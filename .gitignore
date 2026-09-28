@@ -8,3 +8,6 @@ build/
 captures/
 .cxx/
 .externalNativeBuild/
+
+# Temporary git worktrees used by coding agents
+.claude/worktrees/
