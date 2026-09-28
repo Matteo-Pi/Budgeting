@@ -6,7 +6,7 @@ term/holiday-aware predictions, uncertainty ranges, what-if scenarios and sinkin
 All data stays on the phone.
 
 - **Plan and design:** [`docs/PLAN.md`](docs/PLAN.md)
-- **Status:** under construction (see the work packages in the plan).
+- **Status:** first complete version — feature-complete against the plan, not yet tested on a real phone.
 
 ## Installing on your phone
 
