@@ -1,24 +1,55 @@
 package io.github.matteopi.budgeting.core.forecast
 
 import io.github.matteopi.budgeting.core.model.Category
-import io.github.matteopi.budgeting.core.model.Frequency
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.PostingMode
-import io.github.matteopi.budgeting.core.model.RecurringRule
 import io.github.matteopi.budgeting.core.model.ScenarioItemType
-import io.github.matteopi.budgeting.core.model.ScheduledItem
 import io.github.matteopi.budgeting.core.model.SinkingFundStatus
-import io.github.matteopi.budgeting.core.model.TxKind
 import java.time.LocalDate
+
+/**
+ * One committed flow's effect on one specific account (a transfer gives one per leg). Used by
+ * [AccountSplit]; dated exactly like the pool's [CommittedFlow] (overdue items on tomorrow).
+ */
+internal data class AccountFlow(val date: LocalDate, val accountId: Long, val amount: Money)
+
+/** The pool flows plus, built from the same sources, the per-account effects. */
+internal class CommittedFlowSet(val flows: List<CommittedFlow>, val accountFlows: List<AccountFlow>)
 
 /** Builds the list of every known future flow in the horizon. See `docs/PLAN.md` §5.5. */
 object CommittedFlows {
 
-    fun build(input: ForecastInput, forecastEnd: LocalDate): List<CommittedFlow> {
+    fun build(input: ForecastInput, forecastEnd: LocalDate): List<CommittedFlow> =
+        buildWithAccountFlows(input, forecastEnd).flows
+
+    /**
+     * The pool flows of [build] and, alongside, every flow's effect per account for the
+     * per-account forecast (`docs/PLAN.md` §5.11a): a non-transfer hits its own account, a
+     * transfer A->B is `-amount` on A and `+amount` on B whatever the pool membership, and
+     * sinking-fund targets and scenario items without an account go to the default account.
+     * Only non-archived accounts are covered.
+     */
+    internal fun buildWithAccountFlows(input: ForecastInput, forecastEnd: LocalDate): CommittedFlowSet {
         val today = input.today
         val poolIds = Balances.pool(input.accounts).map { it.id }.toSet()
+        val coveredIds = input.accounts.filter { !it.archived }.map { it.id }.toSet()
+        val defaultAccountId = AccountSplit.defaultAccountId(input.accounts, input.settings)
         val categoryById = input.categories.associateBy { it.id }
         val flows = mutableListOf<CommittedFlow>()
+        val accountFlows = mutableListOf<AccountFlow>()
+
+        fun addAccountFlow(date: LocalDate, accountId: Long?, amount: Money) {
+            if (accountId != null && accountId in coveredIds) accountFlows += AccountFlow(date, accountId, amount)
+        }
+        // A rule/item stores one record for a whole transfer: -amount leaves A, +amount reaches B.
+        fun addAccountFlows(date: LocalDate, accountId: Long, toAccountId: Long?, amount: Money) {
+            if (toAccountId == null) {
+                addAccountFlow(date, accountId, amount)
+            } else {
+                addAccountFlow(date, accountId, -amount)
+                addAccountFlow(date, toAccountId, amount)
+            }
+        }
 
         for (rule in input.recurringRules) {
             if (!rule.active) continue
@@ -28,6 +59,7 @@ object CommittedFlows {
             for (occurrence in occurrences) {
                 val overdue = !occurrence.isAfter(today)
                 val date = if (overdue) today.plusDays(1) else occurrence
+                addAccountFlows(date, rule.accountId, rule.toAccountId, rule.amount)
                 val effect = poolEffect(rule.accountId, rule.toAccountId, rule.amount, poolIds) ?: continue
                 val source = if (overdue && rule.postingMode == PostingMode.CONFIRM) {
                     FlowSource.OVERDUE_CONFIRM
@@ -42,6 +74,7 @@ object CommittedFlows {
             if (item.posted || item.skipped || item.date.isAfter(forecastEnd)) continue
             val overdue = !item.date.isAfter(today)
             val date = if (overdue) today.plusDays(1) else item.date
+            addAccountFlows(date, item.accountId, item.toAccountId, item.amount)
             val effect = poolEffect(item.accountId, item.toAccountId, item.amount, poolIds) ?: continue
             val source = if (overdue && item.postingMode == PostingMode.CONFIRM) {
                 FlowSource.OVERDUE_CONFIRM
@@ -57,6 +90,7 @@ object CommittedFlows {
         // store one record for the whole transfer).
         for (tx in input.transactions) {
             if (!tx.date.isAfter(today) || tx.date.isAfter(forecastEnd)) continue
+            addAccountFlow(tx.date, tx.accountId, tx.amount)
             if (tx.accountId !in poolIds) continue
             val label = label(tx.label, tx.categoryId, categoryById)
             flows += CommittedFlow(tx.date, tx.amount, label, FlowSource.TRANSACTION, tx.id, tx.categoryId, tx.accountId, isMajorIncome = false)
@@ -66,6 +100,7 @@ object CommittedFlows {
             if (fund.status != SinkingFundStatus.ACTIVE) continue
             if (fund.targetDate.isAfter(today) && !fund.targetDate.isAfter(forecastEnd)) {
                 flows += CommittedFlow(fund.targetDate, -fund.target, fund.name, FlowSource.SINKING_FUND, fund.id, fund.categoryId, null, isMajorIncome = false)
+                addAccountFlow(fund.targetDate, defaultAccountId, -fund.target)
             }
         }
 
@@ -76,6 +111,7 @@ object CommittedFlows {
                     ScenarioItemType.ONE_OFF -> {
                         val date = item.date ?: continue
                         if (!date.isAfter(today) || date.isAfter(forecastEnd)) continue
+                        addAccountFlow(date, item.accountId ?: defaultAccountId, item.amount)
                         val effect = scenarioPoolEffect(item.accountId, item.amount, poolIds) ?: continue
                         flows += flow(date, effect, label(item.label, item.categoryId, categoryById), FlowSource.SCENARIO, item.id, item.categoryId, item.accountId, isMajorIncome = false)
                     }
@@ -86,6 +122,7 @@ object CommittedFlows {
                         if (from.isAfter(forecastEnd)) continue
                         val occurrences = Recurrence.occurrences(frequency, item.interval, start, item.endDate, from, forecastEnd)
                         for (occurrence in occurrences) {
+                            addAccountFlow(occurrence, item.accountId ?: defaultAccountId, item.amount)
                             val effect = scenarioPoolEffect(item.accountId, item.amount, poolIds) ?: continue
                             flows += flow(occurrence, effect, label(item.label, item.categoryId, categoryById), FlowSource.SCENARIO, item.id, item.categoryId, item.accountId, isMajorIncome = false)
                         }
@@ -97,7 +134,7 @@ object CommittedFlows {
             }
         }
 
-        return flows.sortedWith(compareBy({ it.date }, { it.label }))
+        return CommittedFlowSet(flows.sortedWith(compareBy({ it.date }, { it.label })), accountFlows)
     }
 
     private fun flow(

@@ -165,13 +165,20 @@ data class SafeToSpend(
     /** How much can go on LEARNED spending per week and still stay above floor + buffer. >= 0. */
     val weekly: Money,
     val perDay: Money,
-    /** Last day covered: the day before the next major income, capped at the forecast end. */
+    /**
+     * Last day covered by the calculation: always the forecast end (the weekly figure is a
+     * sustainable budget over the whole forecast, not "until the next income").
+     */
     val horizonEnd: LocalDate,
     val nextMajorIncome: CommittedFlow?,
     val daysUntilNextMajorIncome: Int?,
     /** The date that limits the answer (tightest point), if any. */
     val bindingDate: LocalDate?,
-    /** Human-readable reason, e.g. "Rent & bills on 1 Oct". */
+    /**
+     * Human-readable reason: "Rent & bills on 1 Oct" (a committed outflow in the 3 days up to
+     * the binding date), "Until Student loan on 2 Oct" (a major income arrives the next day),
+     * "Over the next 26 weeks" (the binding date is the end of the forecast), or null.
+     */
     val bindingReason: String?,
     /** > 0 when even zero spending breaches floor + buffer by this much. */
     val shortfall: Money,
@@ -180,12 +187,13 @@ data class SafeToSpend(
 )
 
 data class RiskSummary(
-    /** Probability the pool dips below floor + buffer before the safe-to-spend horizon ends. */
+    /** Probability the pool dips below the floor at any point up to [SafeToSpend.horizonEnd] (the forecast end). */
     val probBelowFloor: Double,
     /** Probability the pool goes past the arranged overdraft limit (the hard limit). */
     val probBeyondOverdraft: Double,
-    /** First date where P10 is below floor + buffer, if any. */
+    /** First date where P10 is below the floor, if any. */
     val firstLikelyBreach: LocalDate?,
+    /** End-of-day pool balance percentiles on [SafeToSpend.horizonEnd] (the forecast end). */
     val endBalanceP10: Money,
     val endBalanceP50: Money,
     val endBalanceP90: Money,
