@@ -79,6 +79,7 @@ fun BudgetNavHost(
                     onOpenForecast = { navController.navigate(Route.Forecast) },
                     onOpenPredictions = { navController.navigate(Route.Predictions) },
                     onAddTransaction = onAddTransaction,
+                    onOpenSinkingFunds = { navController.navigate(Route.SinkingFunds) },
                 )
             }
             composable<Route.Activity> {
