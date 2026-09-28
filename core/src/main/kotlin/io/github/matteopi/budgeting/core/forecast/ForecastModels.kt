@@ -187,7 +187,16 @@ data class FundReservation(
     val weeklyContribution: Money,
 )
 
-enum class FlowSource { RECURRING, SCHEDULED, SINKING_FUND, SCENARIO, OVERDUE_CONFIRM }
+enum class FlowSource {
+    RECURRING, SCHEDULED, SINKING_FUND, SCENARIO, OVERDUE_CONFIRM,
+
+    /**
+     * Added by the engine: a real ledger [io.github.matteopi.budgeting.core.model.Transaction]
+     * dated after today. The UI shouldn't allow this, but the engine still reports it as a
+     * committed flow defensively (see `docs/PLAN.md` §5.5 point 3).
+     */
+    TRANSACTION,
+}
 
 data class CommittedFlow(
     val date: LocalDate,
