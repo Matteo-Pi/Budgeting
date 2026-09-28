@@ -1,6 +1,8 @@
 package io.github.matteopi.budgeting.backup
 
 import io.github.matteopi.budgeting.data.settings.AppSettings
+import io.github.matteopi.budgeting.data.settings.AppTheme
+import io.github.matteopi.budgeting.data.settings.DarkMode
 import java.time.DayOfWeek
 import java.time.LocalDate
 import kotlin.test.Test
@@ -16,6 +18,8 @@ class AppSettingsCodecTest {
             reconcileReminderEnabled = true,
             reconcileReminderDay = DayOfWeek.WEDNESDAY,
             onboardingDone = true,
+            theme = AppTheme.SLATE,
+            darkMode = DarkMode.DARK,
             lastSnapshotDate = LocalDate.of(2026, 9, 1),
             lastExportDate = LocalDate.of(2026, 9, 20),
         )
@@ -26,6 +30,46 @@ class AppSettingsCodecTest {
         assertEquals(settings.reconcileReminderEnabled, decoded.reconcileReminderEnabled)
         assertEquals(settings.reconcileReminderDay, decoded.reconcileReminderDay)
         assertEquals(settings.onboardingDone, decoded.onboardingDone)
+        assertEquals(settings.theme, decoded.theme)
+        assertEquals(settings.darkMode, decoded.darkMode)
+    }
+
+    @Test
+    fun `every theme and dark mode survives a round trip`() {
+        for (theme in AppTheme.entries) {
+            for (mode in DarkMode.entries) {
+                val decoded = AppSettingsCodec.decode(
+                    AppSettingsCodec.encode(AppSettings(theme = theme, darkMode = mode)),
+                    current = AppSettings(theme = AppTheme.PAPER, darkMode = DarkMode.SYSTEM),
+                )
+                assertEquals(theme, decoded.theme)
+                assertEquals(mode, decoded.darkMode)
+            }
+        }
+    }
+
+    @Test
+    fun `encodes the theme and dark mode by enum name`() {
+        val encoded = AppSettingsCodec.encode(AppSettings(theme = AppTheme.INK, darkMode = DarkMode.LIGHT))
+        assertEquals("INK", encoded["theme"])
+        assertEquals("LIGHT", encoded["darkMode"])
+    }
+
+    @Test
+    fun `an unknown theme or dark mode keeps the current value`() {
+        val current = AppSettings(theme = AppTheme.SAGE, darkMode = DarkMode.DARK)
+        val decoded = AppSettingsCodec.decode(mapOf("theme" to "NEON", "darkMode" to "sometimes"), current)
+        assertEquals(AppTheme.SAGE, decoded.theme)
+        assertEquals(DarkMode.DARK, decoded.darkMode)
+    }
+
+    @Test
+    fun `a backup from before themes existed leaves the current theme alone`() {
+        val current = AppSettings(theme = AppTheme.MONO, darkMode = DarkMode.LIGHT)
+        val decoded = AppSettingsCodec.decode(mapOf("hideWidgetAmounts" to "true"), current)
+        assertEquals(true, decoded.hideWidgetAmounts)
+        assertEquals(AppTheme.MONO, decoded.theme)
+        assertEquals(DarkMode.LIGHT, decoded.darkMode)
     }
 
     @Test
@@ -43,5 +87,7 @@ class AppSettingsCodecTest {
         val decoded = AppSettingsCodec.decode(emptyMap(), current)
         assertEquals(current.hideWidgetAmounts, decoded.hideWidgetAmounts)
         assertEquals(current.reconcileReminderDay, decoded.reconcileReminderDay)
+        assertEquals(current.theme, decoded.theme)
+        assertEquals(current.darkMode, decoded.darkMode)
     }
 }

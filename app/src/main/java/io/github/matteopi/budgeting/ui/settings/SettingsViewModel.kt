@@ -10,6 +10,8 @@ import io.github.matteopi.budgeting.core.model.BudgetSettings
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.ZeroPoint
 import io.github.matteopi.budgeting.data.settings.AppSettings
+import io.github.matteopi.budgeting.data.settings.AppTheme
+import io.github.matteopi.budgeting.data.settings.DarkMode
 import java.time.DayOfWeek
 import java.time.LocalDate
 import kotlinx.coroutines.flow.SharingStarted
@@ -45,6 +47,10 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
     fun setSimulations(simulations: Int) = updateAndRefreshWidget { container.settingsStore.setSimulations(simulations) }
     fun setForecastHorizonDays(days: Int) = updateAndRefreshWidget { container.settingsStore.setForecastHorizonDays(days) }
     fun setHideWidgetAmounts(hide: Boolean) = updateAndRefreshWidget { container.settingsStore.setHideWidgetAmounts(hide) }
+
+    // The widget is themed too, so appearance changes refresh it as well.
+    fun setTheme(theme: AppTheme) = updateAndRefreshWidget { container.settingsStore.setTheme(theme) }
+    fun setDarkMode(mode: DarkMode) = updateAndRefreshWidget { container.settingsStore.setDarkMode(mode) }
 
     fun setAppLockEnabled(enabled: Boolean) {
         viewModelScope.launch { container.settingsStore.setAppLockEnabled(enabled) }

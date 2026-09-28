@@ -1,6 +1,7 @@
 package io.github.matteopi.budgeting.widget
 
 import android.content.Context
+import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
@@ -28,6 +29,7 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
+import androidx.glance.material3.ColorProviders
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
@@ -35,7 +37,10 @@ import io.github.matteopi.budgeting.BudgetApp
 import io.github.matteopi.budgeting.MainActivity
 import io.github.matteopi.budgeting.core.forecast.ForecastResult
 import io.github.matteopi.budgeting.core.model.Preset
+import io.github.matteopi.budgeting.data.settings.AppTheme
+import io.github.matteopi.budgeting.data.settings.DarkMode
 import io.github.matteopi.budgeting.ui.quickadd.QuickAddActivity
+import io.github.matteopi.budgeting.ui.theme.colorSchemeFor
 import kotlinx.coroutines.flow.first
 
 private const val MAX_WIDGET_PRESETS = 3
@@ -74,7 +79,7 @@ class SafeToSpendWidget : GlanceAppWidget() {
         val result = if (needsSetup) null else runCatching { container.forecastService.quick() }.getOrNull()
 
         provideContent {
-            GlanceTheme {
+            WidgetTheme(theme = appSettings.theme, darkMode = appSettings.darkMode) {
                 Box(modifier = GlanceModifier.fillMaxSize().background(GlanceTheme.colors.background)) {
                     when {
                         needsSetup -> MessageContent(text = "Set up Budgeting")
@@ -84,6 +89,28 @@ class SafeToSpendWidget : GlanceAppWidget() {
                 }
             }
         }
+    }
+}
+
+/**
+ * Applies the user's chosen theme to the widget. [AppTheme.DYNAMIC] keeps Glance's default
+ * (wallpaper-derived) colours on Android 12+ and looks like Paper below that. Other themes use
+ * their own light/dark schemes; a forced light or dark app mode is honoured by giving both slots
+ * the same scheme, otherwise the widget follows the system's day/night setting.
+ */
+@Composable
+private fun WidgetTheme(theme: AppTheme, darkMode: DarkMode, content: @Composable () -> Unit) {
+    if (theme == AppTheme.DYNAMIC && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        GlanceTheme(content = content)
+    } else {
+        val light = colorSchemeFor(theme, dark = false)
+        val dark = colorSchemeFor(theme, dark = true)
+        val colors = when (darkMode) {
+            DarkMode.SYSTEM -> ColorProviders(light = light, dark = dark)
+            DarkMode.LIGHT -> ColorProviders(light = light, dark = light)
+            DarkMode.DARK -> ColorProviders(light = dark, dark = dark)
+        }
+        GlanceTheme(colors = colors, content = content)
     }
 }
 

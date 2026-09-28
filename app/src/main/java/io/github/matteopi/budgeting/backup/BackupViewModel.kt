@@ -74,6 +74,8 @@ class BackupViewModel(private val container: AppContainer) : ViewModel() {
         container.settingsStore.setReconcileReminderEnabled(restored.reconcileReminderEnabled)
         container.settingsStore.setReconcileReminderDay(restored.reconcileReminderDay)
         container.settingsStore.setOnboardingDone(restored.onboardingDone)
+        container.settingsStore.setTheme(restored.theme)
+        container.settingsStore.setDarkMode(restored.darkMode)
         container.widgetUpdater.requestUpdate()
         _restoreState.value = null
     }
