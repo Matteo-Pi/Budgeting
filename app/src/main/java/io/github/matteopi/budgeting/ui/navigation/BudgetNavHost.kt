@@ -5,6 +5,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -35,6 +36,7 @@ import io.github.matteopi.budgeting.ui.plan.SinkingFundEditScreen
 import io.github.matteopi.budgeting.ui.plan.SinkingFundsScreen
 import io.github.matteopi.budgeting.ui.plan.StudentLoanHelperScreen
 import io.github.matteopi.budgeting.ui.plan.TermDatesScreen
+import io.github.matteopi.budgeting.ui.quickadd.QuickAddActivity
 import io.github.matteopi.budgeting.ui.settings.CategoriesScreen
 import io.github.matteopi.budgeting.ui.settings.PresetsScreen
 import io.github.matteopi.budgeting.ui.settings.SettingsScreen
@@ -56,6 +58,8 @@ fun BudgetNavHost(
     val backStackEntry by navController.currentBackStackEntryAsState()
     val destination = backStackEntry?.destination
     val showBottomBar = destination != null && !destination.hasRoute<Route.Onboarding>()
+    val context = LocalContext.current
+    val onAddTransaction = { context.startActivity(QuickAddActivity.intent(context)) }
 
     Scaffold(
         modifier = modifier,
@@ -74,11 +78,11 @@ fun BudgetNavHost(
                     onOpenActivity = { navController.navigate(Route.Activity) },
                     onOpenForecast = { navController.navigate(Route.Forecast) },
                     onOpenPredictions = { navController.navigate(Route.Predictions) },
-                    onAddTransaction = { /* Quick-add sheet: WP-U1 */ },
+                    onAddTransaction = onAddTransaction,
                 )
             }
             composable<Route.Activity> {
-                ActivityScreen(onAddTransaction = { /* Quick-add sheet: WP-U1 */ })
+                ActivityScreen(onAddTransaction = onAddTransaction)
             }
             composable<Route.Forecast> {
                 ForecastScreen(
