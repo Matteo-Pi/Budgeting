@@ -205,6 +205,7 @@ fun BudgetNavHost(
                             popUpTo<Route.Onboarding> { inclusive = true }
                         }
                     },
+                    onOpenStatementImport = { navController.navigate(Route.StatementImport) },
                 )
             }
         }
