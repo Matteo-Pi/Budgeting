@@ -5,7 +5,6 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import java.time.Duration
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.util.concurrent.TimeUnit
@@ -26,9 +25,9 @@ object WorkScheduler {
         )
     }
 
-    private fun initialDelayMillis(): Long {
-        val now = LocalDateTime.now()
-        var next = LocalDateTime.of(LocalDate.now(), FIRST_RUN_TIME)
+    /** Milliseconds from [now] to the next 03:00 (today's if it hasn't passed yet, else tomorrow's). */
+    internal fun initialDelayMillis(now: LocalDateTime = LocalDateTime.now()): Long {
+        var next = LocalDateTime.of(now.toLocalDate(), FIRST_RUN_TIME)
         if (!next.isAfter(now)) {
             next = next.plusDays(1)
         }

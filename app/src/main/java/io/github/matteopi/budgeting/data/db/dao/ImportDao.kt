@@ -2,6 +2,7 @@ package io.github.matteopi.budgeting.data.db.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import io.github.matteopi.budgeting.data.db.entities.ImportBatchEntity
 import io.github.matteopi.budgeting.data.db.entities.MerchantRuleEntity
@@ -18,6 +19,10 @@ interface ImportDao {
 
     @Insert
     suspend fun insertMerchantRule(rule: MerchantRuleEntity): Long
+
+    /** Used by statement import's "remember" step: replaces any existing rule for the same key. */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertMerchantRule(rule: MerchantRuleEntity): Long
 
     @Insert
     suspend fun insertMerchantRules(rules: List<MerchantRuleEntity>): List<Long>

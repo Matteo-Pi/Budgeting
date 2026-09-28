@@ -1,6 +1,7 @@
 package io.github.matteopi.budgeting.data.repo
 
 import androidx.room.withTransaction
+import io.github.matteopi.budgeting.core.backup.BackupData
 import io.github.matteopi.budgeting.data.db.BudgetDatabase
 import io.github.matteopi.budgeting.data.db.dao.AccountDao
 import io.github.matteopi.budgeting.data.db.dao.CategoryDao
@@ -16,8 +17,9 @@ import io.github.matteopi.budgeting.widget.WidgetUpdater
 import kotlinx.coroutines.flow.first
 
 /**
- * Reads/writes every table for backup export/restore (§6.10). The JSON encode/decode itself
- * (BackupMapper/BackupCodec, from `core.backup`) belongs to WP-U5.
+ * Reads/writes every table for backup export/restore (§6.10), as `core.backup.BackupData`. The
+ * JSON encode/decode (`BackupMapper`/`BackupCodec`, from `core.backup`) is driven by
+ * `backup/BackupViewModel`.
  */
 class BackupRepository(
     private val database: BudgetDatabase,
