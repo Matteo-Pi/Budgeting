@@ -75,6 +75,7 @@ fun BudgetNavHost(
                     onOpenForecast = { navController.navigate(Route.Forecast) },
                     onOpenPredictions = { navController.navigate(Route.Predictions) },
                     onAddTransaction = { /* Quick-add sheet: WP-U1 */ },
+                    onOpenSinkingFunds = { navController.navigate(Route.SinkingFunds) },
                 )
             }
             composable<Route.Activity> {
