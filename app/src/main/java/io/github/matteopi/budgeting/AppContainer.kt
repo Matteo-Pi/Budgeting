@@ -117,6 +117,7 @@ class AppContainer(context: Context) {
     )
 
     val postingService = PostingService(
+        database = database,
         planRepository = planRepository,
         transactionRepository = transactionRepository,
         clock = clock,

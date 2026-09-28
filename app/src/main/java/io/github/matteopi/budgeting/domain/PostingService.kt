@@ -7,10 +7,14 @@ import io.github.matteopi.budgeting.core.model.RecurringRule
 import io.github.matteopi.budgeting.core.model.ScheduledItem
 import io.github.matteopi.budgeting.core.model.Transaction
 import io.github.matteopi.budgeting.core.model.TxKind
+import androidx.room.withTransaction
+import io.github.matteopi.budgeting.data.db.BudgetDatabase
 import io.github.matteopi.budgeting.data.repo.PlanRepository
 import io.github.matteopi.budgeting.data.repo.TransactionRepository
 import java.time.LocalDate
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /** One thing the user needs to confirm, edit, skip or snooze: a CONFIRM occurrence or item. */
 sealed interface PendingItem {
@@ -20,28 +24,39 @@ sealed interface PendingItem {
 
 /** Turns recurring rules and scheduled items into real transactions, automatically or on confirmation. */
 class PostingService(
+    private val database: BudgetDatabase,
     private val planRepository: PlanRepository,
     private val transactionRepository: TransactionRepository,
     private val clock: Clock,
 ) {
+    // postDue runs from app start and from DailyWorker, which can overlap when WorkManager
+    // starts the process. Without this lock both could read the same postedThrough and post
+    // the same direct debit twice.
+    private val mutex = Mutex()
+
     /** Posts every due AUTO recurring occurrence and AUTO scheduled item up to and including [today]. Idempotent. */
-    suspend fun postDue(today: LocalDate) {
+    suspend fun postDue(today: LocalDate) = mutex.withLock {
         val rules = planRepository.observeRecurringRules().first()
         for (rule in rules) {
             if (!rule.active || rule.postingMode != PostingMode.AUTO) continue
             val from = (rule.postedThrough ?: rule.startDate.minusDays(1)).plusDays(1)
             if (from > today) continue
             val occurrences = Recurrence.occurrences(rule, from, today)
-            for (date in occurrences) postRuleOccurrence(rule, date)
-            planRepository.updateRecurringRule(rule.copy(postedThrough = today))
+            // Posting and advancing postedThrough together, so a crash can't cause a re-post.
+            database.withTransaction {
+                for (date in occurrences) postRuleOccurrence(rule, date)
+                planRepository.updateRecurringRule(rule.copy(postedThrough = today))
+            }
         }
 
         val items = planRepository.observeScheduledItems().first()
         for (item in items) {
             if (item.posted || item.skipped || item.postingMode != PostingMode.AUTO) continue
             if (item.date > today) continue
-            postScheduledItem(item, item.date)
-            planRepository.updateScheduledItem(item.copy(posted = true))
+            database.withTransaction {
+                postScheduledItem(item, item.date)
+                planRepository.updateScheduledItem(item.copy(posted = true))
+            }
         }
     }
 
@@ -69,7 +84,13 @@ class PostingService(
     }
 
     /** Confirms a pending item arrived, with a possibly-adjusted [amount] and [date]. */
-    suspend fun confirm(item: PendingItem, amount: Money, date: LocalDate) {
+    suspend fun confirm(item: PendingItem, amount: Money, date: LocalDate) = mutex.withLock {
+        database.withTransaction {
+            confirmLocked(item, amount, date)
+        }
+    }
+
+    private suspend fun confirmLocked(item: PendingItem, amount: Money, date: LocalDate) {
         when (item) {
             is PendingItem.Recurring -> {
                 postRuleOccurrence(item.rule, date, amount)
@@ -84,7 +105,7 @@ class PostingService(
     }
 
     /** Marks a pending item as not happening this time; no transaction is posted. */
-    suspend fun skip(item: PendingItem) {
+    suspend fun skip(item: PendingItem) = mutex.withLock {
         when (item) {
             is PendingItem.Recurring -> {
                 val through = maxOf(item.rule.postedThrough ?: item.rule.startDate.minusDays(1), item.date)
