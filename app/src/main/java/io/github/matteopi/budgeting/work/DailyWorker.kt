@@ -1,14 +1,26 @@
 package io.github.matteopi.budgeting.work
 
+import android.Manifest
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import io.github.matteopi.budgeting.BudgetApp
+import io.github.matteopi.budgeting.MainActivity
+import io.github.matteopi.budgeting.R
+import io.github.matteopi.budgeting.core.analysis.Accuracy
+import kotlinx.coroutines.flow.first
 
 /**
- * Runs once a day: posts due AUTO recurring/scheduled items. Accuracy snapshots, the reconcile
- * reminder notification and always-fresh widget refresh are added by WP-U4/WP-U5; every
- * repository write already asks [io.github.matteopi.budgeting.widget.WidgetUpdater] to refresh.
+ * Runs once a day (docs/PLAN.md §6.8): posts due AUTO recurring/scheduled items; once a day
+ * (guarded by `lastSnapshotDate`) saves an accuracy snapshot of the full forecast; refreshes the
+ * widget; and posts the weekly balance-check reminder when it's due ([ReminderRule]).
  */
 class DailyWorker(
     context: Context,
@@ -16,7 +28,65 @@ class DailyWorker(
 ) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         val container = (applicationContext as BudgetApp).container
-        container.postingService.postDue(container.clock.today())
+        val today = container.clock.today()
+
+        container.postingService.postDue(today)
+
+        val appSettings = container.settingsStore.appSettings.first()
+        if (appSettings.lastSnapshotDate != today) {
+            val result = container.forecastService.full()
+            val (balanceSnapshots, categorySnapshots) = Accuracy.snapshotsFor(result)
+            container.snapshotRepository.saveSnapshots(balanceSnapshots, categorySnapshots)
+            container.settingsStore.setLastSnapshotDate(today)
+        }
+
+        container.widgetUpdater.requestUpdate()
+
+        val poolAccountIds = container.accountRepository.observeAccounts().first()
+            .filter { it.includeInSafeToSpend && !it.archived }
+            .map { it.id }
+            .toSet()
+        val lastPoolReconciliation = container.accountRepository.observeReconciliations().first()
+            .filter { it.accountId in poolAccountIds }
+            .maxOfOrNull { it.date }
+
+        val shouldRemind = ReminderRule.shouldRemind(
+            enabled = appSettings.reconcileReminderEnabled,
+            reminderDay = appSettings.reconcileReminderDay,
+            today = today,
+            lastPoolReconciliationDate = lastPoolReconciliation,
+        )
+        if (shouldRemind) {
+            postReminderNotification(applicationContext)
+        }
+
         return Result.success()
+    }
+
+    private fun postReminderNotification(context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        val intent = Intent(context, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val notification = NotificationCompat.Builder(context, BudgetApp.REMINDERS_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("Check your balances")
+            .setContentText("It's been a while since you last updated your account balances.")
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+        NotificationManagerCompat.from(context).notify(REMINDER_NOTIFICATION_ID, notification)
+    }
+
+    private companion object {
+        const val REMINDER_NOTIFICATION_ID = 1001
     }
 }
