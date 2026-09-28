@@ -16,6 +16,9 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // With the orchestrator, every test starts from a freshly cleared app (empty database).
+        testInstrumentationRunnerArguments["clearPackageData"] = "true"
     }
 
     // One committed keystore so every build (CI, local, future sessions) has the same
@@ -47,6 +50,11 @@ android {
 
     buildFeatures {
         compose = true
+    }
+
+    testOptions {
+        animationsDisabled = true
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
     }
 }
 
@@ -87,4 +95,16 @@ dependencies {
     testImplementation(libs.kotlin.test.junit)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+
+    // Instrumented tests run on an emulator in CI (.github/workflows/build.yml, device-tests job).
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.uiautomator)
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.kotlin.test.junit)
+    androidTestUtil(libs.androidx.test.orchestrator)
+    debugImplementation(libs.compose.ui.test.manifest)
 }

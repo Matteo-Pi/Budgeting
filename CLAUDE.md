@@ -8,3 +8,7 @@
 - `app/` needs Google Maven (`dl.google.com`), which may be blocked in cloud sessions; then
   only CI (`.github/workflows/build.yml`) can compile it. Check runs with the GitHub tools.
 - Never regenerate `app/debug.keystore`; never use destructive Room migrations.
+- Device tests (`app/src/androidTest`) run on an emulator in CI's `device-tests` job. Its report
+  (SUMMARY.txt, screenshots/, results/, log) is pushed to `refs/ci/device-report`; read it with
+  `git fetch origin refs/ci/device-report && git worktree add /tmp/report FETCH_HEAD` (or
+  `git show FETCH_HEAD:SUMMARY.txt`).
