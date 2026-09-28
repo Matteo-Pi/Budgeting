@@ -793,6 +793,35 @@ After each wave the orchestrator merges, pushes, gets CI green, and updates this
 | **C2 Core support** | `core/analysis/`, `core/importer/`, `core/backup/`, `core/entry/`, `core/reconcile/` (§5.14–5.18) + tests | model (done) | tests green |
 | **A1 App foundation** | Room DB (§6.1), repositories (§6.2), SettingsStore (§6.3), Clock/ForecastService/PostingService/AppContainer (§6.4), BudgetApp wiring, theme, navigation with bottom bar and **placeholder composables for every screen in §6.5** in the owning packages, full AndroidManifest (QuickAddActivity, widget receiver, backup rules, notification permission), stub `QuickAddActivity`, stub widget + receiver + `WidgetUpdater`, stub `DailyWorker` + `WorkScheduler`, shared UI components (MoneyText, SectionCard, EmptyState, ConfirmDialog, DateField, AccountPicker, CategoryPicker, AmountKeypad) | model (done); calls `Recurrence.occurrences`, `Balances`, `Reconcile.plan`, `ForecastEngine.run` by their §5 signatures | CI builds the APK; app launches to the bottom-nav shell |
 
+### Wave 1 outcome (merged, CI green) — read before starting Wave 2
+- **Status**: C1 (101 tests), C2 (116 tests) and A1 merged; the APK builds in CI.
+- **Core API as built** — call only these public entry points:
+  `ForecastEngine.run`, `Regimes`, `Recurrence`, `Balances` (forecast/);
+  `Anomalies.detect`, `Accuracy.snapshotsFor/evaluate` (`AccuracyReport(horizons, categories, improvementPercent)`),
+  `Trends.weeklyByCategory/termVsHoliday/balanceHistory/monthlyInOut` (analysis/);
+  `Reconcile.plan` (reconcile/); `CsvParser`, `StatementImport.guessMapping/parseRows`, `MerchantKey`,
+  `CategorySuggester`, `ImportDedupe`, `OpeningBalanceAdjuster` (importer/);
+  `BackupMapper`, `BackupCodec.encode/decode` → `BackupDecodeResult.Success/Failure(errors)`, `core.backup.BackupData` (backup/);
+  `AmountEntry(text).press(KeypadKey)` with `KeypadKey.Digit/Dot/Backspace/Clear`, `.money`, `.display`;
+  `CategoryRanking.rank` (entry/). Engine internals (`HistoryBuilder`, `SafeToSpendCalculator`, `Tier1/2/3`…) are
+  public only for tests — don't call them from the app. `FlowSource.TRANSACTION` was added (future-dated transactions).
+- **Screens**: every route already has a placeholder composable in its owning file (see `ui/navigation/BudgetNavHost.kt`
+  for the exact signatures). Keep the existing parameters; you may add parameters **with default values**. If you need a
+  new navigation callback, add it and wire it in `BudgetNavHost.kt` with the smallest possible edit.
+- **Add transaction**: Home/Activity call `onAddTransaction`. U1 wires this in `BudgetNavHost.kt` to start
+  `QuickAddActivity` (the same dialog-style pop-up the widget uses) — no separate in-app bottom sheet.
+- **Accounts**: there is no standalone accounts-list route; the accounts list lives on Home (U2), with
+  AccountDetail/AccountEdit routes.
+- **Mini forecast chart on Home**: U2 draws its own small sparkline in `ui/home/`; the full charts are U4's.
+- **Known gaps assigned in Wave 2**: `ImportRepository.importRows` is not implemented yet (U5). There are two
+  `BackupData` classes (`data.repo.BackupData` in the app, `core.backup.BackupData` in core) — U5 switches
+  `BackupRepository` to the core one and deletes the app copy. `MainActivity` changes for the app lock and
+  FLAG_SECURE belong to U5; FLAG_SECURE for `QuickAddActivity` belongs to U1.
+- **Quirks**: `Scenario` has no createdAt, so `Scenario.toEntity(createdAt)` takes it explicitly. Transfers posted
+  from recurring rules don't carry `recurringRuleId` (harmless for the forecast).
+- **Shared files** (`BudgetNavHost.kt`, `AppContainer.kt`, `AndroidManifest.xml`, `strings.xml`, repositories): minimal
+  additive edits only, listed in your report. The orchestrator resolves merge conflicts.
+
 ### Wave 2 — features (after Wave 1 is merged and green)
 | WP | Scope |
 |---|---|

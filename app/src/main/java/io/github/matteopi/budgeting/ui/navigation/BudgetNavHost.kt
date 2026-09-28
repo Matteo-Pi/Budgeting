@@ -5,6 +5,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -53,8 +54,8 @@ fun BudgetNavHost(
     modifier: Modifier = Modifier,
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = backStackEntry?.destination?.route
-    val showBottomBar = currentRoute != null && currentRoute != Route.Onboarding::class.qualifiedName
+    val destination = backStackEntry?.destination
+    val showBottomBar = destination != null && !destination.hasRoute<Route.Onboarding>()
 
     Scaffold(
         modifier = modifier,

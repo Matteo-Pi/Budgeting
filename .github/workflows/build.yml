@@ -26,7 +26,8 @@ jobs:
         run: ./gradlew -p core test --console=plain
 
       - name: Build app and run app unit tests
-        run: ./gradlew :app:assembleDebug :app:testDebugUnitTest --console=plain --stacktrace
+        shell: bash  # explicit bash enables pipefail, so a failed build still fails through tee
+        run: ./gradlew :app:assembleDebug :app:testDebugUnitTest --console=plain --continue 2>&1 | tee build.log
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -44,3 +45,9 @@ jobs:
             core/build/reports/tests
             app/build/reports/tests
           if-no-files-found: ignore
+
+      # Last step so the compiler errors are at the end of the log.
+      - name: Summarise build errors
+        if: failure()
+        run: |
+          grep -E "^e: |What went wrong|FAILED|Could not resolve|error:" build.log | head -80 || true

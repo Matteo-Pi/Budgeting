@@ -13,6 +13,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 
@@ -30,16 +32,22 @@ private val bottomBarItems = listOf(
 @Composable
 fun BudgetBottomBar(navController: NavHostController) {
     val backStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = backStackEntry?.destination?.route
+    val destination = backStackEntry?.destination
 
     NavigationBar {
         bottomBarItems.forEach { item ->
-            val itemRoute = item.route::class.qualifiedName
+            val selected = destination?.hierarchy?.any { it.hasRoute(item.route::class) } == true
             NavigationBarItem(
-                selected = currentRoute == itemRoute,
+                selected = selected,
                 onClick = {
-                    if (currentRoute != itemRoute) {
-                        navController.navigate(item.route) { launchSingleTop = true }
+                    if (!selected) {
+                        // Standard tab behaviour: keep one copy of each tab on top of Home and
+                        // remember each tab's scroll/state, instead of piling up the back stack.
+                        navController.navigate(item.route) {
+                            popUpTo<Route.Home> { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     }
                 },
                 icon = { Icon(item.icon, contentDescription = item.label) },
