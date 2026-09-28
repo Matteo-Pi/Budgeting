@@ -59,16 +59,23 @@ class MainActivity : FragmentActivity() {
 
                     val locked by AppLockState.locked.collectAsStateWithLifecycle()
 
-                    when {
-                        settings == null || startDestination == null -> LoadingScreen()
-                        settings.appLockEnabled && locked -> LockScreen(onUnlock = { AppLockState.unlock() })
-                        else -> {
-                            val navController = rememberNavController()
+                    if (settings == null || startDestination == null) {
+                        LoadingScreen()
+                    } else {
+                        // The lock screen is drawn over the NavHost rather than replacing it, so
+                        // locking keeps the user's place and never rebuilds the graph from the
+                        // start destination captured at launch (which may be Onboarding).
+                        // LockScreen is an opaque full-size Surface, which also blocks touches.
+                        val navController = rememberNavController()
+                        Box(modifier = Modifier.fillMaxSize()) {
                             BudgetNavHost(
                                 navController = navController,
                                 startDestination = startDestination!!,
                                 container = container,
                             )
+                            if (settings.appLockEnabled && locked) {
+                                LockScreen(onUnlock = { AppLockState.unlock() })
+                            }
                         }
                     }
                 }
