@@ -71,6 +71,34 @@ data class ForecastResult(
     val historyStart: LocalDate?,
     /** Number of complete Mon–Sun weeks inside the history window. */
     val completeWeeksOfHistory: Int,
+    /**
+     * The same forecast split per account, for every non-archived account (pool and non-pool),
+     * ordered by account id. For pool accounts the expected balances sum exactly to
+     * [DayForecast.expectedBalance]; percentiles are per account and are not additive.
+     */
+    val accountForecasts: List<AccountForecast> = emptyList(),
+)
+
+data class AccountForecast(
+    val accountId: Long,
+    /** True if the account counts towards the pool (safe-to-spend and the total line). */
+    val inPool: Boolean,
+    /** Raw balance today. */
+    val balanceNow: Money,
+    /** The account's own overdraft limit (positive), for display conversion. */
+    val overdraft: Money,
+    /** One entry per day, aligned with [ForecastResult.days] (starts today). */
+    val days: List<AccountDayForecast>,
+)
+
+data class AccountDayForecast(
+    val date: LocalDate,
+    /** End-of-day raw balance using tier 2 point estimates. */
+    val expectedBalance: Money,
+    /** Tier 3 percentiles for this account (null if Monte Carlo skipped). */
+    val p10: Money?,
+    val p50: Money?,
+    val p90: Money?,
 )
 
 data class DayForecast(
