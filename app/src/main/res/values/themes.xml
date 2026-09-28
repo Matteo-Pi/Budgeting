@@ -2,4 +2,11 @@
 <resources>
     <!-- Compose draws all UI; this theme only styles the window before Compose starts. -->
     <style name="Theme.Budgeting" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- QuickAddActivity: a translucent, dimmed window over whatever app was in the foreground. -->
+    <style name="Theme.Budgeting.QuickAdd" parent="android:Theme.Translucent.NoTitleBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:backgroundDimEnabled">true</item>
+    </style>
 </resources>

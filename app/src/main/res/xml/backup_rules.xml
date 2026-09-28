@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pre-Android 12 (API < 31) auto-backup rules. See docs/PLAN.md §6.10. -->
+<full-backup-content>
+    <include domain="database" path="." />
+    <include domain="file" path="datastore/settings.preferences_pb" />
+</full-backup-content>
