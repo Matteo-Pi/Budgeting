@@ -37,13 +37,10 @@ object SafeToSpendCalculator {
         val nextMajorIncome = majorIncomes.firstOrNull()
         val daysUntilNextMajorIncome = nextMajorIncome?.let { ChronoUnit.DAYS.between(today, it.date).toInt() }
 
-        val horizonEnd: LocalDate = run {
-            if (nextMajorIncome == null) return@run forecastEnd
-            val daysAway = ChronoUnit.DAYS.between(today, nextMajorIncome.date)
-            val target = if (daysAway < 7) majorIncomes.getOrNull(1) else nextMajorIncome
-            val h = target?.date?.minusDays(1) ?: forecastEnd
-            if (h.isAfter(forecastEnd)) forecastEnd else h
-        }
+        // A sustainable weekly budget over the WHOLE forecast: the horizon is always the forecast
+        // end. Major incomes only feed the display fields above; they no longer cut the horizon
+        // (a short horizon extrapolated to a week gave nonsense such as GBP 14,663/week).
+        val horizonEnd: LocalDate = forecastEnd
 
         val committedByDate = committedFlows.groupBy { it.date }
 
@@ -74,18 +71,7 @@ object SafeToSpendCalculator {
         val perDay = Money(weekly.pence / 7)
         val shortfall = if (minWDate != null) Money(maxOf(0L, Math.round(-minH))) else Money.ZERO
 
-        val bindingReason = minWDate?.let { bindingDate ->
-            val windowStart = bindingDate.minusDays(2)
-            val largestOutflow = committedFlows
-                .filter { !it.date.isBefore(windowStart) && !it.date.isAfter(bindingDate) && it.amount.isNegative }
-                .minByOrNull { it.amount.pence }
-            when {
-                largestOutflow != null -> "${largestOutflow.label} on ${BINDING_DATE_FORMAT.format(largestOutflow.date)}"
-                bindingDate == horizonEnd && nextMajorIncome != null ->
-                    "Until ${nextMajorIncome.label} on ${BINDING_DATE_FORMAT.format(nextMajorIncome.date)}"
-                else -> null
-            }
-        }
+        val bindingReason = minWDate?.let { bindingReason(it, horizonEnd, today, committedFlows) }
 
         return SafeToSpend(
             weekly = weekly,
@@ -98,6 +84,38 @@ object SafeToSpendCalculator {
             shortfall = shortfall,
             predictedWeeklySpending = predictedWeeklySpending(today, terms, learned, estimateByKey),
         )
+    }
+
+    /**
+     * Why [bindingDate] is the tightest point: (a) a committed outflow in the 3 days up to and
+     * including it, (b) a major income arriving the very next day, (c) the end of the forecast
+     * itself (the budget just has to last that long), else null.
+     */
+    private fun bindingReason(
+        bindingDate: LocalDate,
+        horizonEnd: LocalDate,
+        today: LocalDate,
+        committedFlows: List<CommittedFlow>,
+    ): String? {
+        val windowStart = bindingDate.minusDays(2)
+        val largestOutflow = committedFlows
+            .filter { !it.date.isBefore(windowStart) && !it.date.isAfter(bindingDate) && it.amount.isNegative }
+            .minByOrNull { it.amount.pence }
+        if (largestOutflow != null) {
+            return "${largestOutflow.label} on ${BINDING_DATE_FORMAT.format(largestOutflow.date)}"
+        }
+        val nextDay = bindingDate.plusDays(1)
+        val incomeNextDay = committedFlows
+            .filter { it.isMajorIncome && it.amount.isPositive && it.date == nextDay }
+            .maxByOrNull { it.amount.pence }
+        if (incomeNextDay != null) {
+            return "Until ${incomeNextDay.label} on ${BINDING_DATE_FORMAT.format(incomeNextDay.date)}"
+        }
+        if (bindingDate == horizonEnd) {
+            val weeks = maxOf(1L, Math.round(ChronoUnit.DAYS.between(today, horizonEnd) / 7.0))
+            return if (weeks == 1L) "Over the next week" else "Over the next $weeks weeks"
+        }
+        return null
     }
 
     private fun predictedWeeklySpending(

@@ -25,6 +25,13 @@ data class History(
     val weeklyByCategory: Map<Long, List<Money>>,
     /** categoryId -> date -> signed amount that day, for days inside the [weeks] window only. */
     val dailyByCategory: Map<Long, Map<LocalDate, Money>>,
+    /**
+     * categoryId -> accountId -> sum of |amount| (pence) of the very transactions behind
+     * [dailyByCategory] (window only, reconciliation spreading included): the weights of the
+     * per-account split of learned flows (`docs/PLAN.md` §5.11a). Categories without any
+     * amount in the window have no entry.
+     */
+    val absByCategoryAccount: Map<Long, Map<Long, Long>> = emptyMap(),
 ) {
     fun dayAmount(categoryId: Long, date: LocalDate): Money =
         dailyByCategory[categoryId]?.get(date) ?: Money.ZERO
@@ -66,10 +73,13 @@ object HistoryBuilder {
         val windowEndExclusive = weeks.last().weekStart.plusDays(7)
 
         val daily = HashMap<Long, HashMap<LocalDate, Long>>()
-        fun add(categoryId: Long, date: LocalDate, pence: Long) {
+        val absByAccount = HashMap<Long, HashMap<Long, Long>>()
+        fun add(categoryId: Long, accountId: Long, date: LocalDate, pence: Long) {
             if (date.isBefore(windowStart) || !date.isBefore(windowEndExclusive)) return
             val byDate = daily.getOrPut(categoryId) { HashMap() }
             byDate[date] = (byDate[date] ?: 0L) + pence
+            val byAccount = absByAccount.getOrPut(categoryId) { HashMap() }
+            byAccount[accountId] = (byAccount[accountId] ?: 0L) + Math.abs(pence)
         }
 
         val reconciliationByTxId = input.reconciliations
@@ -79,7 +89,7 @@ object HistoryBuilder {
         for (tx in learnedTransactions) {
             val categoryId = tx.categoryId ?: continue
             if (tx.kind == TxKind.NORMAL) {
-                add(categoryId, tx.date, tx.amount.pence)
+                add(categoryId, tx.accountId, tx.date, tx.amount.pence)
                 continue
             }
             // RECONCILIATION: statistics only, spread evenly (whole pence, remainder on the
@@ -89,7 +99,7 @@ object HistoryBuilder {
             val periodEnd = tx.date
             val totalDays = ChronoUnit.DAYS.between(periodStart, periodEnd) + 1
             if (totalDays <= 0) {
-                add(categoryId, tx.date, tx.amount.pence)
+                add(categoryId, tx.accountId, tx.date, tx.amount.pence)
                 continue
             }
             val base = tx.amount.pence / totalDays
@@ -97,7 +107,7 @@ object HistoryBuilder {
             var d = periodStart
             while (!d.isAfter(periodEnd)) {
                 val pence = if (d == periodEnd) base + remainder else base
-                add(categoryId, d, pence)
+                add(categoryId, tx.accountId, d, pence)
                 d = d.plusDays(1)
             }
         }
@@ -114,7 +124,7 @@ object HistoryBuilder {
             }
         }
 
-        return History(historyStart, weeks, weeklyByCategory, dailyByCategoryMoney)
+        return History(historyStart, weeks, weeklyByCategory, dailyByCategoryMoney, absByAccount)
     }
 
     private fun empty(learnedCategoryIds: Set<Long>, historyStart: LocalDate?): History =

@@ -19,6 +19,11 @@ data class Tier3Output(
     val p50ByDay: List<Money>,
     val p90ByDay: List<Money>,
     val risk: RiskSummary,
+    /**
+     * Per pool account (ascending id), when an account plan was supplied. Non-pool accounts are
+     * deterministic and not simulated.
+     */
+    val accounts: List<AccountPercentiles> = emptyList(),
 )
 
 /**
@@ -27,7 +32,7 @@ data class Tier3Output(
  * `docs/PLAN.md` §5.9.
  */
 object Tier3 {
-    fun run(
+    internal fun run(
         input: ForecastInput,
         history: History,
         estimateByKey: Map<Pair<Long, Regime>, CategoryEstimate>,
@@ -38,6 +43,7 @@ object Tier3 {
         floor: Money,
         poolOverdraft: Money,
         horizonEnd: LocalDate,
+        accountPlan: AccountPlan? = null,
     ): Tier3Output {
         val terms = input.termPeriods
         val learned = input.categories.filter { it.forecastMode == ForecastMode.LEARNED }
@@ -115,6 +121,35 @@ object Tier3 {
 
         val windowEndIdx = forecastDays.indexOfFirst { it == horizonEnd }
 
+        // --- Per pool account tracking (docs/PLAN.md §5.11a). With a single pool account its path
+        // IS the pool path, so only two or more accounts need their own bookkeeping. ---
+        val poolSize = accountPlan?.poolSize ?: 0
+        val trackAccounts = accountPlan != null && poolSize >= 2
+        val trackedAccounts = if (trackAccounts) poolSize else 0
+        val accountBase = LongArray(trackedAccounts)
+        val accountCumCommitted = Array(trackedAccounts) { LongArray(days) }
+        val categoryPositions = Array(if (trackAccounts) nCategories else 0) { IntArray(0) }
+        val categoryAccountShares = Array(if (trackAccounts) nCategories else 0) { DoubleArray(0) }
+        if (accountPlan != null && trackAccounts) {
+            for (p in 0 until poolSize) {
+                val a = accountPlan.poolAccountIdx[p]
+                accountBase[p] = accountPlan.balanceNow[a]
+                var running = 0L
+                for (i in 0 until days) {
+                    running += accountPlan.committedByDay[a][i]
+                    accountCumCommitted[p][i] = running
+                }
+            }
+            for (c in 0 until nCategories) {
+                categoryPositions[c] = accountPlan.categoryShares[c].positions
+                categoryAccountShares[c] = accountPlan.categoryShares[c].shares
+            }
+        }
+        val accountBalances = Array(trackedAccounts) { Array(days) { LongArray(simulations) } }
+        val accountDayPence = Array(trackedAccounts) { LongArray(days) }
+        val splitOut = LongArray(poolSize)
+        val splitFrac = DoubleArray(poolSize)
+
         // --- Simulate. ---
         val balances = Array(days) { LongArray(simulations) }
         val minInWindow = LongArray(simulations)
@@ -123,6 +158,7 @@ object Tier3 {
 
         for (s in 0 until simulations) {
             dayPence.fill(0L)
+            for (p in 0 until trackedAccounts) accountDayPence[p].fill(0L)
             for (week in simWeeks) {
                 val pool = if (week.regime == Regime.TERM) termPool else holidayPool
                 val picked: Int? = if (pool != null) pool[random.nextInt(pool.size)] else null
@@ -156,7 +192,20 @@ object Tier3 {
                         val dayIndices = week.dayIndices
                         val offsets = week.dayOfWeekOffsets
                         for (k in dayIndices.indices) {
-                            dayPence[dayIndices[k]] += Math.round(simPence * dayShares[offsets[k]])
+                            val dayIndex = dayIndices[k]
+                            val amount = Math.round(simPence * dayShares[offsets[k]])
+                            dayPence[dayIndex] += amount
+                            if (trackAccounts && amount != 0L) {
+                                // The same simulated amount, split by the category's account shares
+                                // (largest remainder, so the accounts always add up to the pool).
+                                val positions = categoryPositions[c]
+                                if (positions.size == 1) {
+                                    accountDayPence[positions[0]][dayIndex] += amount
+                                } else {
+                                    AccountSplit.splitLargestRemainder(amount, categoryAccountShares[c], splitOut, splitFrac)
+                                    for (j in positions.indices) accountDayPence[positions[j]][dayIndex] += splitOut[j]
+                                }
+                            }
                         }
                     }
                 }
@@ -172,6 +221,18 @@ object Tier3 {
             }
             minInWindow[s] = if (windowEndIdx >= 0) minSeen else poolBalanceNow.pence
             endBalance[s] = if (windowEndIdx >= 0) balances[windowEndIdx][s] else poolBalanceNow.pence
+
+            for (p in 0 until trackedAccounts) {
+                var accountRunning = 0L
+                val dayAmounts = accountDayPence[p]
+                val cumulativeCommitted = accountCumCommitted[p]
+                val byDay = accountBalances[p]
+                val base = accountBase[p]
+                for (dIdx in 0 until days) {
+                    accountRunning += dayAmounts[dIdx]
+                    byDay[dIdx][s] = base + cumulativeCommitted[dIdx] + accountRunning
+                }
+            }
         }
 
         // --- Percentiles per day. ---
@@ -185,6 +246,27 @@ object Tier3 {
             p10 += Money(column[percentileIndex(0.10, simulations)])
             p50 += Money(column[percentileIndex(0.50, simulations)])
             p90 += Money(column[percentileIndex(0.90, simulations)])
+        }
+
+        // --- Percentiles per pool account. ---
+        val accountPercentiles = ArrayList<AccountPercentiles>(poolSize)
+        if (accountPlan != null && poolSize == 1) {
+            // One pool account: its balance path is exactly the pool's.
+            accountPercentiles += AccountPercentiles(accountPlan.accounts[accountPlan.poolAccountIdx[0]].id, p10, p50, p90)
+        } else if (accountPlan != null && trackAccounts) {
+            for (p in 0 until poolSize) {
+                val a10 = ArrayList<Money>(days)
+                val a50 = ArrayList<Money>(days)
+                val a90 = ArrayList<Money>(days)
+                for (dIdx in 0 until days) {
+                    System.arraycopy(accountBalances[p][dIdx], 0, column, 0, simulations)
+                    column.sort()
+                    a10 += Money(column[percentileIndex(0.10, simulations)])
+                    a50 += Money(column[percentileIndex(0.50, simulations)])
+                    a90 += Money(column[percentileIndex(0.90, simulations)])
+                }
+                accountPercentiles += AccountPercentiles(accountPlan.accounts[accountPlan.poolAccountIdx[p]].id, a10, a50, a90)
+            }
         }
 
         // --- Risk summary over today+1 .. horizonEnd. ---
@@ -220,7 +302,7 @@ object Tier3 {
             endBalanceP90 = endP90,
         )
 
-        return Tier3Output(p10, p50, p90, risk)
+        return Tier3Output(p10, p50, p90, risk, accountPercentiles)
     }
 
     private fun cvFor(estimate: CategoryEstimate?): Double =
