@@ -58,7 +58,9 @@ import io.github.matteopi.budgeting.core.model.Category
 import io.github.matteopi.budgeting.ui.components.AccountPicker
 import io.github.matteopi.budgeting.ui.components.CategoryPicker
 import io.github.matteopi.budgeting.ui.components.MoneyText
+import io.github.matteopi.budgeting.ui.components.PickerField
 import io.github.matteopi.budgeting.ui.components.SectionCard
+import io.github.matteopi.budgeting.ui.components.formatDisplayDate
 import java.time.LocalDate
 import kotlinx.coroutines.launch
 
@@ -286,12 +288,11 @@ private fun ColumnPicker(label: String, columnCount: Int, headerNames: List<Stri
     var expanded by remember { mutableStateOf(false) }
     val display = headerNames.getOrNull(selected)?.takeIf { it.isNotBlank() } ?: "Column ${selected + 1}"
     Box {
-        OutlinedTextField(
+        PickerField(
             value = display,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(label) },
-            modifier = Modifier.fillMaxWidth().clickable { expanded = true },
+            label = label,
+            onClick = { expanded = true },
+            modifier = Modifier.fillMaxWidth(),
         )
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             for (i in 0 until columnCount) {
@@ -310,12 +311,11 @@ private val DATE_PATTERNS = listOf("dd/MM/yyyy", "dd/MM/yy", "yyyy-MM-dd", "dd-M
 private fun DatePatternPicker(selected: String, onSelect: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     Box {
-        OutlinedTextField(
+        PickerField(
             value = selected,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Date format") },
-            modifier = Modifier.fillMaxWidth().clickable { expanded = true },
+            label = "Date format",
+            onClick = { expanded = true },
+            modifier = Modifier.fillMaxWidth(),
         )
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DATE_PATTERNS.forEach { pattern ->
@@ -376,7 +376,7 @@ private fun ReviewRow(row: ParsedRow, status: RowStatus, selected: Boolean, onTo
         Checkbox(checked = selected, onCheckedChange = { onToggle() })
         Column(modifier = Modifier.weight(1f)) {
             Text(row.description, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(row.date.toString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(formatDisplayDate(row.date), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         MoneyText(amount = row.amount)
         if (status == RowStatus.POSSIBLE_DUPLICATE) {

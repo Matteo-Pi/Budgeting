@@ -21,6 +21,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -56,7 +57,9 @@ import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.ZeroPoint
 import io.github.matteopi.budgeting.data.settings.AppSettings
 import io.github.matteopi.budgeting.ui.components.AccountPicker
+import io.github.matteopi.budgeting.ui.components.PickerField
 import io.github.matteopi.budgeting.ui.components.SectionCard
+import io.github.matteopi.budgeting.ui.components.formatDisplayDate
 import io.github.matteopi.budgeting.ui.lock.canUseAppLock
 import java.time.DayOfWeek
 import java.time.Instant
@@ -236,11 +239,12 @@ private fun HistoryStartRow(date: LocalDate?, onChange: (LocalDate?) -> Unit) {
         )
         Spacer(Modifier.height(4.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = date?.toString() ?: "Not set",
-                onValueChange = {},
-                readOnly = true,
-                modifier = Modifier.weight(1f).clickable { showPicker = true },
+            PickerField(
+                value = date?.let { formatDisplayDate(it) } ?: "Not set",
+                label = "Date",
+                onClick = { showPicker = true },
+                modifier = Modifier.weight(1f),
+                trailingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) },
             )
             if (date != null) {
                 TextButton(onClick = { onChange(null) }) { Text("Clear") }

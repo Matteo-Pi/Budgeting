@@ -28,6 +28,8 @@ import io.github.matteopi.budgeting.core.model.Category
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /** A chip that opens a date picker limited to [today] and earlier; shows "Today" when that's picked. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,7 +44,16 @@ fun DateChip(
 
     AssistChip(
         onClick = { showPicker = true },
-        label = { Text(if (date == today) "Today" else date.toString()) },
+        label = {
+            Text(
+                when (date) {
+                    today -> "Today"
+                    today.minusDays(1) -> "Yesterday"
+                    // Locale.ENGLISH: en-GB CLDR data abbreviates September as "Sept".
+                    else -> date.format(DateTimeFormatter.ofPattern("EEE d MMM", Locale.ENGLISH))
+                },
+            )
+        },
         leadingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) },
         modifier = modifier,
     )

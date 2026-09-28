@@ -37,6 +37,7 @@ import io.github.matteopi.budgeting.core.model.Category
 import io.github.matteopi.budgeting.core.model.SinkingFundStatus
 import io.github.matteopi.budgeting.ui.components.ConfirmDialog
 import io.github.matteopi.budgeting.ui.components.DateField
+import io.github.matteopi.budgeting.ui.components.PickerField
 
 /** Add/edit a sinking fund: name, target, start/target dates, category (WP-U3). */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -161,14 +162,11 @@ private fun OptionalCategoryPicker(
     val selectedName = categories.firstOrNull { it.id == selectedCategoryId }?.name ?: "None"
 
     Box(modifier = Modifier.fillMaxWidth()) {
-        OutlinedTextField(
+        PickerField(
             value = selectedName,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Category (optional)") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = true },
+            label = "Category (optional)",
+            onClick = { expanded = true },
+            modifier = Modifier.fillMaxWidth(),
         )
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DropdownMenuItem(

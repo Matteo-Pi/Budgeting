@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import io.github.matteopi.budgeting.core.model.AccountType
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.ui.components.EmptyState
+import io.github.matteopi.budgeting.ui.components.PickerField
 
 /**
  * Step 2: the accounts added so far, quick-add suggestion chips, and an add-account dialog
@@ -143,14 +144,11 @@ private fun AddAccountDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Box {
-                    OutlinedTextField(
+                    PickerField(
                         value = type.accountTypeLabel(),
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Type") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { typeMenuExpanded = true },
+                        label = "Type",
+                        onClick = { typeMenuExpanded = true },
+                        modifier = Modifier.fillMaxWidth(),
                     )
                     DropdownMenu(expanded = typeMenuExpanded, onDismissRequest = { typeMenuExpanded = false }) {
                         AccountType.entries.forEach { option ->

@@ -28,14 +28,11 @@ fun CategoryPicker(
     val selected = categories.firstOrNull { it.id == selectedCategoryId }
 
     Box(modifier = modifier) {
-        OutlinedTextField(
+        PickerField(
             value = selected?.name ?: "",
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(label) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = true },
+            label = label,
+            onClick = { expanded = true },
+            modifier = Modifier.fillMaxWidth(),
         )
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             categories.forEach { category ->

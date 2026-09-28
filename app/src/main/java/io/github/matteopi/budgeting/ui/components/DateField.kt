@@ -1,10 +1,11 @@
 package io.github.matteopi.budgeting.ui.components
 
-import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Icon
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -18,9 +19,17 @@ import androidx.compose.ui.Modifier
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+// Locale.ENGLISH: en-GB CLDR data abbreviates September as "Sept".
+private val DISPLAY_DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE d MMM yyyy", Locale.ENGLISH)
+
+/** How a date is shown in date fields, e.g. "Mon 28 Sep 2026". */
+fun formatDisplayDate(date: LocalDate): String = date.format(DISPLAY_DATE_FORMAT)
 
 /**
- * A read-only field that opens a Material 3 date picker dialog. [maxDate], if set, disables
+ * A read-only field that opens a Material 3 date picker dialog when tapped. [maxDate], if set, disables
  * later dates (e.g. a transaction can't be dated in the future).
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,12 +43,12 @@ fun DateField(
 ) {
     var showPicker by remember { mutableStateOf(false) }
 
-    OutlinedTextField(
-        value = date.toString(),
-        onValueChange = {},
-        readOnly = true,
-        label = { Text(label) },
-        modifier = modifier.clickable { showPicker = true },
+    PickerField(
+        value = formatDisplayDate(date),
+        label = label,
+        onClick = { showPicker = true },
+        modifier = modifier,
+        trailingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) },
     )
 
     if (showPicker) {
