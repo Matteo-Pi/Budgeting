@@ -60,7 +60,7 @@ object ForecastChartMapping {
     }
 }
 
-private val SHORT_DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.UK)
+private val SHORT_DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH)
 
 /** "5 Oct" — the short date label shared by the Forecast, Timeline and What-if screens. */
 fun LocalDate.toShortLabel(): String = format(SHORT_DATE_FORMATTER)

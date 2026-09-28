@@ -38,8 +38,8 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private val MONTH_LABEL_FORMATTER = DateTimeFormatter.ofPattern("MMM", Locale.UK)
-private val DAY_MONTH_FORMATTER = DateTimeFormatter.ofPattern("d MMM", Locale.UK)
+private val MONTH_LABEL_FORMATTER = DateTimeFormatter.ofPattern("MMM", Locale.ENGLISH)
+private val DAY_MONTH_FORMATTER = DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH)
 
 /**
  * The Forecast screen's headline chart: shaded P10-P90 uncertainty band, the P50/expected line,
