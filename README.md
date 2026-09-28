@@ -10,10 +10,12 @@ All data stays on the phone.
 
 ## Installing on your phone
 
-1. Open the repository's **Actions** tab on GitHub and pick the latest green **Build** run.
-2. Download the `budgeting-debug-apk` artifact (a zip) and unzip it on your phone.
-3. Open `app-debug.apk`. Allow your browser/file manager to "install unknown apps" when asked.
-4. Later builds install over the top and keep your data (every build uses the same signing key).
+1. On your phone, open the repository on GitHub (signed in) → **Releases** → **Latest build**
+   (it is replaced after every successful build).
+2. Download `budgeting.apk` and open it. Allow your browser to "install unknown apps" when asked.
+3. Later builds install over the top and keep your data (every build uses the same signing key).
+
+The APK is also attached to each **Build** run in the Actions tab as the `budgeting-debug-apk` artifact.
 
 ## Development
 

@@ -4,6 +4,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write  # to publish the APK as the "latest-build" pre-release
+
 concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: true
@@ -35,6 +38,21 @@ jobs:
           name: budgeting-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      # A fixed place to download the newest APK on a phone: the release asset is the .apk
+      # itself (no zip), so it can be opened and installed straight from the browser.
+      - name: Publish APK as the "latest-build" pre-release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk budgeting.apk
+          gh release delete latest-build --yes --cleanup-tag || true
+          gh release create latest-build budgeting.apk \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Latest build" \
+            --notes "Built from ${GITHUB_SHA::7} on ${GITHUB_REF_NAME}. On your phone: download budgeting.apk and open it to install or update."
 
       - name: Upload test reports
         if: failure()
