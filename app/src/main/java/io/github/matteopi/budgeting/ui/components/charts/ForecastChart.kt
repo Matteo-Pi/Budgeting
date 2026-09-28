@@ -256,7 +256,7 @@ fun ForecastChart(
             // Today marker.
             if (!today.isBefore(startDate) && !today.isAfter(endDate)) {
                 val x = xFor(today)
-                drawLine(colors.mutedInk, Offset(x, plotTop), Offset(x, plotBottom), strokeWidth = 1.dp.toPx())
+                drawLine(colors.todayMarker, Offset(x, plotTop), Offset(x, plotBottom), strokeWidth = 1.5.dp.toPx())
             }
         }
 

@@ -19,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
+import io.github.matteopi.budgeting.data.settings.AppTheme
+import io.github.matteopi.budgeting.data.settings.DarkMode
 import io.github.matteopi.budgeting.ui.lock.AppLockState
 import io.github.matteopi.budgeting.ui.lock.LockScreen
 import io.github.matteopi.budgeting.ui.navigation.BudgetNavHost
@@ -33,11 +35,14 @@ class MainActivity : FragmentActivity() {
         AppLockState.ensureObserving()
         val container = (application as BudgetApp).container
         setContent {
-            BudgetingTheme {
+            // Collected outside the theme so the chosen theme/dark mode applies live, without a restart.
+            val appSettings by container.settingsStore.appSettings.collectAsStateWithLifecycle(initialValue = null)
+            val settings = appSettings
+            BudgetingTheme(
+                theme = settings?.theme ?: AppTheme.DEFAULT,
+                darkMode = settings?.darkMode ?: DarkMode.DEFAULT,
+            ) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    val appSettings by container.settingsStore.appSettings.collectAsStateWithLifecycle(initialValue = null)
-                    val settings = appSettings
-
                     // FLAG_SECURE ("hide in recent apps"): only touch the window when the setting
                     // actually changes, not on every recomposition.
                     LaunchedEffect(settings?.secureScreen) {

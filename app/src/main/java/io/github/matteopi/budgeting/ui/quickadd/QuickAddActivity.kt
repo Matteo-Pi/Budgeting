@@ -55,7 +55,7 @@ class QuickAddActivity : ComponentActivity() {
             )
             val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-            BudgetingTheme {
+            BudgetingTheme(theme = appSettings.theme, darkMode = appSettings.darkMode) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()

@@ -116,6 +116,12 @@ fun SettingsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                AppearanceSection(
+                    theme = uiState.appSettings.theme,
+                    darkMode = uiState.appSettings.darkMode,
+                    onThemeChange = viewModel::setTheme,
+                    onDarkModeChange = viewModel::setDarkMode,
+                )
                 SectionCard(title = "Money display") {
                     ZeroPointSection(uiState.budgetSettings.zeroPoint, viewModel::setZeroPoint)
                     Spacer(Modifier.height(8.dp))

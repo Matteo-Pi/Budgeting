@@ -555,10 +555,13 @@ Preferences DataStore named `settings`. Exposes `budgetSettings: Flow<BudgetSett
 `appSettings: Flow<AppSettings>` and suspend setters.
 `AppSettings(hideWidgetAmounts, appLockEnabled, secureScreen, reconcileReminderEnabled,
 reconcileReminderDay: DayOfWeek = SUNDAY, onboardingDone, lastSnapshotDate: LocalDate?,
-lastExportDate: LocalDate?)`. Keys: `zero_point`, `buffer_pence`, `default_account_id`,
-`history_start_epoch_day`, `simulations`, `horizon_days`, `hide_widget_amounts`, `app_lock`,
-`secure_screen`, `reconcile_reminder`, `reconcile_reminder_dow`, `onboarding_done`,
-`last_snapshot_epoch_day`, `last_export_epoch_day` (−1 = null for Long keys).
+lastExportDate: LocalDate?, theme: AppTheme = PAPER, darkMode: DarkMode = SYSTEM)`. Keys: `zero_point`,
+`buffer_pence`, `default_account_id`, `history_start_epoch_day`, `simulations`, `horizon_days`,
+`hide_widget_amounts`, `app_lock`, `secure_screen`, `reconcile_reminder`, `reconcile_reminder_dow`,
+`onboarding_done`, `last_snapshot_epoch_day`, `last_export_epoch_day` (−1 = null for Long keys),
+`app_theme`, `dark_mode` (enum names; a missing or unknown value falls back to the default).
+`AppTheme` and `DarkMode` live in `data/settings/ThemeSettings.kt`; both are part of the
+`AppSettingsCodec` backup map (`theme`, `darkMode`).
 
 ### 6.4 Domain services (`domain/`)
 - `Clock`: `today(): LocalDate`, `nowMillis()`, `todayFlow: Flow<LocalDate>` (emits now and
@@ -699,7 +702,9 @@ an in-app `ModalBottomSheet`.
 
 ### 6.7 Widget (`widget/`)
 - `SafeToSpendWidget : GlanceAppWidget`, `SizeMode.Responsive` with small (≈110×48dp),
-  wide (≈250×48dp) and tall (≈250×110dp) layouts; `GlanceTheme` default colours.
+  wide (≈250×48dp) and tall (≈250×110dp) layouts; coloured by the chosen theme via
+  `GlanceTheme(colors = ColorProviders(light, dark))` (`AppTheme.DYNAMIC` keeps the default `GlanceTheme`
+  colours), and refreshed whenever the theme or dark mode changes.
 - State loaded in `provideGlance` via the container: `forecastService.quick()`,
   `appSettings`, presets with `showOnWidget`. Small: "Safe to spend" + "£71/wk" + "+".
   Wide: + "12 days to Student loan". Tall: + up to 3 preset buttons.
@@ -749,8 +754,17 @@ code, invoke the `dataviz` skill if your tools allow it and follow its guidance 
 accessibility, light/dark). Charts must work in light and dark themes and at phone width.
 
 ### 6.12 Theme (`ui/theme/`)
-Material 3; dynamic colour on API 31+, otherwise a green-based light/dark scheme. Money
-text: income green, negative balances red; spending uses the normal text colour.
+Material 3, minimalist: near-neutral surfaces, one restrained accent, containers only a shade off
+the background, thin light outlines, corner radii 8/12/16dp. The user picks an `AppTheme` (Paper
+(default), Mono, Slate, Sand, Sage, Ink, Dynamic) and a `DarkMode` (System/Light/Dark) in Settings >
+Appearance; `BudgetingTheme(theme, darkMode)` is fed from `AppSettings` by `MainActivity` and
+`QuickAddActivity`, so changes apply live. Palettes are plain ARGB longs in `ui/theme/ThemePalettes.kt`
+(`PaletteSpec`), each a complete light and dark `ColorScheme` including every surface-container role;
+`ThemePalettesTest` enforces WCAG AA contrast (text ≥ 4.5:1 on every surface and card tone, accents
+≥ 3:1). Dynamic uses the wallpaper scheme on API 31+ and Paper below. Money text: income and negative
+colours come from `LocalMoneyColors` (per theme; spending uses the normal text colour). The theme
+also sets the system bar icon appearance and drives `ChartColors` (derived from the active
+`ColorScheme`; floor/buffer keep red/amber status colours) and the widget (§6.7).
 
 ---
 

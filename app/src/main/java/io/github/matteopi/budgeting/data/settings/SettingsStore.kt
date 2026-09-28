@@ -31,6 +31,8 @@ data class AppSettings(
     val onboardingDone: Boolean = false,
     val lastSnapshotDate: LocalDate? = null,
     val lastExportDate: LocalDate? = null,
+    val theme: AppTheme = AppTheme.DEFAULT,
+    val darkMode: DarkMode = DarkMode.DEFAULT,
 )
 
 /** Preferences DataStore named "settings". See docs/PLAN.md §6.3 for the key list. */
@@ -60,6 +62,8 @@ class SettingsStore(context: Context) {
             onboardingDone = prefs[Keys.ONBOARDING_DONE] ?: false,
             lastSnapshotDate = prefs[Keys.LAST_SNAPSHOT_EPOCH_DAY]?.takeIf { it >= 0 }?.let(LocalDate::ofEpochDay),
             lastExportDate = prefs[Keys.LAST_EXPORT_EPOCH_DAY]?.takeIf { it >= 0 }?.let(LocalDate::ofEpochDay),
+            theme = AppTheme.parse(prefs[Keys.APP_THEME]) ?: AppTheme.DEFAULT,
+            darkMode = DarkMode.parse(prefs[Keys.DARK_MODE]) ?: DarkMode.DEFAULT,
         )
     }
 
@@ -131,6 +135,14 @@ class SettingsStore(context: Context) {
         dataStore.edit { it[Keys.LAST_EXPORT_EPOCH_DAY] = date?.toEpochDay() ?: -1L }
     }
 
+    suspend fun setTheme(theme: AppTheme) {
+        dataStore.edit { it[Keys.APP_THEME] = theme.name }
+    }
+
+    suspend fun setDarkMode(mode: DarkMode) {
+        dataStore.edit { it[Keys.DARK_MODE] = mode.name }
+    }
+
     private object Keys {
         val ZERO_POINT = stringPreferencesKey("zero_point")
         val BUFFER_PENCE = longPreferencesKey("buffer_pence")
@@ -146,5 +158,7 @@ class SettingsStore(context: Context) {
         val ONBOARDING_DONE = booleanPreferencesKey("onboarding_done")
         val LAST_SNAPSHOT_EPOCH_DAY = longPreferencesKey("last_snapshot_epoch_day")
         val LAST_EXPORT_EPOCH_DAY = longPreferencesKey("last_export_epoch_day")
+        val APP_THEME = stringPreferencesKey("app_theme")
+        val DARK_MODE = stringPreferencesKey("dark_mode")
     }
 }
