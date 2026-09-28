@@ -17,6 +17,7 @@ import io.github.matteopi.budgeting.domain.Clock
 import io.github.matteopi.budgeting.domain.ForecastService
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -95,4 +96,5 @@ class PlanViewModel(
 }
 
 /** Formats a date as e.g. "28 Sep". */
-fun formatShortDate(date: LocalDate): String = date.format(DateTimeFormatter.ofPattern("d MMM"))
+// Locale.ENGLISH: en-GB CLDR data abbreviates September as "Sept".
+fun formatShortDate(date: LocalDate): String = date.format(DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH))

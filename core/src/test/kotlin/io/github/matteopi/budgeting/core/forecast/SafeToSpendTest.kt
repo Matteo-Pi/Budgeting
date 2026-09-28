@@ -167,6 +167,27 @@ class SafeToSpendTest {
         assertTrue(overdraftMode.weekly > accountBalanceMode.weekly)
     }
 
+    @Test
+    fun septemberIsAbbreviatedAsSepNotSept() {
+        // en-GB CLDR data says "Sept"; the app shows the standard three-letter form everywhere.
+        val augustMonday = LocalDate.of(2026, 8, 24)
+        val loan = ScheduledItem(
+            id = 1, label = "Student loan", accountId = TestData.CURRENT, categoryId = TestData.STUDENT_LOAN,
+            amount = Money.pounds(3000), date = augustMonday.plusDays(20), postingMode = PostingMode.CONFIRM, isMajorIncome = true,
+        )
+        val rent = ScheduledItem(
+            id = 2, label = "Rent & bills", accountId = TestData.CURRENT, categoryId = TestData.RENT,
+            amount = Money.pounds(-300), date = augustMonday.plusDays(19), postingMode = PostingMode.AUTO,
+        )
+        val input = TestData.input(
+            augustMonday,
+            transactions = listOf(TestData.tx(TestData.CURRENT, Money.pounds(1000), augustMonday.minusYears(1), null, kind = TxKind.OPENING_BALANCE)),
+            scheduledItems = listOf(loan, rent),
+            settings = TestData.settings(buffer = Money.ZERO, forecastHorizonDays = 60),
+        )
+        assertEquals("Rent & bills on 12 Sep", ForecastEngine.run(input).safeToSpend.bindingReason)
+    }
+
     private fun formatted(date: LocalDate): String {
         val months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
         return "${date.dayOfMonth} ${months[date.monthValue - 1]}"

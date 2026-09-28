@@ -13,7 +13,8 @@ import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.floor
 
-private val BINDING_DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.UK)
+// Locale.ENGLISH, not Locale.UK: current CLDR data abbreviates September as "Sept" for en-GB.
+private val BINDING_DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH)
 
 /** The headroom-based "safe to spend per week" calculation. See `docs/PLAN.md` §5.11. */
 object SafeToSpendCalculator {
