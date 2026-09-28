@@ -1,5 +1,6 @@
 package io.github.matteopi.budgeting.backup
 
+import io.github.matteopi.budgeting.data.settings.AccountView
 import io.github.matteopi.budgeting.data.settings.AppSettings
 import io.github.matteopi.budgeting.data.settings.AppTheme
 import io.github.matteopi.budgeting.data.settings.DarkMode
@@ -20,6 +21,8 @@ class AppSettingsCodecTest {
             onboardingDone = true,
             theme = AppTheme.SLATE,
             darkMode = DarkMode.DARK,
+            chartAccountView = AccountView.Single(12),
+            balanceView = AccountView.Single(7),
             lastSnapshotDate = LocalDate.of(2026, 9, 1),
             lastExportDate = LocalDate.of(2026, 9, 20),
         )
@@ -32,6 +35,8 @@ class AppSettingsCodecTest {
         assertEquals(settings.onboardingDone, decoded.onboardingDone)
         assertEquals(settings.theme, decoded.theme)
         assertEquals(settings.darkMode, decoded.darkMode)
+        assertEquals(settings.chartAccountView, decoded.chartAccountView)
+        assertEquals(settings.balanceView, decoded.balanceView)
     }
 
     @Test
@@ -89,5 +94,50 @@ class AppSettingsCodecTest {
         assertEquals(current.reconcileReminderDay, decoded.reconcileReminderDay)
         assertEquals(current.theme, decoded.theme)
         assertEquals(current.darkMode, decoded.darkMode)
+    }
+
+    @Test
+    fun `account views are encoded as total, each and account colon id`() {
+        val encoded = AppSettingsCodec.encode(
+            AppSettings(chartAccountView = AccountView.Each, balanceView = AccountView.Single(12)),
+        )
+        assertEquals("each", encoded["chartAccountView"])
+        assertEquals("account:12", encoded["balanceView"])
+        val total = AppSettingsCodec.encode(AppSettings())
+        assertEquals("total", total["chartAccountView"])
+        assertEquals("total", total["balanceView"])
+    }
+
+    @Test
+    fun `every chart account view survives a round trip`() {
+        for (view in listOf(AccountView.Total, AccountView.Each, AccountView.Single(3))) {
+            val decoded = AppSettingsCodec.decode(
+                AppSettingsCodec.encode(AppSettings(chartAccountView = view)),
+                current = AppSettings(chartAccountView = AccountView.Single(99)),
+            )
+            assertEquals(view, decoded.chartAccountView)
+        }
+    }
+
+    @Test
+    fun `an unreadable account view keeps the current value`() {
+        val current = AppSettings(chartAccountView = AccountView.Each, balanceView = AccountView.Single(2))
+        val decoded = AppSettingsCodec.decode(mapOf("chartAccountView" to "sideways", "balanceView" to "account:abc"), current)
+        assertEquals(AccountView.Each, decoded.chartAccountView)
+        assertEquals(AccountView.Single(2), decoded.balanceView)
+    }
+
+    @Test
+    fun `a balance view can never be each`() {
+        val decoded = AppSettingsCodec.decode(mapOf("balanceView" to "each"), AppSettings(balanceView = AccountView.Single(2)))
+        assertEquals(AccountView.Total, decoded.balanceView)
+    }
+
+    @Test
+    fun `a backup from before account views existed leaves the current views alone`() {
+        val current = AppSettings(chartAccountView = AccountView.Each, balanceView = AccountView.Single(4))
+        val decoded = AppSettingsCodec.decode(mapOf("hideWidgetAmounts" to "false"), current)
+        assertEquals(AccountView.Each, decoded.chartAccountView)
+        assertEquals(AccountView.Single(4), decoded.balanceView)
     }
 }

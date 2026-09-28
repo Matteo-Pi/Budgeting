@@ -21,20 +21,6 @@ private val Context.settingsDataStore: DataStore<Preferences> by preferencesData
 
 private val DEFAULT_BUDGET_SETTINGS = BudgetSettings()
 
-/** Privacy/UI-only settings. Calculation-affecting settings are [BudgetSettings] (core). */
-data class AppSettings(
-    val hideWidgetAmounts: Boolean = false,
-    val appLockEnabled: Boolean = false,
-    val secureScreen: Boolean = false,
-    val reconcileReminderEnabled: Boolean = false,
-    val reconcileReminderDay: DayOfWeek = DayOfWeek.SUNDAY,
-    val onboardingDone: Boolean = false,
-    val lastSnapshotDate: LocalDate? = null,
-    val lastExportDate: LocalDate? = null,
-    val theme: AppTheme = AppTheme.DEFAULT,
-    val darkMode: DarkMode = DarkMode.DEFAULT,
-)
-
 /** Preferences DataStore named "settings". See docs/PLAN.md §6.3 for the key list. */
 class SettingsStore(context: Context) {
     private val dataStore = context.settingsDataStore
@@ -64,6 +50,8 @@ class SettingsStore(context: Context) {
             lastExportDate = prefs[Keys.LAST_EXPORT_EPOCH_DAY]?.takeIf { it >= 0 }?.let(LocalDate::ofEpochDay),
             theme = AppTheme.parse(prefs[Keys.APP_THEME]) ?: AppTheme.DEFAULT,
             darkMode = DarkMode.parse(prefs[Keys.DARK_MODE]) ?: DarkMode.DEFAULT,
+            chartAccountView = AccountView.parseChart(prefs[Keys.CHART_ACCOUNT_VIEW]),
+            balanceView = AccountView.parseBalance(prefs[Keys.BALANCE_VIEW]),
         )
     }
 
@@ -143,6 +131,14 @@ class SettingsStore(context: Context) {
         dataStore.edit { it[Keys.DARK_MODE] = mode.name }
     }
 
+    suspend fun setChartAccountView(view: AccountView) {
+        dataStore.edit { it[Keys.CHART_ACCOUNT_VIEW] = AccountView.encode(view) }
+    }
+
+    suspend fun setBalanceView(view: AccountView) {
+        dataStore.edit { it[Keys.BALANCE_VIEW] = AccountView.encode(view) }
+    }
+
     private object Keys {
         val ZERO_POINT = stringPreferencesKey("zero_point")
         val BUFFER_PENCE = longPreferencesKey("buffer_pence")
@@ -160,5 +156,7 @@ class SettingsStore(context: Context) {
         val LAST_EXPORT_EPOCH_DAY = longPreferencesKey("last_export_epoch_day")
         val APP_THEME = stringPreferencesKey("app_theme")
         val DARK_MODE = stringPreferencesKey("dark_mode")
+        val CHART_ACCOUNT_VIEW = stringPreferencesKey("chart_account_view")
+        val BALANCE_VIEW = stringPreferencesKey("balance_view")
     }
 }
