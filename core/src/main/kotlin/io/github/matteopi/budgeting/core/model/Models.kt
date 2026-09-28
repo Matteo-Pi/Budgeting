@@ -225,3 +225,14 @@ data class CategoryWeekSnapshot(
     /** Signed (negative = spending). */
     val predicted: Money,
 )
+
+/** One statement import, so it can be listed and undone. */
+data class ImportBatch(
+    val id: Long = 0,
+    val accountId: Long,
+    val importedAtEpochMillis: Long,
+    val fileName: String,
+    val rowCount: Int,
+    val firstDate: LocalDate?,
+    val lastDate: LocalDate?,
+)

@@ -65,6 +65,12 @@ data class ForecastResult(
     val fundReservations: List<FundReservation>,
     /** Every known future flow in the horizon (recurring, scheduled, funds, scenario), date-sorted. */
     val committedFlows: List<CommittedFlow>,
+    /** Tier 1 weekly estimate per LEARNED category id (signed), for accuracy comparisons. */
+    val tier1WeeklyByCategory: Map<Long, Money>,
+    /** First day of the history window used for learning (null = no history yet). */
+    val historyStart: LocalDate?,
+    /** Number of complete Mon–Sun weeks inside the history window. */
+    val completeWeeksOfHistory: Int,
 )
 
 data class DayForecast(
