@@ -15,12 +15,13 @@ import io.github.matteopi.budgeting.core.model.Prediction
 import io.github.matteopi.budgeting.core.model.PredictionMode
 import io.github.matteopi.budgeting.core.model.Regime
 import io.github.matteopi.budgeting.core.model.SystemKeys
-import io.github.matteopi.budgeting.data.repo.CategoryRepository
 import io.github.matteopi.budgeting.data.repo.PlanRepository
 import io.github.matteopi.budgeting.domain.ForecastService
+import io.github.matteopi.budgeting.domain.ForecastSnapshot
+import io.github.matteopi.budgeting.domain.snapshot
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -56,18 +57,22 @@ data class PredictionsUiState(
 
 class PredictionsViewModel(
     private val planRepository: PlanRepository,
-    categoryRepository: CategoryRepository,
     forecastService: ForecastService,
 ) : ViewModel() {
-    val uiState: StateFlow<PredictionsUiState> = combine(
-        categoryRepository.observeCategories(),
-        planRepository.observePredictions(),
-        forecastService.forecast,
-    ) { categories, predictions, forecast ->
-        val learned = categories.filter { it.forecastMode == ForecastMode.LEARNED && !it.archived }
+    // Categories, predictions and estimates all come from ONE forecast snapshot, so a row never
+    // pairs a newer prediction with an estimate that was computed before it.
+    val uiState: StateFlow<PredictionsUiState> = forecastService.state
+        .map { state -> buildUiState(state.snapshot()) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PredictionsUiState())
+
+    private fun buildUiState(snapshot: ForecastSnapshot?): PredictionsUiState {
+        if (snapshot == null) return PredictionsUiState()
+        val forecast = snapshot.result
+        val input = snapshot.input
+        val learned = input.categories.filter { it.forecastMode == ForecastMode.LEARNED && !it.archived }
         val needsByKey = forecast?.needsPrediction?.associateBy { it.categoryId to it.regime } ?: emptyMap()
         val estimateByKey = forecast?.categoryEstimates?.associateBy { it.categoryId to it.regime } ?: emptyMap()
-        val predictionByKey = predictions.associateBy { it.categoryId to it.regime }
+        val predictionByKey = input.predictions.associateBy { it.categoryId to it.regime }
         val rows = learned.flatMap { category ->
             listOf(Regime.TERM, Regime.HOLIDAY).map { regime ->
                 val key = category.id to regime
@@ -87,8 +92,8 @@ class PredictionsViewModel(
                 )
             }
         }.sortedWith(compareBy({ it.category.sortOrder }, { it.regime }))
-        PredictionsUiState(rows = rows, loading = forecast == null)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PredictionsUiState())
+        return PredictionsUiState(rows = rows, loading = false)
+    }
 
     fun setAutomatic(row: PredictionRow) {
         viewModelScope.launch { planRepository.deletePrediction(row.category.id, row.regime) }
@@ -142,7 +147,6 @@ class PredictionsViewModel(
                 val app = this[APPLICATION_KEY] as BudgetApp
                 PredictionsViewModel(
                     planRepository = app.container.planRepository,
-                    categoryRepository = app.container.categoryRepository,
                     forecastService = app.container.forecastService,
                 )
             }

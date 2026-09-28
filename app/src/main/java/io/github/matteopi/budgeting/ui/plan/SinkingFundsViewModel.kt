@@ -10,12 +10,12 @@ import io.github.matteopi.budgeting.BudgetApp
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.SinkingFund
 import io.github.matteopi.budgeting.core.model.SinkingFundStatus
-import io.github.matteopi.budgeting.data.repo.PlanRepository
-import io.github.matteopi.budgeting.domain.Clock
 import io.github.matteopi.budgeting.domain.ForecastService
+import io.github.matteopi.budgeting.domain.ForecastSnapshot
+import io.github.matteopi.budgeting.domain.snapshot
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 /** A fund plus its live reservation figures from the forecast, for [SinkingFundsScreen]. */
@@ -34,17 +34,18 @@ data class SinkingFundsUiState(
 )
 
 class SinkingFundsViewModel(
-    planRepository: PlanRepository,
     forecastService: ForecastService,
-    clock: Clock,
 ) : ViewModel() {
-    val uiState: StateFlow<SinkingFundsUiState> = combine(
-        planRepository.observeSinkingFunds(),
-        forecastService.forecast,
-        clock.todayFlow,
-    ) { funds, forecast, today ->
-        val reservations = forecast?.fundReservations?.associateBy { it.fundId } ?: emptyMap()
-        val rows = funds.map { fund ->
+    // Funds, today's date and their reservations all come from ONE forecast snapshot.
+    val uiState: StateFlow<SinkingFundsUiState> = forecastService.state
+        .map { state -> buildUiState(state.snapshot()) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SinkingFundsUiState())
+
+    private fun buildUiState(snapshot: ForecastSnapshot?): SinkingFundsUiState {
+        if (snapshot == null) return SinkingFundsUiState()
+        val today = snapshot.input.today
+        val reservations = snapshot.result?.fundReservations?.associateBy { it.fundId } ?: emptyMap()
+        val rows = snapshot.input.sinkingFunds.map { fund ->
             val reservation = reservations[fund.id]
             val reservedToday = reservation?.reservedToday ?: Money.ZERO
             val progress = if (fund.target.pence > 0) {
@@ -60,22 +61,18 @@ class SinkingFundsViewModel(
                 overdue = fund.status == SinkingFundStatus.ACTIVE && fund.targetDate.isBefore(today),
             )
         }.sortedBy { it.fund.targetDate }
-        SinkingFundsUiState(
+        return SinkingFundsUiState(
             active = rows.filter { it.fund.status == SinkingFundStatus.ACTIVE },
             other = rows.filter { it.fund.status != SinkingFundStatus.ACTIVE },
-            loading = forecast == null,
+            loading = snapshot.result == null,
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SinkingFundsUiState())
+    }
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val app = this[APPLICATION_KEY] as BudgetApp
-                SinkingFundsViewModel(
-                    planRepository = app.container.planRepository,
-                    forecastService = app.container.forecastService,
-                    clock = app.container.clock,
-                )
+                SinkingFundsViewModel(forecastService = app.container.forecastService)
             }
         }
     }

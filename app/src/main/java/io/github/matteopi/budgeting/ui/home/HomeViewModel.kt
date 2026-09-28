@@ -9,8 +9,6 @@ import io.github.matteopi.budgeting.BudgetApp
 import io.github.matteopi.budgeting.core.analysis.Anomalies
 import io.github.matteopi.budgeting.core.analysis.Anomaly
 import io.github.matteopi.budgeting.core.forecast.Balances
-import io.github.matteopi.budgeting.core.forecast.ForecastInput
-import io.github.matteopi.budgeting.core.forecast.ForecastResult
 import io.github.matteopi.budgeting.core.forecast.RiskSummary
 import io.github.matteopi.budgeting.core.forecast.SafeToSpend
 import io.github.matteopi.budgeting.core.model.Account
@@ -20,9 +18,13 @@ import io.github.matteopi.budgeting.core.model.SinkingFund
 import io.github.matteopi.budgeting.core.model.SinkingFundStatus
 import io.github.matteopi.budgeting.core.model.Transaction
 import io.github.matteopi.budgeting.core.model.ZeroPoint
+import io.github.matteopi.budgeting.data.settings.AccountView
+import io.github.matteopi.budgeting.data.settings.SettingsStore
 import io.github.matteopi.budgeting.domain.ForecastService
+import io.github.matteopi.budgeting.domain.ForecastSnapshot
 import io.github.matteopi.budgeting.domain.PendingItem
 import io.github.matteopi.budgeting.domain.PostingService
+import io.github.matteopi.budgeting.domain.snapshot
 import io.github.matteopi.budgeting.ui.activity.ActivityGrouping
 import io.github.matteopi.budgeting.ui.activity.ActivityRow
 import java.time.LocalDate
@@ -43,10 +45,17 @@ data class HomeUiState(
     val zeroPoint: ZeroPoint = ZeroPoint.ACCOUNT_BALANCE,
     val hasAccounts: Boolean = false,
     val accounts: List<HomeAccountRow> = emptyList(),
-    val poolBalanceDisplay: Money = Money.ZERO,
-    val poolOverdraft: Money = Money.ZERO,
+    /** "Your money": the balance of [balanceView] (the pool total or one account), in display terms. */
+    val balanceDisplay: Money = Money.ZERO,
+    /** The view actually shown in the "Your money" card (the persisted one, made safe for the accounts that exist). */
+    val balanceView: AccountView = AccountView.Total,
+    /** The non-archived accounts, for the chip that switches [balanceView]. */
+    val accountChoices: List<Account> = emptyList(),
     val floorDisplay: Money = Money.ZERO,
+    /** Always the all-accounts figure: safe-to-spend covers every account included in it. */
     val safeToSpend: SafeToSpend? = null,
+    /** Set when the latest forecast run failed; any numbers shown are then from the last good forecast. */
+    val forecastError: String? = null,
     val pendingConfirmations: List<PendingItem> = emptyList(),
     val needsPredictionCount: Int = 0,
     val risk: RiskSummary? = null,
@@ -84,28 +93,39 @@ private fun PendingItem.sessionKey(): String = when (this) {
 class HomeViewModel(
     private val forecastService: ForecastService,
     private val postingService: PostingService,
+    private val settingsStore: SettingsStore,
 ) : ViewModel() {
 
     private val hiddenForSession = MutableStateFlow<Set<String>>(emptySet())
 
-    private val pendingConfirmationsFlow = forecastService.inputFlow
-        .mapLatest { input -> postingService.pendingConfirmations(input.today) }
+    private data class Source(val snapshot: ForecastSnapshot?, val pending: List<PendingItem>)
+
+    // Everything on Home (the balance, the account rows, safe-to-spend and every card) is built
+    // from this ONE forecast snapshot; no second subscription to the repositories is mixed in.
+    private val sourceFlow = forecastService.state.mapLatest { state ->
+        val snapshot = state.snapshot()
+        val pending = if (snapshot != null) postingService.pendingConfirmations(snapshot.input.today) else emptyList()
+        Source(snapshot, pending)
+    }
 
     val uiState: StateFlow<HomeUiState> = combine(
-        forecastService.inputFlow,
-        forecastService.forecast,
-        pendingConfirmationsFlow,
+        sourceFlow,
         hiddenForSession,
-    ) { input, result, pending, hidden ->
-        buildUiState(input, result, pending, hidden)
+        settingsStore.appSettings,
+    ) { source, hidden, appSettings ->
+        buildUiState(source.snapshot, source.pending, hidden, appSettings.balanceView)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
     private fun buildUiState(
-        input: ForecastInput,
-        result: ForecastResult?,
+        snapshot: ForecastSnapshot?,
         pending: List<PendingItem>,
         hiddenKeys: Set<String>,
+        requestedBalanceView: AccountView,
     ): HomeUiState {
+        if (snapshot == null) return HomeUiState()
+        val input = snapshot.input
+        val result = snapshot.result
+
         val zeroPoint = input.settings.zeroPoint
         val rawBalances = Balances.balancesByAccount(input.transactions, input.today)
         val liveAccounts = input.accounts.filter { !it.archived }.sortedBy { it.sortOrder }
@@ -120,10 +140,7 @@ class HomeViewModel(
             )
         }
 
-        val pool = Balances.pool(input.accounts)
-        val poolOverdraft = Balances.poolOverdraft(input.accounts)
-        val poolRaw = result?.poolBalanceNow ?: Balances.poolBalance(input.accounts, input.transactions, input.today)
-        val poolDisplay = Balances.toDisplay(poolRaw, poolOverdraft, zeroPoint)
+        val balance = HomeMapping.balance(requestedBalanceView, input, result)
 
         val recentRows = ActivityGrouping.buildRows(
             input.transactions
@@ -141,40 +158,38 @@ class HomeViewModel(
 
         val showReconcileNudge = ReconcileNudge.isStale(
             reconciliations = input.reconciliations,
-            poolAccountIds = pool.map { it.id }.toSet(),
+            poolAccountIds = Balances.pool(input.accounts).map { it.id }.toSet(),
             today = input.today,
         )
 
-        val sparkline = result?.days
-            ?.filterIndexed { index, _ -> (index + 1) % 7 == 0 }
-            ?.take(8)
-            ?.map { Balances.toDisplay(it.expectedBalance, poolOverdraft, zeroPoint) }
-            ?: emptyList()
-
-        val floorRaw = result?.floor ?: Balances.floor(input.accounts, zeroPoint)
-        val floorDisplay = Balances.toDisplay(floorRaw, poolOverdraft, zeroPoint)
-
         return HomeUiState(
-            loading = result == null,
+            // A failed run with nothing to show is not "still working out": say so instead of spinning.
+            loading = result == null && snapshot.error == null,
             today = input.today,
             zeroPoint = zeroPoint,
             hasAccounts = liveAccounts.isNotEmpty(),
             accounts = accountRows,
-            poolBalanceDisplay = poolDisplay,
-            poolOverdraft = poolOverdraft,
-            floorDisplay = floorDisplay,
+            balanceDisplay = balance.display,
+            balanceView = balance.view,
+            accountChoices = liveAccounts,
+            floorDisplay = balance.floorDisplay,
             safeToSpend = result?.safeToSpend,
+            forecastError = snapshot.error,
             pendingConfirmations = visiblePending,
             needsPredictionCount = result?.needsPrediction?.size ?: 0,
             risk = result?.risk,
             anomalies = anomalies,
             showReconcileNudge = showReconcileNudge,
             overdueSinkingFunds = overdueSinkingFunds,
-            sparkline = sparkline,
+            sparkline = balance.sparkline,
             recentActivity = recentRows,
             categoriesById = input.categories.associateBy { it.id },
             accountsById = input.accounts.associateBy { it.id },
         )
+    }
+
+    fun selectBalanceView(view: AccountView) {
+        viewModelScope.launch { settingsStore.setBalanceView(view) }
     }
 
     fun confirmDefault(item: PendingItem) = viewModelScope.launch {
@@ -200,6 +215,7 @@ class HomeViewModel(
                 HomeViewModel(
                     forecastService = app.container.forecastService,
                     postingService = app.container.postingService,
+                    settingsStore = app.container.settingsStore,
                 )
             }
         }

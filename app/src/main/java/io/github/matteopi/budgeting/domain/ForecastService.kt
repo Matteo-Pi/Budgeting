@@ -1,5 +1,6 @@
 package io.github.matteopi.budgeting.domain
 
+import android.util.Log
 import io.github.matteopi.budgeting.core.forecast.ForecastEngine
 import io.github.matteopi.budgeting.core.forecast.ForecastInput
 import io.github.matteopi.budgeting.core.forecast.ForecastResult
@@ -23,18 +24,33 @@ import java.time.LocalDate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 
+/** The baseline forecast and the forecast with a what-if scenario overlaid, both worked out from one [input]. */
+data class ScenarioRun(
+    val input: ForecastInput,
+    val baseline: ForecastResult,
+    val withScenario: ForecastResult,
+)
+
 /**
- * Combines every repository's data with settings and today's date into a [ForecastInput], and
+ * Combines every repository's data with settings and today's date into ONE [ForecastInput], and
  * runs [ForecastEngine] on a background dispatcher. See docs/PLAN.md §6.4.
+ *
+ * The UI observes [state], whose [ForecastState.Ready] carries the input together with the result
+ * computed from it. Screens must not combine that with their own subscriptions to the same
+ * repositories: two subscriptions emit at different moments, which is how Home once showed
+ * account rows next to a forecast worked out for an older day (£0.00 "Your money").
  */
 class ForecastService(
     private val accountRepository: AccountRepository,
@@ -65,8 +81,8 @@ class ForecastService(
         val today: LocalDate,
     )
 
-    /** combine() is only typed up to 5 flows, so this is built in stages. */
-    val inputFlow: Flow<ForecastInput> = run {
+    /** combine() is only typed up to 5 flows, so this is built in stages. Cold: every collector re-reads the data. */
+    private val freshInput: Flow<ForecastInput> = run {
         val coreFlow = combine(
             accountRepository.observeAccounts(),
             categoryRepository.observeCategories(),
@@ -104,27 +120,78 @@ class ForecastService(
         }
     }
 
-    /** Debounced, latest-wins forecast for the UI to observe. Null until the first input arrives. */
-    val forecast: StateFlow<ForecastResult?> = inputFlow
+    /**
+     * The input, built once and shared, only when it actually changed. The replay cache is dropped
+     * as soon as nobody is listening (`replayExpirationMillis = 0`) so a returning subscriber
+     * never starts from an input that went stale while the app was in the background.
+     */
+    private val sharedInput: SharedFlow<ForecastInput> = freshInput
+        .distinctUntilChanged()
+        .shareIn(appScope, SharingStarted.WhileSubscribed(5_000, replayExpirationMillis = 0), replay = 1)
+
+    /** The last successful calculation, so a failure can still offer numbers. */
+    @Volatile
+    private var lastGood: ForecastState.Ready? = null
+
+    /**
+     * Debounced, latest-wins forecast for the UI to observe: [ForecastState.Loading] until the
+     * first calculation, then [ForecastState.Ready] (input + the result computed from it) or
+     * [ForecastState.Failed].
+     */
+    val state: StateFlow<ForecastState> = sharedInput
         .debounce(200)
-        .mapLatest { input -> withContext(Dispatchers.Default) { ForecastEngine.run(input) } }
-        .stateIn(appScope, SharingStarted.WhileSubscribed(5_000), null)
+        .mapLatest { input -> compute(input) }
+        .stateIn(appScope, SharingStarted.WhileSubscribed(5_000), ForecastState.Loading)
+
+    private suspend fun compute(input: ForecastInput): ForecastState {
+        val outcome = withContext(Dispatchers.Default) {
+            ForecastStates.compute(
+                input = input,
+                lastGood = lastGood,
+                nowMillis = clock::nowMillis,
+                run = { forecastInput -> ForecastEngine.run(forecastInput) },
+                onError = { error -> Log.e(TAG, "Forecast failed", error) },
+            )
+        }
+        // After withContext, so a computation that was cancelled meanwhile never becomes "last good".
+        if (outcome is ForecastState.Ready) lastGood = outcome
+        return outcome
+    }
+
+    /** The input as of right now (a fresh read, never a cached one). */
+    suspend fun currentInput(): ForecastInput = freshInput.first()
 
     /** Current input, Monte Carlo skipped — fast path for the widget and the daily worker. */
     suspend fun quick(): ForecastResult {
-        val input = inputFlow.first().copy(runMonteCarlo = false)
+        val input = currentInput().copy(runMonteCarlo = false)
         return withContext(Dispatchers.Default) { ForecastEngine.run(input) }
     }
 
     /** Current input, full model (including Monte Carlo). */
     suspend fun full(): ForecastResult {
-        val input = inputFlow.first()
+        val input = currentInput()
         return withContext(Dispatchers.Default) { ForecastEngine.run(input) }
     }
 
     /** Current input with a what-if [scenario] overlaid. */
     suspend fun withScenario(scenario: Scenario): ForecastResult {
-        val input = inputFlow.first().copy(scenario = scenario)
+        val input = currentInput().copy(scenario = scenario)
         return withContext(Dispatchers.Default) { ForecastEngine.run(input) }
+    }
+
+    /** Baseline and scenario forecasts from the *same* input, for the what-if comparison. */
+    suspend fun runScenario(scenario: Scenario): ScenarioRun {
+        val input = currentInput()
+        return withContext(Dispatchers.Default) {
+            ScenarioRun(
+                input = input,
+                baseline = ForecastEngine.run(input),
+                withScenario = ForecastEngine.run(input.copy(scenario = scenario)),
+            )
+        }
+    }
+
+    private companion object {
+        const val TAG = "ForecastService"
     }
 }
