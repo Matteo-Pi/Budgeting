@@ -9,12 +9,14 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.glance.appwidget.updateAll
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import io.github.matteopi.budgeting.BudgetApp
 import io.github.matteopi.budgeting.MainActivity
 import io.github.matteopi.budgeting.R
 import io.github.matteopi.budgeting.core.analysis.Accuracy
+import io.github.matteopi.budgeting.widget.SafeToSpendWidget
 import kotlinx.coroutines.flow.first
 
 /**
@@ -33,19 +35,23 @@ class DailyWorker(
         container.postingService.postDue(today)
 
         val appSettings = container.settingsStore.appSettings.first()
-        if (appSettings.lastSnapshotDate != today) {
+        val poolAccountIds = container.accountRepository.observeAccounts().first()
+            .filter { it.includeInSafeToSpend && !it.archived }
+            .map { it.id }
+            .toSet()
+        // No accounts yet means "£0 predicted, £0 actual" snapshots that would make the
+        // accuracy screen look perfect, so only start recording once there is something to forecast.
+        if (poolAccountIds.isNotEmpty() && appSettings.lastSnapshotDate != today) {
             val result = container.forecastService.full()
             val (balanceSnapshots, categorySnapshots) = Accuracy.snapshotsFor(result)
             container.snapshotRepository.saveSnapshots(balanceSnapshots, categorySnapshots)
             container.settingsStore.setLastSnapshotDate(today)
         }
 
-        container.widgetUpdater.requestUpdate()
+        // Directly, not via the debounced WidgetUpdater: the worker may be stopped as soon as
+        // doWork returns, and this is the refresh that rolls the widget over to a new day/week.
+        SafeToSpendWidget().updateAll(applicationContext)
 
-        val poolAccountIds = container.accountRepository.observeAccounts().first()
-            .filter { it.includeInSafeToSpend && !it.archived }
-            .map { it.id }
-            .toSet()
         val lastPoolReconciliation = container.accountRepository.observeReconciliations().first()
             .filter { it.accountId in poolAccountIds }
             .maxOfOrNull { it.date }
