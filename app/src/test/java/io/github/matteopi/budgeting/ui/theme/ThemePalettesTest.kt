@@ -62,6 +62,22 @@ class ThemePalettesTest {
     }
 
     @Test
+    fun `outlines are visible enough for text-field borders`() {
+        // WCAG 1.4.11: UI component boundaries need 3:1 against what they sit on. Decorative
+        // dividers use outlineVariant, which is deliberately fainter and not checked here.
+        for ((theme, dark, p) in allPalettes) {
+            val name = label(theme, dark)
+            for ((surfaceName, surface) in mapOf(
+                "background" to p.background,
+                "surface" to p.surface,
+                "surfaceContainerLow" to p.surfaceContainerLow,
+            )) {
+                assertContrast(3.0, p.outline, surface, "$name outline/$surfaceName")
+            }
+        }
+    }
+
+    @Test
     fun `accent colours are legible as text and lines on every surface`() {
         for ((theme, dark, p) in allPalettes) {
             for ((surfaceName, surface) in surfaces(p)) {
