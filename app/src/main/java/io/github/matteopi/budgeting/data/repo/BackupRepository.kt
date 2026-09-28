@@ -85,10 +85,12 @@ class BackupRepository(
             planDao.insertScheduledItems(data.scheduledItems.map { it.toEntity() })
             planDao.insertPredictions(data.predictions.map { it.toEntity() })
             planDao.insertSinkingFunds(data.sinkingFunds.map { it.toEntity() })
+            // Batches before transactions: transactions.import_batch_id is an (immediately
+            // checked) foreign key, so inserting them first fails for any imported row.
+            importDao.insertBatches(data.importBatches.map { it.toEntity() })
             transactionDao.insertAll(data.transactions.map { it.toEntity() })
             presetDao.insertAll(data.presets.map { it.toEntity() })
             importDao.insertMerchantRules(data.merchantRules.map { it.toEntity() })
-            importDao.insertBatches(data.importBatches.map { it.toEntity() })
             reconciliationDao.insertAll(data.reconciliations.map { it.toEntity() })
             data.scenarios.forEach { scenario ->
                 scenarioDao.insertScenario(scenario.toEntity(createdAt = System.currentTimeMillis()))
