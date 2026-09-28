@@ -97,7 +97,35 @@ class ImportRepository(
             if (openingBalanceTransaction != null) {
                 val adjusted = OpeningBalanceAdjuster.adjust(openingBalanceTransaction, rows.map { it.row })
                 if (adjusted != null) {
-                    transactionDao.update(adjusted.toEntity())
+                    // Move the opening balance with two entries tagged with this batch rather than
+                    // editing the original, so "Undo import" (which deletes the batch's rows)
+                    // restores it exactly. Net effect: the opening balance now sits before the
+                    // earliest imported row, reduced by the rows it already included.
+                    val label = "Opening balance (moved by import)"
+                    transactionDao.insert(
+                        Transaction(
+                            accountId = accountId,
+                            amount = adjusted.amount,
+                            date = adjusted.date,
+                            createdAtEpochMillis = nowMillis,
+                            categoryId = null,
+                            label = label,
+                            kind = TxKind.OPENING_BALANCE,
+                            importBatchId = batchId,
+                        ).toEntity(),
+                    )
+                    transactionDao.insert(
+                        Transaction(
+                            accountId = accountId,
+                            amount = -openingBalanceTransaction.amount,
+                            date = openingBalanceTransaction.date,
+                            createdAtEpochMillis = nowMillis,
+                            categoryId = null,
+                            label = label,
+                            kind = TxKind.OPENING_BALANCE,
+                            importBatchId = batchId,
+                        ).toEntity(),
+                    )
                 }
             }
         }

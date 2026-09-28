@@ -207,7 +207,10 @@ class StatementImportViewModel(private val container: AppContainer) : ViewModel(
                 .map { MerchantRule(merchantKey = it.merchantKey, categoryId = it.categoryId!!) }
 
             val existing = container.transactionRepository.observeAll().first()
-            val openingBalance = existing.firstOrNull { it.accountId == accountId && it.kind == TxKind.OPENING_BALANCE }
+            val openingBalance = existing
+                .filter { it.accountId == accountId && it.kind == TxKind.OPENING_BALANCE }
+                // The earliest entry is the effective opening balance (later imports move it back).
+                .minByOrNull { it.date }
 
             val batch = container.importRepository.importRows(
                 accountId = accountId,
