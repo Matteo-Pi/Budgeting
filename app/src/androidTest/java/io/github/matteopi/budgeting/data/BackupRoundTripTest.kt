@@ -628,11 +628,7 @@ class BackupRoundTripTest {
         assertEquals(DarkMode.DARK, after.darkMode)
     }
 
-    /**
-     * The backup file carries `chartAccountView` and `balanceView` (AppSettingsCodec encodes and decodes
-     * them), but `BackupViewModel.confirmRestore` writes back every other app setting and not these two,
-     * so this is expected to fail until it does.
-     */
+    /** The backup file carries `chartAccountView` and `balanceView`; restoring must write them back too. */
     @Test
     fun restoreAlsoBringsBackTheChartAndBalanceAccountViews() = runBlocking<Unit> {
         val p = populateEverything()
