@@ -170,7 +170,13 @@ private fun OtherIncomeForm(state: OnboardingUiState, onAdd: (RecurringRule) -> 
         if (accountId == null) accountId = DefaultAccount.resolveId(state.accounts, state.budgetSettings.defaultAccountId)
     }
     val incomeCategories = state.categories.filter { it.flow == CategoryFlow.IN && !it.archived }
-    LaunchedEffect(incomeCategories) { if (categoryId == null) categoryId = incomeCategories.firstOrNull()?.id }
+    // Default to a regular-income category (Wages) rather than the first one, which is Student
+    // loan: a lump-sum category would make a part-time job count as a major income.
+    LaunchedEffect(incomeCategories) {
+        if (categoryId == null) {
+            categoryId = (incomeCategories.firstOrNull { !it.isMajorIncomeDefault } ?: incomeCategories.firstOrNull())?.id
+        }
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(
