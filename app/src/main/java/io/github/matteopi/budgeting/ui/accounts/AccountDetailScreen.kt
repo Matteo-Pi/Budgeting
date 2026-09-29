@@ -26,6 +26,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -77,7 +78,12 @@ fun AccountDetailScreen(
         ) {
             item {
                 SectionCard {
-                    MoneyText(amount = state.displayBalance, style = MaterialTheme.typography.headlineLarge, isBalance = true)
+                    MoneyText(
+                        amount = state.displayBalance,
+                        modifier = Modifier.testTag("account-balance"),
+                        style = MaterialTheme.typography.headlineLarge,
+                        isBalance = true,
+                    )
                     if (state.zeroPoint == ZeroPoint.OVERDRAFT_LIMIT) {
                         Text(
                             text = "above your overdraft limit",
