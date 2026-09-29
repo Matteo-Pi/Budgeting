@@ -189,7 +189,10 @@ class PlanTest : UiTest() {
         // Split a year's total in three; the last instalment takes the odd penny.
         tap(isToggleable(), "the split switch")
         type("Year's total (£)", "4600")
-        waitFor("the split amounts") { count(txt("£1,533.33")) == 2 && count(txt("£1,533.34")) == 1 }
+        // The keyboard is up after typing, so not every instalment fits on screen at once: look for each
+        // amount (scrolling as needed). The exact three amounts are checked in the database below.
+        waitForExists(txt("£1,533.33"), "the first instalments' amount")
+        waitForExists(txt("£1,533.34"), "the last instalment's amount, with the odd penny")
         shot("plan-14-student-loan-split")
 
         // Without dates nothing can be created.

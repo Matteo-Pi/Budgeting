@@ -3,12 +3,16 @@ package io.github.matteopi.budgeting.ui.quickadd
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -77,6 +81,7 @@ private fun NoAccountsContent(onOpenApp: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun QuickAddContent(
     state: QuickAddUiState,
@@ -89,7 +94,8 @@ private fun QuickAddContent(
     onDateChange: (LocalDate) -> Unit,
     onSave: () -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+    // Scrolls if the card is ever taller than the space above the keyboard (a small screen).
+    Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -168,9 +174,12 @@ private fun QuickAddContent(
 
         Spacer(Modifier.height(12.dp))
 
-        AmountKeypad(onKey = onKeypadKey, modifier = Modifier.fillMaxWidth())
-
-        Spacer(Modifier.height(8.dp))
+        // While the keyboard is up (typing a label) the amount keypad isn't needed; without it the card
+        // fits above the keyboard with Save still visible.
+        if (!WindowInsets.isImeVisible) {
+            AmountKeypad(onKey = onKeypadKey, modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(8.dp))
+        }
 
         Button(
             onClick = onSave,

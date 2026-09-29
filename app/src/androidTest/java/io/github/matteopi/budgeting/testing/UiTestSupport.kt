@@ -578,10 +578,32 @@ abstract class UiTest {
 
     // ----- tapping and typing -----
 
-    /** Waits for [matcher], scrolls it into view and taps the [index]th match. */
+    /**
+     * Waits until the [index]th node matching [matcher] stops moving. Screens resize while the
+     * keyboard slides in or out (they keep their Save buttons above it), and a tap aimed at where a
+     * button was a moment ago lands on something else.
+     */
+    private fun waitForStableBounds(matcher: SemanticsMatcher, index: Int) {
+        fun bounds() = runCatching { compose.onAllNodes(matcher).fetchSemanticsNodes()[index].boundsInRoot }.getOrNull()
+        val deadline = System.nanoTime() / 1_000_000 + 3_000
+        var previous = bounds()
+        while (System.nanoTime() / 1_000_000 < deadline) {
+            Thread.sleep(80)
+            compose.waitForIdle()
+            val current = bounds()
+            if (current == previous) return
+            previous = current
+        }
+    }
+
+    /** Waits for [matcher], scrolls it into view and taps the [index]th match once it has stopped moving. */
     fun tap(matcher: SemanticsMatcher, what: String, index: Int = 0) {
         waitForExists(matcher, what)
+        // Settle first (the keyboard may still be sliding in and shrinking the screen), then scroll
+        // for the final layout, and settle again before tapping.
+        waitForStableBounds(matcher, index)
         scrollIntoView(matcher, index)
+        waitForStableBounds(matcher, index)
         try {
             compose.onAllNodes(matcher)[index].performClick()
         } catch (e: AssertionError) {
@@ -769,8 +791,13 @@ abstract class UiTest {
 
     /** Waits until Home's "Your money" figure reads [expected]. */
     fun expectYourMoney(expected: String, timeoutMs: Long = HEAVY_TIMEOUT_MS) {
-        waitFor("'Your money' to read $expected (it reads '${firstText(hasTestTag(YOUR_MONEY_TAG))}')", timeoutMs) {
-            firstText(hasTestTag(YOUR_MONEY_TAG)) == expected
+        val figure = hasTestTag(YOUR_MONEY_TAG)
+        // Home's list may have been scrolled down, leaving the figure un-composed: bring it back.
+        if (!exists(figure)) scrollIntoView(figure)
+        try {
+            waitFor("'Your money' to read $expected", timeoutMs) { firstText(figure) == expected }
+        } catch (e: AssertionError) {
+            throw AssertionError("${e.message}\n(At the end it read '${firstText(figure)}'.)", e)
         }
     }
 
