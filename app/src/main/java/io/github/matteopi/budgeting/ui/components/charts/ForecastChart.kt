@@ -163,16 +163,22 @@ fun ForecastChart(
                 )
             }
 
-            // X-axis: one gridline + short month label per calendar month.
-            ChartAxis.monthTicks(startDate, endDate).forEach { date ->
+            // X-axis: one gridline + short month label per calendar month. A chart starting a day or
+            // two before a month begins would draw its first label ("Sep") on top of the next ("Oct"),
+            // so a label that would overlap the one before it is left out.
+            var labelsEndX = Float.NEGATIVE_INFINITY
+            val monthTicks = ChartAxis.monthTicks(startDate, endDate)
+            monthTicks.forEachIndexed { index, date ->
                 val x = xFor(date)
                 drawLine(colors.gridline, Offset(x, plotTop), Offset(x, plotBottom), strokeWidth = 1.dp.toPx())
-                drawText(
-                    textMeasurer = textMeasurer,
-                    text = date.format(MONTH_LABEL_FORMATTER),
-                    topLeft = Offset(x.coerceAtLeast(plotLeft), plotBottom + 4.dp.toPx()),
-                    style = labelStyle,
-                )
+                val label = textMeasurer.measure(date.format(MONTH_LABEL_FORMATTER), labelStyle)
+                val left = x.coerceAtLeast(plotLeft)
+                val next = monthTicks.getOrNull(index + 1)
+                val crowdsNext = index == 0 && next != null && xFor(next) < left + label.size.width + 4.dp.toPx()
+                if (left >= labelsEndX && !crowdsNext) {
+                    drawText(textLayoutResult = label, topLeft = Offset(left, plotBottom + 4.dp.toPx()))
+                    labelsEndX = left + label.size.width + 4.dp.toPx()
+                }
             }
 
             // P10-P90 uncertainty band.
