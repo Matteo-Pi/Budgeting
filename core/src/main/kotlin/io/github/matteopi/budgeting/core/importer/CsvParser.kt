@@ -25,11 +25,12 @@ object CsvParser {
         var bestCols = -1
         for (d in CANDIDATE_DELIMITERS) {
             val rows = tokenize(text, d)
-            // Sampling every tokenized row (not just visually "non-blank" ones) keeps the
-            // comparison fair: a genuinely blank source line (e.g. ",,") still has the right
-            // delimiter's usual column count once split, but looks like one non-blank field
-            // under the wrong delimiter, which would otherwise unfairly favour it.
-            val sample = rows.take(20)
+            // Only truly empty lines are left out of the sample: they tokenize to a single empty
+            // cell under every delimiter, so they say nothing about which one is right, yet a wrong
+            // delimiter (one column everywhere) would count them as agreeing rows and could beat
+            // the right one. A line like ",,", by contrast, is kept: it has the right delimiter's
+            // usual column count once split but looks like one non-blank field under the wrong one.
+            val sample = rows.filter { !(it.size == 1 && it[0].isEmpty()) }.take(20)
             if (sample.isEmpty()) continue
             val freq = sample.map { it.size }.groupingBy { it }.eachCount()
             val mode = freq.entries.maxByOrNull { it.value } ?: continue

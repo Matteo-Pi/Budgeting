@@ -250,4 +250,25 @@ class BackupCodecTest {
         val failure = assertIs<BackupDecodeResult.Failure>(result)
         assertTrue(failure.errors.any { it.contains("transaction") })
     }
+
+    private fun jsonWithDate(date: String): String {
+        val data = BackupData(
+            accounts = listOf(Account(id = 1, name = "Current", type = AccountType.CURRENT)),
+            transactions = listOf(
+                Transaction(id = 1, accountId = 1, amount = Money.pounds(5), date = LocalDate.of(2026, 1, 1), categoryId = null, kind = TxKind.OPENING_BALANCE),
+            ),
+            settings = BudgetSettings(historyStartDate = LocalDate.of(2026, 1, 1)),
+        )
+        val json = BackupCodec.encode(BackupMapper.toBackup(data, exportedAt = "now"))
+        assertTrue("\"2026-01-01\"" in json)
+        return json.replace("\"2026-01-01\"", "\"$date\"")
+    }
+
+    @Test
+    fun `decode reports an unparseable date as a failure instead of throwing`() {
+        for (bad in listOf("2026-13-01", "2026-02-30", "not-a-date", "", "2026/01/01", "20260101")) {
+            val failure = assertIs<BackupDecodeResult.Failure>(BackupCodec.decode(jsonWithDate(bad)), "date '$bad'")
+            assertTrue(failure.errors.isNotEmpty())
+        }
+    }
 }

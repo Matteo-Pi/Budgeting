@@ -2,6 +2,7 @@ package io.github.matteopi.budgeting.core.backup
 
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import java.time.DateTimeException
 
 /** The outcome of [BackupCodec.decode]. */
 sealed class BackupDecodeResult {
@@ -57,7 +58,10 @@ object BackupCodec {
                 exportedAt = backup.exportedAt,
             )
         } catch (e: IllegalArgumentException) {
-            // e.g. an enum name or date string that doesn't parse.
+            // e.g. an enum name that doesn't exist.
+            BackupDecodeResult.Failure(listOf("The backup data is corrupted and can't be read."))
+        } catch (e: DateTimeException) {
+            // A date string that doesn't parse (DateTimeParseException is not an IllegalArgumentException).
             BackupDecodeResult.Failure(listOf("The backup data is corrupted and can't be read."))
         }
     }
