@@ -1,5 +1,7 @@
 package io.github.matteopi.budgeting.ui.navigation
 
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -68,7 +70,13 @@ fun BudgetNavHost(
         NavHost(
             navController = navController,
             startDestination = startDestination,
-            modifier = Modifier.padding(innerPadding),
+            // The bottom bar already covers the system navigation bar, so mark that inset as used:
+            // otherwise each screen's own Scaffold reserves it again, leaving a blank strip above
+            // the bottom bar. imePadding keeps forms (and their Save buttons) above the keyboard.
+            modifier = Modifier
+                .padding(innerPadding)
+                .consumeWindowInsets(innerPadding)
+                .imePadding(),
         ) {
             composable<Route.Home> {
                 HomeScreen(

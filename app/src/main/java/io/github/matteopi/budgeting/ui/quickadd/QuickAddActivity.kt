@@ -6,11 +6,15 @@ import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -34,6 +38,9 @@ import io.github.matteopi.budgeting.ui.theme.BudgetingTheme
 class QuickAddActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Draw under the system bars on every Android version (15+ forces it anyway) and place the
+        // card with insets below, so it always sits above the navigation bar and the keyboard.
+        enableEdgeToEdge()
         val container = (application as BudgetApp).container
         val presetId = intent.getLongExtra(EXTRA_PRESET_ID, -1L).takeIf { it >= 0 }
         val flowExtra = intent.getStringExtra(EXTRA_FLOW)
@@ -60,7 +67,10 @@ class QuickAddActivity : ComponentActivity() {
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Color.Black.copy(alpha = 0.4f))
-                        .clickable { finish() },
+                        .clickable { finish() }
+                        // Keep the card clear of the system bars and the keyboard (typing a label
+                        // used to hide the Save button behind it).
+                        .windowInsetsPadding(WindowInsets.safeDrawing),
                     contentAlignment = Alignment.BottomCenter,
                 ) {
                     QuickAddScreen(
