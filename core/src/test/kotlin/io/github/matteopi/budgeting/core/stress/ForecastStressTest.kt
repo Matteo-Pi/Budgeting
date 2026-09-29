@@ -115,6 +115,8 @@ class ForecastStressTest {
         f.expect("mc.doesNotChangeTheRest", stripMonteCarlo(first) == off) { "results differ beyond percentiles/risk between MC on and off" }
 
         metamorphic(seed, offInput, off, f)
+        moreMetamorphic(seed, offInput, off, f)
+        zeroPointUnderMonteCarlo(mcInput, first, f)
     }
 
     private fun stripMonteCarlo(result: ForecastResult): ForecastResult = result.copy(
@@ -184,6 +186,151 @@ class ForecastStressTest {
             f.expect("meta.zeroPoint.shortfall", overdraftResult.safeToSpend.shortfall <= zeroResult.safeToSpend.shortfall) {
                 "shortfall ${zeroResult.safeToSpend.shortfall} (balance) -> ${overdraftResult.safeToSpend.shortfall} (overdraft limit)"
             }
+        }
+    }
+
+    // --- more relations: things that must not matter, and monotone knobs ---------------------------------------------------
+
+    private fun moreMetamorphic(seed: Long, base: ForecastInput, baseResult: ForecastResult, f: Failures) {
+        val random = Random(seed xor 0x2545F4914F6CDD1DL)
+        val today = base.today
+        val forecastEnd = today.plusDays(base.settings.forecastHorizonDays.toLong())
+        val account = base.accounts.first()
+
+        // Things the engine must ignore leave the whole result untouched.
+        val inertItems = listOf(
+            ScheduledItem(id = 9_100_001L, label = "Posted", accountId = account.id, categoryId = null, amount = Money(-12_345), date = today.plusDays(3), postingMode = PostingMode.AUTO, posted = true),
+            ScheduledItem(id = 9_100_002L, label = "Skipped", accountId = account.id, categoryId = null, amount = Money(54_321), date = today.plusDays(4), postingMode = PostingMode.CONFIRM, isMajorIncome = true, skipped = true),
+            ScheduledItem(id = 9_100_003L, label = "Beyond", accountId = account.id, categoryId = null, amount = Money(-99_999), date = forecastEnd.plusDays(1), postingMode = PostingMode.AUTO),
+        )
+        val inertRules = listOf(
+            io.github.matteopi.budgeting.core.model.RecurringRule(
+                id = 9_100_001L, label = "Inactive", accountId = account.id, categoryId = null, amount = Money(-777),
+                frequency = io.github.matteopi.budgeting.core.model.Frequency.DAILY, startDate = today.plusDays(1),
+                postingMode = PostingMode.AUTO, active = false,
+            ),
+            io.github.matteopi.budgeting.core.model.RecurringRule(
+                id = 9_100_002L, label = "Later", accountId = account.id, categoryId = null, amount = Money(-888),
+                frequency = io.github.matteopi.budgeting.core.model.Frequency.DAILY, startDate = forecastEnd.plusDays(1),
+                postingMode = PostingMode.AUTO, isMajorIncome = true,
+            ),
+        )
+        val inertFunds = listOf(
+            io.github.matteopi.budgeting.core.model.SinkingFund(
+                id = 9_100_001L, name = "Cancelled", target = Money(50_000), startDate = today.minusDays(5), targetDate = today.plusDays(9),
+                status = io.github.matteopi.budgeting.core.model.SinkingFundStatus.CANCELLED,
+            ),
+            io.github.matteopi.budgeting.core.model.SinkingFund(
+                id = 9_100_002L, name = "Completed", target = Money(60_000), startDate = today.minusDays(5), targetDate = today.plusDays(9),
+                status = io.github.matteopi.budgeting.core.model.SinkingFundStatus.COMPLETED,
+            ),
+        )
+        val padded = base.copy(
+            scheduledItems = base.scheduledItems + inertItems,
+            recurringRules = base.recurringRules + inertRules,
+            sinkingFunds = base.sinkingFunds + inertFunds,
+        )
+        run(padded, f, "inert additions")?.let { result ->
+            f.expect("meta.inert", result == baseResult) { "posted/skipped items, an inactive rule, a rule starting after the horizon, an item beyond it or a cancelled/completed fund changed the result" }
+        }
+
+        // The order of the input lists does not matter to any number in the result.
+        val shuffled = base.copy(
+            accounts = base.accounts.shuffled(random),
+            transactions = base.transactions.shuffled(random),
+            recurringRules = base.recurringRules.shuffled(random),
+            scheduledItems = base.scheduledItems.shuffled(random),
+            termPeriods = base.termPeriods.shuffled(random),
+            sinkingFunds = base.sinkingFunds.shuffled(random),
+            reconciliations = base.reconciliations.shuffled(random),
+        )
+        run(shuffled, f, "shuffled lists")?.let { result ->
+            val same = result.days == baseResult.days && result.accountForecasts == baseResult.accountForecasts &&
+                result.budgetPeriods == baseResult.budgetPeriods && result.categoryEstimates == baseResult.categoryEstimates &&
+                result.needsPrediction == baseResult.needsPrediction && result.tier1WeeklyByCategory == baseResult.tier1WeeklyByCategory &&
+                result.poolBalanceNow == baseResult.poolBalanceNow && result.historyStart == baseResult.historyStart &&
+                result.completeWeeksOfHistory == baseResult.completeWeeksOfHistory &&
+                result.fundReservations.sortedBy { it.fundId } == baseResult.fundReservations.sortedBy { it.fundId } &&
+                result.safeToSpend.weekly == baseResult.safeToSpend.weekly && result.safeToSpend.perDay == baseResult.safeToSpend.perDay &&
+                result.safeToSpend.shortfall == baseResult.safeToSpend.shortfall && result.safeToSpend.bindingDate == baseResult.safeToSpend.bindingDate
+            f.expect("meta.order", same) { "shuffling the input lists changed a number in the result" }
+        }
+
+        // Splitting a past transaction into two of the same sign changes nothing.
+        val splittable = base.transactions.filter {
+            it.kind == io.github.matteopi.budgeting.core.model.TxKind.NORMAL && it.recurringRuleId == null && it.scheduledItemId == null &&
+                !it.date.isAfter(today) && it.amount.abs().pence >= 2
+        }
+        if (splittable.isNotEmpty()) {
+            val target = splittable[random.nextInt(splittable.size)]
+            val part = 1L + random.nextLong(target.amount.abs().pence - 1)
+            val sign = if (target.amount.isNegative) -1 else 1
+            val nextId = (base.transactions.maxOf { it.id }) + 1
+            val halves = listOf(
+                target.copy(amount = Money(sign * part)),
+                target.copy(id = nextId, amount = Money(sign * (target.amount.abs().pence - part))),
+            )
+            val split = base.copy(transactions = base.transactions.filter { it !== target } + halves)
+            run(split, f, "split transaction")?.let { result ->
+                f.expect("meta.split", result == baseResult) { "splitting ${target.amount} on ${target.date} (account ${target.accountId}, category ${target.categoryId}) into ${halves.map { it.amount }} changed the result" }
+            }
+        }
+
+        // Predictions for a discretionary (learned OUT) category: more predicted spending never raises a balance
+        // and never moves safe-to-spend, which leaves discretionary spending out of the headroom.
+        val learnedOut = base.categories.firstOrNull {
+            it.forecastMode == io.github.matteopi.budgeting.core.model.ForecastMode.LEARNED && it.flow == io.github.matteopi.budgeting.core.model.Flow.OUT
+        }
+        if (learnedOut != null) {
+            fun withPrediction(weeklyPence: Long): ForecastInput = base.copy(
+                predictions = base.predictions.filter { it.categoryId != learnedOut.id } + io.github.matteopi.budgeting.core.model.Regime.entries.mapIndexed { i, regime ->
+                    io.github.matteopi.budgeting.core.model.Prediction(
+                        id = 9_100_000L + i, categoryId = learnedOut.id, regime = regime,
+                        mode = io.github.matteopi.budgeting.core.model.PredictionMode.REPLACE, weeklyAmount = Money(weeklyPence),
+                    )
+                },
+            )
+            val low = random.nextLong(0, 20_000)
+            val high = low + 1 + random.nextLong(30_000)
+            val lowInput = withPrediction(low)
+            val highInput = withPrediction(high)
+            val lowResult = run(lowInput, f, "low prediction")
+            val highResult = run(highInput, f, "high prediction")
+            if (lowResult != null && highResult != null) {
+                ForecastInvariants.check(lowInput, lowResult, f)
+                ForecastInvariants.check(highInput, highResult, f)
+                val moreSpending = lowResult.days.zip(highResult.days).all { (l, h) -> h.expectedBalance <= l.expectedBalance }
+                f.expect("meta.prediction.balances", moreSpending) { "predicting ${Money(high)} instead of ${Money(low)} a week for category ${learnedOut.id} raised a balance" }
+                f.expect("meta.prediction.safeToSpend", lowResult.safeToSpend.weekly == highResult.safeToSpend.weekly && lowResult.safeToSpend.shortfall == highResult.safeToSpend.shortfall && lowResult.safeToSpend.bindingDate == highResult.safeToSpend.bindingDate) {
+                    "discretionary predictions moved safe-to-spend: ${lowResult.safeToSpend.weekly} vs ${highResult.safeToSpend.weekly}"
+                }
+                f.expect("meta.prediction.committed", lowResult.committedFlows == highResult.committedFlows && lowResult.budgetPeriods.map { it.committedOut to it.committedIn } == highResult.budgetPeriods.map { it.committedOut to it.committedIn }) {
+                    "discretionary predictions changed committed flows"
+                }
+            }
+        }
+    }
+
+    /**
+     * The zero point only moves the floor: the simulated paths are the same, the chance of going past the
+     * overdraft is the same, and the chance of dipping below the floor can only fall when the floor drops.
+     */
+    private fun zeroPointUnderMonteCarlo(mcInput: ForecastInput, mcResult: ForecastResult, f: Failures) {
+        val other = if (mcInput.settings.zeroPoint == ZeroPoint.ACCOUNT_BALANCE) ZeroPoint.OVERDRAFT_LIMIT else ZeroPoint.ACCOUNT_BALANCE
+        val otherInput = mcInput.copy(settings = mcInput.settings.copy(zeroPoint = other))
+        val otherResult = run(otherInput, f, "zero point $other under Monte Carlo") ?: return
+        f.expect("meta.zeroPoint.paths", otherResult.days.map { Triple(it.p10, it.p50, it.p90) } == mcResult.days.map { Triple(it.p10, it.p50, it.p90) } &&
+            otherResult.accountForecasts == mcResult.accountForecasts) { "the zero point changed simulated paths" }
+        val risk = mcResult.risk
+        val otherRisk = otherResult.risk
+        if (risk == null || otherRisk == null) {
+            f.add("meta.zeroPoint.risk", "missing risk summary")
+            return
+        }
+        f.expect("meta.zeroPoint.beyondOverdraft", risk.probBeyondOverdraft == otherRisk.probBeyondOverdraft) { "${risk.probBeyondOverdraft} vs ${otherRisk.probBeyondOverdraft}" }
+        val (atZero, atOverdraft) = if (mcInput.settings.zeroPoint == ZeroPoint.ACCOUNT_BALANCE) risk to otherRisk else otherRisk to risk
+        f.expect("meta.zeroPoint.belowFloor", atOverdraft.probBelowFloor <= atZero.probBelowFloor) {
+            "chance below the floor ${atZero.probBelowFloor} (balance) -> ${atOverdraft.probBelowFloor} (overdraft limit)"
         }
     }
 
