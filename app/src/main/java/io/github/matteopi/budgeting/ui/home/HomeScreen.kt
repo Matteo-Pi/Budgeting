@@ -40,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -285,7 +286,12 @@ private fun BalanceCard(
                 AccountViewChip(accounts = accountChoices, selected = view, onSelect = onSelectView)
             }
         }
-        MoneyText(amount = balance, style = MaterialTheme.typography.headlineMedium, isBalance = true)
+        MoneyText(
+            amount = balance,
+            modifier = Modifier.testTag("your-money"),
+            style = MaterialTheme.typography.headlineMedium,
+            isBalance = true,
+        )
         if (zeroPoint == ZeroPoint.OVERDRAFT_LIMIT) {
             Text(
                 text = "above your overdraft limit",
