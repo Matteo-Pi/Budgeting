@@ -315,23 +315,33 @@ flow in §5.5). If `start >= targetDate`: fully reserved from `start` until `tar
 `weeklyContribution = target × 7 / (targetDate − start)` days. `DayForecast.reserved` = Σ funds.
 
 ### 5.11 Safe-to-spend (`forecast/SafeToSpend.kt`)
-- `nextMajorIncome` = first committed flow with `isMajorIncome && amount > 0 && date > today`.
-- Horizon end `H` = day before `nextMajorIncome`; if that is fewer than 7 days away, use the day
-  before the following major income instead; if none, `forecastEnd`. Cap at `forecastEnd`.
-- For each day d in `today+1 .. H`, with `k(d)` = days from today (1, 2, …):
-  - `C(d)` = cumulative committed flows to d;
-  - `L(d)` = cumulative expected learned flows to d **excluding discretionary categories**,
-    where learned IN categories count at 75% (conservative) and Untracked at 100%;
-  - `R(d)` = reserved sinking-fund money at d;
-  - headroom `h(d) = poolNow + C(d) + L(d) − R(d) − floor − buffer`;
-  - bound `W(d) = 7 × h(d) / k(d)`.
-- `weekly = max(0, min_d W(d))`, rounded down to whole pence; `perDay = weekly / 7`.
-- `bindingDate` = the d giving the minimum. `bindingReason`: the largest committed outflow in the
-  3 days up to and including `bindingDate` → `"<label> on <d MMM>"`; else if `bindingDate == H`
-  and there is a next major income → `"Until <label> on <d MMM>"`; else null.
-- `shortfall = max(0, −min_d h(d))`.
+A **sustainable weekly budget over the whole forecast**. (The first version stopped at the day
+before the next major income; with an income a few days away that gave absurd answers — £0 or
+£14,000+/week — so it was replaced.)
+- `H = forecastEnd`. For each day d in `today+1 .. H`, with `k(d)` = days from today:
+  `h(d) = poolNow + C(d) + L(d) − R(d) − floor − buffer`, where `C` = cumulative committed flows,
+  `L` = cumulative expected learned flows excluding discretionary categories (learned IN at 75%,
+  Untracked at 100%), `R` = sinking-fund reservations; bound `W(d) = 7 × h(d) / k(d)`.
+- `weekly = max(0, min_d W(d))` (whole pence, rounded down); `perDay = weekly / 7`;
+  `shortfall = max(0, −min_d h(d))`; `bindingDate` = the d giving the minimum.
+- `bindingReason`: the largest committed outflow in the 3 days up to `bindingDate` →
+  "Rent on 1 Oct"; else a major income the day after → "Until Student loan on 11 Jan"; else
+  `bindingDate == H` → "Over the next N weeks"; else null. Month names via `Locale.ENGLISH`.
+- `nextMajorIncome` / `daysUntilNextMajorIncome`: first major income after today (overdue CONFIRM
+  items count as tomorrow) — for display only.
 - `predictedWeeklySpending` = Σ |final estimate| over discretionary categories for `regime(today)`.
-- `daysUntilNextMajorIncome` = days from today to `nextMajorIncome.date`.
+
+### 5.11a Per-account forecasts (`forecast/AccountSplit.kt`)
+`ForecastResult.accountForecasts` repeats the forecast for every non-archived account.
+- Committed flows go to their own account; transfers A→B are −amount on A and +amount on B;
+  sinking-fund spends and scenario items without an account go to the **default account**
+  (settings default if a non-archived pool account, else the smallest-id pool account, else the
+  smallest-id non-archived account).
+- Learned flows go to pool accounts only, split by each category's historical share per account
+  (no history → default account), with largest-remainder rounding so that Σ pool accounts'
+  expected balances equals the pool's exactly, every day.
+- Tier 3 tracks each pool account inside the same simulations (per-account P10/P50/P90);
+  non-pool accounts are deterministic (p10 = p50 = p90 = expected when Monte Carlo ran).
 
 ### 5.12 Budget periods — lumpy income (`forecast/BudgetPeriods.kt`)
 Split `today+1 .. forecastEnd` at each major-income date (same-day incomes merged).
@@ -585,6 +595,25 @@ lastExportDate: LocalDate?, theme: AppTheme = PAPER, darkMode: DarkMode = SYSTEM
   clock, forecastService, postingService, widgetUpdater, `appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)`.
 - ViewModels get dependencies through `viewModelFactory { initializer { … } }` reading the
   container from `APPLICATION_KEY`. No Hilt/Koin.
+
+### 6.4a Changes after first use (2026-09-29)
+- **One snapshot**: `ForecastService.state: StateFlow<ForecastState>` (`Loading` / `Ready(input,
+  result, computedAtMillis)` / `Failed(input, message, lastGood)`), computed from one shared input
+  flow. Every screen takes the input and the result from the same `Ready` snapshot, so balances
+  and forecast numbers can never disagree (a user saw "Your money £0" beside correct account
+  balances because they came from different subscriptions). Settings → About shows when the
+  forecast last ran. `Clock.todayFlow` re-checks the date every 60 s (a single long `delay`
+  stalls during deep sleep).
+- **Account views**: `AppSettings.chartAccountView` (all accounts / one account / each account)
+  drives the Forecast chart, Timeline and Insights balance history; `balanceView` (all accounts /
+  one account) drives Home's "Your money" and sparkline. Safe-to-spend stays pool-wide.
+- **Default account**: the first account created becomes the default (changeable in Settings);
+  archiving/deleting it moves the default to the earliest remaining account. One resolver
+  (`data/repo/DefaultAccount.kt`) is used everywhere.
+- **Recurring rules** inserted with a start date in the past get `postedThrough = today`: past
+  occurrences are already in the opening balance, so they are never posted retroactively.
+- **Student loan helper / onboarding**: instalment dates without a term start are left blank
+  ("Pick a date") and required, instead of defaulting to today.
 
 ### 6.5 Navigation and screens
 Single activity (`MainActivity : FragmentActivity`) + `QuickAddActivity`. Navigation Compose

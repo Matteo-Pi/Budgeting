@@ -19,6 +19,9 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // With the orchestrator, every test starts from a freshly cleared app (empty database).
         testInstrumentationRunnerArguments["clearPackageData"] = "true"
+        // Screenshots go through Test Storage, which survives clearPackageData and is pulled
+        // automatically into build/outputs/connected_android_test_additional_output.
+        testInstrumentationRunnerArguments["useTestStorageService"] = "true"
     }
 
     // One committed keystore so every build (CI, local, future sessions) has the same
@@ -105,6 +108,8 @@ dependencies {
     androidTestImplementation(libs.compose.ui.test.junit4)
     androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.kotlin.test.junit)
+    androidTestImplementation(libs.androidx.test.storage)
     androidTestUtil(libs.androidx.test.orchestrator)
+    androidTestUtil(libs.androidx.test.services)
     debugImplementation(libs.compose.ui.test.manifest)
 }
