@@ -162,6 +162,9 @@ class OnboardingFlowTest : UiTest() {
             "Home must not claim a shortfall.\n${screenDump()}",
             !textExists("Even with no spending", substring = true),
         )
+        // Every balance was just typed in and nothing could have been logged last week: no nagging.
+        assertNeverShows(txt("You haven't checked a balance", substring = true), "the balance-check nudge")
+        assertNeverShows(txt("Quiet week", substring = true), "the quiet-week alert")
         expectAccountRow("Lloyds current", "£6,579.30")
         expectAccountRow("Santander Savings", "£400.00")
         expectAccountRow("Santander current", "£500.00")

@@ -17,6 +17,7 @@ import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.SinkingFund
 import io.github.matteopi.budgeting.core.model.SinkingFundStatus
 import io.github.matteopi.budgeting.core.model.Transaction
+import io.github.matteopi.budgeting.core.model.TxKind
 import io.github.matteopi.budgeting.core.model.ZeroPoint
 import io.github.matteopi.budgeting.data.settings.AccountView
 import io.github.matteopi.budgeting.data.settings.SettingsStore
@@ -156,10 +157,15 @@ class HomeViewModel(
 
         val anomalies = if (result != null) Anomalies.detect(input, result).take(3) else emptyList()
 
+        val poolAccountIds = Balances.pool(input.accounts).map { it.id }.toSet()
         val showReconcileNudge = ReconcileNudge.isStale(
             reconciliations = input.reconciliations,
-            poolAccountIds = Balances.pool(input.accounts).map { it.id }.toSet(),
+            poolAccountIds = poolAccountIds,
             today = input.today,
+            // Opening balances typed in by the user count as a check; ones moved by a statement import don't.
+            openingBalanceDates = input.transactions
+                .filter { it.kind == TxKind.OPENING_BALANCE && it.importBatchId == null && it.accountId in poolAccountIds }
+                .map { it.date },
         )
 
         return HomeUiState(

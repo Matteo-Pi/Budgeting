@@ -55,6 +55,24 @@ class ReconcileNudgeTest {
     }
 
     @Test
+    fun `an account opened today counts as a balance check`() {
+        // Straight after onboarding: every balance was just typed in from the bank app.
+        assertFalse(ReconcileNudge.isStale(emptyList(), setOf(1L), today, openingBalanceDates = listOf(today)))
+    }
+
+    @Test
+    fun `an old opening balance with no reconciliation since is stale`() {
+        assertTrue(ReconcileNudge.isStale(emptyList(), setOf(1L), today, openingBalanceDates = listOf(today.minusDays(30))))
+    }
+
+    @Test
+    fun `the later of the last reconciliation and the newest opening balance counts`() {
+        val reconciliations = listOf(reconciliation(1L, today.minusDays(20)))
+        assertFalse(ReconcileNudge.isStale(reconciliations, setOf(1L), today, openingBalanceDates = listOf(today.minusDays(2))))
+        assertTrue(ReconcileNudge.isStale(reconciliations, setOf(1L), today, openingBalanceDates = listOf(today.minusDays(9))))
+    }
+
+    @Test
     fun `uses the most recent reconciliation across all pool accounts`() {
         val reconciliations = listOf(
             reconciliation(1L, today.minusDays(20)),
