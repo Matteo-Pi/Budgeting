@@ -109,12 +109,18 @@ jobs:
         with:
           api-level: 34
           arch: x86_64
-          target: google_apis
+          # The AOSP image (no Google services — the app needs none) is lighter; with the extra
+          # cores and memory, System UI no longer stalls into "isn't responding" dialogs.
+          target: default
           profile: pixel_6
+          cores: 3
+          ram-size: 4096M
           disk-size: 3G
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
+            adb shell settings put global hide_error_dialogs 1 || true
+            adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
             ./gradlew :app:connectedDebugAndroidTest --console=plain --continue > device-tests.log 2>&1; echo $? > device-tests.exit
 
       - name: Collect results
