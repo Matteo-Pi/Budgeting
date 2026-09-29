@@ -32,6 +32,7 @@ import io.github.matteopi.budgeting.core.model.Category
 import io.github.matteopi.budgeting.core.model.Flow as CategoryFlow
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.Regime
+import io.github.matteopi.budgeting.ui.components.AccountViewSelector
 import io.github.matteopi.budgeting.ui.components.EmptyState
 import io.github.matteopi.budgeting.ui.components.MoneyText
 import io.github.matteopi.budgeting.ui.components.SectionCard
@@ -45,7 +46,6 @@ import io.github.matteopi.budgeting.ui.components.charts.StackedBarSegment
 import io.github.matteopi.budgeting.ui.components.charts.WeeklyStackedBarChart
 import io.github.matteopi.budgeting.ui.components.charts.rememberChartColors
 import io.github.matteopi.budgeting.ui.forecast.toShortLabel
-import java.time.LocalDate
 
 /**
  * The Insights tab: weekly spending by category, this month vs. average, term vs. holiday
@@ -121,6 +121,12 @@ fun InsightsScreen(
 
             item {
                 SectionCard(title = "Balance history") {
+                    AccountViewSelector(
+                        accounts = state.accounts,
+                        selected = state.chartView,
+                        onSelect = viewModel::selectChartView,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
                     BalanceHistoryChart(state.balanceHistory)
                 }
             }
@@ -242,13 +248,17 @@ private fun TermVsHolidayList(averages: List<CategoryRegimeAverage>, categoryNam
 }
 
 @Composable
-private fun BalanceHistoryChart(balanceHistory: List<Pair<LocalDate, Money>>) {
-    if (balanceHistory.isEmpty()) {
+private fun BalanceHistoryChart(lines: List<BalanceHistoryLine>) {
+    if (lines.all { it.points.isEmpty() }) {
         EmptyState(message = "No balance history yet.")
         return
     }
     val colors = rememberChartColors()
-    LineChart(series = listOf(LineChartSeries("Balance", colors.seriesPrimary, balanceHistory)))
+    val series = lines.mapIndexed { index, line ->
+        val color = if (lines.size > 1) colors.accountColor(index) else colors.seriesPrimary
+        LineChartSeries(line.label, color, line.points)
+    }
+    LineChart(series = series)
 }
 
 @Composable

@@ -33,10 +33,12 @@ import io.github.matteopi.budgeting.core.model.Flow as CategoryFlow
 import io.github.matteopi.budgeting.core.model.Frequency
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.RecurringRule
+import io.github.matteopi.budgeting.data.repo.DefaultAccount
 import io.github.matteopi.budgeting.ui.components.AccountPicker
 import io.github.matteopi.budgeting.ui.components.CategoryPicker
 import io.github.matteopi.budgeting.ui.components.DateField
 import io.github.matteopi.budgeting.ui.components.MoneyText
+import io.github.matteopi.budgeting.ui.components.OptionalDateField
 import io.github.matteopi.budgeting.ui.plan.Direction
 import io.github.matteopi.budgeting.ui.plan.defaultPostingMode
 import io.github.matteopi.budgeting.ui.plan.directionOf
@@ -62,7 +64,8 @@ fun MoneyInStep(
         Text("Student loan", style = MaterialTheme.typography.titleMedium)
         Text(
             "Creates three instalments in the \"${state.studentLoanCategory?.name ?: "Student loan"}\" " +
-                "category, dated to your next three terms. You'll confirm each when it arrives.",
+                "category, dated to your next three terms. If you haven't entered that many terms, " +
+                "pick the missing dates yourself. You'll confirm each when it arrives.",
             style = MaterialTheme.typography.bodyMedium,
         )
         if (state.studentLoanCreated) {
@@ -88,10 +91,11 @@ fun MoneyInStep(
             state.loanInstalments.forEachIndexed { index, instalment ->
                 Column {
                     Text("Instalment ${index + 1}", style = MaterialTheme.typography.labelLarge)
-                    DateField(
+                    OptionalDateField(
                         label = "Date",
                         date = instalment.date,
                         onDateChange = { viewModel.setLoanInstalmentDate(index, it) },
+                        initialDate = state.today,
                     )
                     if (state.loanSplitMode) {
                         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -158,7 +162,9 @@ private fun OtherIncomeForm(state: OnboardingUiState, onAdd: (RecurringRule) -> 
     var accountId by remember { mutableStateOf<Long?>(null) }
     var categoryId by remember { mutableStateOf<Long?>(null) }
 
-    LaunchedEffect(state.accounts) { if (accountId == null) accountId = state.accounts.firstOrNull()?.id }
+    LaunchedEffect(state.accounts, state.budgetSettings.defaultAccountId) {
+        if (accountId == null) accountId = DefaultAccount.resolveId(state.accounts, state.budgetSettings.defaultAccountId)
+    }
     val incomeCategories = state.categories.filter { it.flow == CategoryFlow.IN && !it.archived }
     LaunchedEffect(incomeCategories) { if (categoryId == null) categoryId = incomeCategories.firstOrNull()?.id }
 

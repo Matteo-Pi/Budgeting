@@ -30,6 +30,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.matteopi.budgeting.core.model.Flow as CategoryFlow
 import io.github.matteopi.budgeting.core.model.Frequency
 import io.github.matteopi.budgeting.core.model.PostingMode
+import io.github.matteopi.budgeting.data.repo.RuleStart
 import io.github.matteopi.budgeting.ui.components.AccountPicker
 import io.github.matteopi.budgeting.ui.components.CategoryPicker
 import io.github.matteopi.budgeting.ui.components.ConfirmDialog
@@ -146,6 +147,14 @@ fun RecurringEditScreen(
             }
             item {
                 DateField(label = "Start date", date = state.startDate, onDateChange = viewModel::setStartDate)
+                if (state.startsInPast) {
+                    Text(
+                        text = RuleStart.PAST_START_NOTE,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 16.dp, top = 4.dp),
+                    )
+                }
             }
             item {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {

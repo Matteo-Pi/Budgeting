@@ -8,19 +8,17 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.matteopi.budgeting.BudgetApp
 import io.github.matteopi.budgeting.core.forecast.Regimes
-import io.github.matteopi.budgeting.core.model.RecurringRule
-import io.github.matteopi.budgeting.core.model.ScheduledItem
 import io.github.matteopi.budgeting.core.model.SinkingFundStatus
 import io.github.matteopi.budgeting.core.model.TermPeriod
-import io.github.matteopi.budgeting.data.repo.PlanRepository
-import io.github.matteopi.budgeting.domain.Clock
 import io.github.matteopi.budgeting.domain.ForecastService
+import io.github.matteopi.budgeting.domain.ForecastSnapshot
+import io.github.matteopi.budgeting.domain.snapshot
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 /** Counts and short summaries for the Plan hub's sections (docs/PLAN.md §6.5). */
@@ -36,45 +34,32 @@ data class PlanUiState(
     val loading: Boolean = true,
 )
 
-private data class PlanData(
-    val recurringRules: List<RecurringRule>,
-    val scheduledItems: List<ScheduledItem>,
-    val termPeriods: List<TermPeriod>,
-    val activeSinkingFunds: Int,
-)
-
 class PlanViewModel(
-    planRepository: PlanRepository,
     forecastService: ForecastService,
-    clock: Clock,
 ) : ViewModel() {
-    val uiState: StateFlow<PlanUiState> = combine(
-        combine(
-            planRepository.observeRecurringRules(),
-            planRepository.observeScheduledItems(),
-            planRepository.observeTermPeriods(),
-            planRepository.observeSinkingFunds(),
-        ) { rules, items, terms, funds ->
-            PlanData(rules, items, terms, funds.count { it.status == SinkingFundStatus.ACTIVE })
-        },
-        forecastService.forecast,
-        clock.todayFlow,
-    ) { data, forecast, today ->
-        val activeRules = data.recurringRules.filter { it.active }
-        val upcomingItems = data.scheduledItems.filter { !it.posted && !it.skipped }
-        PlanUiState(
+    // Counts, today's regime and the needs-prediction badge all come from ONE forecast snapshot.
+    val uiState: StateFlow<PlanUiState> = forecastService.state
+        .map { state -> buildUiState(state.snapshot()) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PlanUiState())
+
+    private fun buildUiState(snapshot: ForecastSnapshot?): PlanUiState {
+        if (snapshot == null) return PlanUiState()
+        val input = snapshot.input
+        val activeRules = input.recurringRules.filter { it.active }
+        val upcomingItems = input.scheduledItems.filter { !it.posted && !it.skipped }
+        return PlanUiState(
             moneyInCount = activeRules.count { directionOf(it.amount, it.toAccountId) == Direction.IN } +
                 upcomingItems.count { directionOf(it.amount, it.toAccountId) == Direction.IN },
             regularCostsCount = activeRules.count { directionOf(it.amount, it.toAccountId) == Direction.OUT },
             transfersCount = activeRules.count { directionOf(it.amount, it.toAccountId) == Direction.TRANSFER },
             oneOffCount = upcomingItems.size,
-            termCount = data.termPeriods.size,
-            todayRegimeLabel = todayRegimeLabel(today, data.termPeriods),
-            activeSinkingFundsCount = data.activeSinkingFunds,
-            needsPredictionCount = forecast?.needsPrediction?.size ?: 0,
-            loading = forecast == null,
+            termCount = input.termPeriods.size,
+            todayRegimeLabel = todayRegimeLabel(input.today, input.termPeriods),
+            activeSinkingFundsCount = input.sinkingFunds.count { it.status == SinkingFundStatus.ACTIVE },
+            needsPredictionCount = snapshot.result?.needsPrediction?.size ?: 0,
+            loading = snapshot.result == null,
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PlanUiState())
+    }
 
     private fun todayRegimeLabel(today: LocalDate, terms: List<TermPeriod>): String {
         val term = Regimes.termContaining(today, terms)
@@ -85,11 +70,7 @@ class PlanViewModel(
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val app = this[APPLICATION_KEY] as BudgetApp
-                PlanViewModel(
-                    planRepository = app.container.planRepository,
-                    forecastService = app.container.forecastService,
-                    clock = app.container.clock,
-                )
+                PlanViewModel(forecastService = app.container.forecastService)
             }
         }
     }

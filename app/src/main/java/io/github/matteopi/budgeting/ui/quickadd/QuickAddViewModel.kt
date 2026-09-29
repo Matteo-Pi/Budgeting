@@ -16,6 +16,7 @@ import io.github.matteopi.budgeting.core.model.Transaction
 import io.github.matteopi.budgeting.core.model.TxKind
 import io.github.matteopi.budgeting.data.repo.AccountRepository
 import io.github.matteopi.budgeting.data.repo.CategoryRepository
+import io.github.matteopi.budgeting.data.repo.DefaultAccount
 import io.github.matteopi.budgeting.data.repo.PresetRepository
 import io.github.matteopi.budgeting.data.repo.TransactionRepository
 import io.github.matteopi.budgeting.data.settings.SettingsStore
@@ -115,7 +116,7 @@ class QuickAddViewModel(
         viewModelScope.launch {
             val repo = repoState.first()
             val defaultAccountId = settingsStore.budgetSettings.first().defaultAccountId
-            selectedAccountIdState.value = DefaultAccountSelector.choose(repo.accounts, defaultAccountId)
+            selectedAccountIdState.value = DefaultAccount.resolveId(repo.accounts, defaultAccountId)
             val preset = initialPresetId?.let { id -> repo.presets.firstOrNull { it.id == id } }
             if (preset != null) applyPreset(preset)
         }

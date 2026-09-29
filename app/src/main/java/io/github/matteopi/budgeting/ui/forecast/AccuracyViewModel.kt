@@ -12,6 +12,7 @@ import io.github.matteopi.budgeting.core.analysis.AccuracyReport
 import io.github.matteopi.budgeting.core.model.BalanceSnapshot
 import io.github.matteopi.budgeting.core.model.Category
 import io.github.matteopi.budgeting.core.model.CategoryWeekSnapshot
+import io.github.matteopi.budgeting.domain.snapshot
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -27,24 +28,25 @@ data class AccuracyUiState(
 
 /**
  * Loads the stored [BalanceSnapshot]/[CategoryWeekSnapshot] history once (it only changes once a
- * day, written by the daily worker) and re-scores it against the live ledger as accounts and
- * transactions change.
+ * day, written by the daily worker) and re-scores it against the ledger of the latest forecast
+ * snapshot as accounts and transactions change.
  */
 class AccuracyViewModel(private val container: AppContainer) : ViewModel() {
     private val snapshots = MutableStateFlow<Pair<List<BalanceSnapshot>, List<CategoryWeekSnapshot>>?>(null)
 
+    // Accounts, transactions, categories and "today" come from ONE forecast snapshot, the same one
+    // every other screen draws from, so the stored snapshots are always scored against a single ledger.
     val uiState: StateFlow<AccuracyUiState> = combine(
-        container.accountRepository.observeAccounts(),
-        container.transactionRepository.observeAll(),
-        container.categoryRepository.observeCategories(),
-        container.clock.todayFlow,
+        container.forecastService.state,
         snapshots,
-    ) { accounts, transactions, categories, today, snaps ->
-        if (snaps == null) {
+    ) { forecastState, snaps ->
+        val forecast = forecastState.snapshot()
+        if (snaps == null || forecast == null) {
             AccuracyUiState(loading = true)
         } else {
-            val report = Accuracy.evaluate(snaps.first, snaps.second, accounts, transactions, today)
-            AccuracyUiState(loading = false, report = report, categories = categories)
+            val input = forecast.input
+            val report = Accuracy.evaluate(snaps.first, snaps.second, input.accounts, input.transactions, input.today)
+            AccuracyUiState(loading = false, report = report, categories = input.categories)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AccuracyUiState())
 

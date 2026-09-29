@@ -15,9 +15,10 @@ class InstalmentDefaultsTest {
             TermPeriod(id = 2, name = "Spring", startDate = LocalDate.of(2027, 1, 11), endDate = LocalDate.of(2027, 3, 26)),
             TermPeriod(id = 3, name = "Summer", startDate = LocalDate.of(2027, 4, 26), endDate = LocalDate.of(2027, 6, 18)),
         )
-        // Autumn starts today, not after today, so it doesn't count as "upcoming".
+        // Autumn starts today, not after today, so it doesn't count as "upcoming"; the third
+        // instalment has no term to anchor to, so it stays blank instead of defaulting to today.
         assertEquals(
-            listOf(LocalDate.of(2027, 1, 11), LocalDate.of(2027, 4, 26), today),
+            listOf(LocalDate.of(2027, 1, 11), LocalDate.of(2027, 4, 26), null),
             InstalmentDefaults.defaultDates(terms, today),
         )
     }
@@ -25,7 +26,7 @@ class InstalmentDefaultsTest {
     @Test
     fun ignoresTermsThatHaveAlreadyStarted() {
         val terms = listOf(TermPeriod(id = 1, name = "Autumn", startDate = today.minusDays(1), endDate = today.plusDays(60)))
-        assertEquals(listOf(today, today, today), InstalmentDefaults.defaultDates(terms, today))
+        assertEquals(listOf(null, null, null), InstalmentDefaults.defaultDates(terms, today))
     }
 
     @Test
@@ -35,14 +36,20 @@ class InstalmentDefaultsTest {
             TermPeriod(id = 1, name = "Autumn", startDate = LocalDate.of(2026, 10, 5), endDate = LocalDate.of(2026, 12, 12)),
         )
         assertEquals(
-            listOf(LocalDate.of(2026, 10, 5), LocalDate.of(2027, 1, 11), today),
+            listOf(LocalDate.of(2026, 10, 5), LocalDate.of(2027, 1, 11), null),
             InstalmentDefaults.defaultDates(terms, today),
         )
     }
 
     @Test
-    fun noUpcomingTermsFallsBackToToday() {
-        assertEquals(listOf(today, today, today), InstalmentDefaults.defaultDates(emptyList(), today))
+    fun noUpcomingTermsLeavesEveryDateBlank() {
+        assertEquals(listOf(null, null, null), InstalmentDefaults.defaultDates(emptyList(), today))
+    }
+
+    @Test
+    fun neverDefaultsToToday() {
+        val dates = InstalmentDefaults.defaultDates(emptyList(), today)
+        assertEquals(false, dates.contains(today))
     }
 
     @Test

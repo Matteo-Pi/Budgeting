@@ -1,12 +1,13 @@
 package io.github.matteopi.budgeting.backup
 
+import io.github.matteopi.budgeting.data.settings.AccountView
 import io.github.matteopi.budgeting.data.settings.AppSettings
 import io.github.matteopi.budgeting.data.settings.AppTheme
 import io.github.matteopi.budgeting.data.settings.DarkMode
 import java.time.DayOfWeek
 
 /**
- * Converts [AppSettings] (privacy/reminders/onboarding/appearance — app-only, not part of
+ * Converts [AppSettings] (privacy/reminders/onboarding/appearance/account views — app-only, not part of
  * `core.backup.BackupData`) to/from the `appSettings` string map a
  * [io.github.matteopi.budgeting.core.backup.BackupV1] carries. `lastSnapshotDate`/`lastExportDate`
  * are device-local bookkeeping and are intentionally not round-tripped: [decode] always keeps
@@ -21,6 +22,8 @@ object AppSettingsCodec {
     private const val ONBOARDING_DONE = "onboardingDone"
     private const val THEME = "theme"
     private const val DARK_MODE = "darkMode"
+    private const val CHART_ACCOUNT_VIEW = "chartAccountView"
+    private const val BALANCE_VIEW = "balanceView"
 
     fun encode(settings: AppSettings): Map<String, String> = mapOf(
         HIDE_WIDGET_AMOUNTS to settings.hideWidgetAmounts.toString(),
@@ -31,6 +34,8 @@ object AppSettingsCodec {
         ONBOARDING_DONE to settings.onboardingDone.toString(),
         THEME to settings.theme.name,
         DARK_MODE to settings.darkMode.name,
+        CHART_ACCOUNT_VIEW to AccountView.encode(settings.chartAccountView),
+        BALANCE_VIEW to AccountView.encode(settings.balanceView),
     )
 
     /** Applies [map] onto [current]; a missing or unreadable key falls back to [current]'s value. */
@@ -45,6 +50,10 @@ object AppSettingsCodec {
         onboardingDone = map[ONBOARDING_DONE]?.toBooleanStrictOrNull() ?: current.onboardingDone,
         theme = AppTheme.parse(map[THEME]) ?: current.theme,
         darkMode = DarkMode.parse(map[DARK_MODE]) ?: current.darkMode,
+        chartAccountView = AccountView.parseOrNull(map[CHART_ACCOUNT_VIEW]) ?: current.chartAccountView,
+        balanceView = AccountView.parseOrNull(map[BALANCE_VIEW])?.let { view ->
+            if (view == AccountView.Each) AccountView.Total else view
+        } ?: current.balanceView,
         lastSnapshotDate = current.lastSnapshotDate,
         lastExportDate = current.lastExportDate,
     )

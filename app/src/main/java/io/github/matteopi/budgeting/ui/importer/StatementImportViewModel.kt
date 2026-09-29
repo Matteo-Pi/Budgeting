@@ -19,6 +19,7 @@ import io.github.matteopi.budgeting.core.model.ImportBatch
 import io.github.matteopi.budgeting.core.model.MerchantRule
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.TxKind
+import io.github.matteopi.budgeting.data.repo.DefaultAccount
 import io.github.matteopi.budgeting.data.repo.SelectedImportRow
 import io.github.matteopi.budgeting.ui.settings.budgetViewModelFactory
 import java.time.LocalDate
@@ -67,9 +68,13 @@ class StatementImportViewModel(private val container: AppContainer) : ViewModel(
     init {
         viewModelScope.launch {
             container.accountRepository.observeAccounts().collect { accounts ->
+                val defaultAccountId = DefaultAccount.resolveId(
+                    accounts,
+                    container.settingsStore.budgetSettings.first().defaultAccountId,
+                )
                 _state.value = _state.value.copy(
                     accounts = accounts,
-                    selectedAccountId = _state.value.selectedAccountId ?: accounts.firstOrNull()?.id,
+                    selectedAccountId = _state.value.selectedAccountId ?: defaultAccountId,
                 )
             }
         }

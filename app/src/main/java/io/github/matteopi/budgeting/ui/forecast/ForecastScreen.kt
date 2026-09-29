@@ -42,6 +42,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.matteopi.budgeting.core.forecast.BudgetPeriod
+import io.github.matteopi.budgeting.data.settings.AccountView
+import io.github.matteopi.budgeting.ui.components.AccountViewSelector
+import io.github.matteopi.budgeting.ui.components.ForecastErrorCard
 import io.github.matteopi.budgeting.ui.components.MoneyText
 import io.github.matteopi.budgeting.ui.components.SectionCard
 import io.github.matteopi.budgeting.ui.components.charts.ForecastChart
@@ -67,19 +70,29 @@ fun ForecastScreen(
         topBar = { TopAppBar(title = { Text("Forecast") }) },
     ) { innerPadding ->
         val result = state.result
-        if (result == null) {
+        val chart = state.chart
+        if (result == null || chart == null) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(innerPadding),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator()
+                val error = state.error
+                if (error != null) {
+                    Text(
+                        text = "Couldn't update the forecast: $error",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(24.dp),
+                    )
+                } else {
+                    CircularProgressIndicator()
+                }
             }
             return@Scaffold
         }
 
         val horizonEnd = ForecastChartMapping.horizonEndDate(state.horizon, result)
-        val chartDays = ForecastChartMapping.toChartDays(result, state.zeroPoint)
-            .filter { !it.date.isAfter(horizonEnd) }
+        val shown = AccountChartMapping.cutAt(chart, horizonEnd)
 
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(innerPadding),
@@ -101,27 +114,49 @@ fun ForecastScreen(
                 }
             }
 
+            state.error?.let { error ->
+                item { ForecastErrorCard(error) }
+            }
+
+            if (state.accounts.size >= 2) {
+                item {
+                    AccountViewSelector(
+                        accounts = state.accounts,
+                        selected = state.view,
+                        onSelect = viewModel::selectView,
+                    )
+                }
+            }
+
             item {
                 SectionCard {
                     ForecastChart(
-                        days = chartDays,
-                        buffer = state.buffer,
+                        days = shown.days,
+                        buffer = shown.buffer,
                         today = result.today,
-                        showTier1 = state.showTier1,
+                        showTier1 = state.showTier1 && shown.hasTier1,
+                        lines = shown.lines,
                     )
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text("Show tier-1 baseline", style = MaterialTheme.typography.bodyMedium)
-                        Switch(checked = state.showTier1, onCheckedChange = { viewModel.toggleTier1() })
+                    if (shown.hasTier1) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text("Show tier-1 baseline", style = MaterialTheme.typography.bodyMedium)
+                            Switch(checked = state.showTier1, onCheckedChange = { viewModel.toggleTier1() })
+                        }
                     }
                 }
             }
 
             item {
-                val sentence = ForecastChartMapping.riskSentence(result.risk, result.safeToSpend.horizonEnd)
+                val poolSentence = ForecastChartMapping.riskSentence(result.risk, result.safeToSpend.horizonEnd)
+                val sentence = if (state.view == AccountView.Total) {
+                    poolSentence
+                } else {
+                    "Across all accounts in safe-to-spend: $poolSentence"
+                }
                 val isHighRisk = (result.risk?.probBelowFloor ?: 0.0) >= 0.10
                 Card {
                     Row(

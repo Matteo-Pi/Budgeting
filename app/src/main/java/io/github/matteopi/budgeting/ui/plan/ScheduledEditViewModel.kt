@@ -14,7 +14,9 @@ import io.github.matteopi.budgeting.core.model.PostingMode
 import io.github.matteopi.budgeting.core.model.ScheduledItem
 import io.github.matteopi.budgeting.data.repo.AccountRepository
 import io.github.matteopi.budgeting.data.repo.CategoryRepository
+import io.github.matteopi.budgeting.data.repo.DefaultAccount
 import io.github.matteopi.budgeting.data.repo.PlanRepository
+import io.github.matteopi.budgeting.data.settings.SettingsStore
 import io.github.matteopi.budgeting.domain.Clock
 import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,6 +53,7 @@ class ScheduledEditViewModel(
     private val planRepository: PlanRepository,
     private val categoryRepository: CategoryRepository,
     private val accountRepository: AccountRepository,
+    private val settingsStore: SettingsStore,
     clock: Clock,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ScheduledEditUiState(itemId = itemId, date = clock.today()))
@@ -58,13 +61,17 @@ class ScheduledEditViewModel(
 
     init {
         viewModelScope.launch {
-            combine(accountRepository.observeAccounts(), categoryRepository.observeCategories()) { a, c -> a to c }
-                .collect { (accounts, categories) ->
+            combine(
+                accountRepository.observeAccounts(),
+                categoryRepository.observeCategories(),
+                settingsStore.budgetSettings,
+            ) { accounts, categories, settings -> Triple(accounts, categories, settings.defaultAccountId) }
+                .collect { (accounts, categories, defaultAccountId) ->
                     _state.update {
                         it.copy(
                             accounts = accounts,
                             categories = categories,
-                            accountId = it.accountId ?: accounts.firstOrNull()?.id,
+                            accountId = it.accountId ?: DefaultAccount.resolveId(accounts, defaultAccountId),
                         )
                     }
                 }
@@ -199,6 +206,7 @@ class ScheduledEditViewModel(
                     planRepository = app.container.planRepository,
                     categoryRepository = app.container.categoryRepository,
                     accountRepository = app.container.accountRepository,
+                    settingsStore = app.container.settingsStore,
                     clock = app.container.clock,
                 )
             }

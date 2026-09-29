@@ -32,6 +32,7 @@ import io.github.matteopi.budgeting.core.model.Flow as CategoryFlow
 import io.github.matteopi.budgeting.core.model.Frequency
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.RecurringRule
+import io.github.matteopi.budgeting.data.repo.DefaultAccount
 import io.github.matteopi.budgeting.ui.components.AccountPicker
 import io.github.matteopi.budgeting.ui.components.CategoryPicker
 import io.github.matteopi.budgeting.ui.components.DateField
@@ -94,7 +95,9 @@ private fun RegularCostForm(state: OnboardingUiState, onAdd: (RecurringRule) -> 
     var accountId by remember { mutableStateOf<Long?>(null) }
     var categoryId by remember { mutableStateOf<Long?>(null) }
 
-    LaunchedEffect(state.accounts) { if (accountId == null) accountId = state.accounts.firstOrNull()?.id }
+    LaunchedEffect(state.accounts, state.budgetSettings.defaultAccountId) {
+        if (accountId == null) accountId = DefaultAccount.resolveId(state.accounts, state.budgetSettings.defaultAccountId)
+    }
     val outCategories = state.categories.filter { it.flow == CategoryFlow.OUT && !it.archived }
     LaunchedEffect(outCategories) {
         if (categoryId == null) categoryId = outCategories.firstOrNull { it.name == "Rent & bills" }?.id

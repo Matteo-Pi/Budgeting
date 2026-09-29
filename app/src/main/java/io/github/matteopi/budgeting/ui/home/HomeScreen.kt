@@ -39,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,10 +52,14 @@ import io.github.matteopi.budgeting.core.model.Category
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.SinkingFund
 import io.github.matteopi.budgeting.core.model.ZeroPoint
+import io.github.matteopi.budgeting.data.settings.AccountView
+import io.github.matteopi.budgeting.data.settings.displayName
 import io.github.matteopi.budgeting.domain.PendingItem
 import io.github.matteopi.budgeting.ui.activity.ActivityRow
 import io.github.matteopi.budgeting.ui.activity.ActivityRowView
 import io.github.matteopi.budgeting.ui.activity.toShortLabel
+import io.github.matteopi.budgeting.ui.components.AccountViewChip
+import io.github.matteopi.budgeting.ui.components.ForecastErrorCard
 import io.github.matteopi.budgeting.ui.components.MoneyText
 import io.github.matteopi.budgeting.ui.components.SectionCard
 import java.time.LocalDate
@@ -102,13 +107,19 @@ fun HomeScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            state.forecastError?.let { error ->
+                item { ForecastErrorCard(error) }
+            }
+
             item { SafeToSpendHero(loading = state.loading, safeToSpend = state.safeToSpend) }
 
             item {
-                PoolBalanceCard(
-                    balance = state.poolBalanceDisplay,
+                BalanceCard(
+                    balance = state.balanceDisplay,
                     zeroPoint = state.zeroPoint,
-                    daysUntilNextMoneyIn = state.safeToSpend?.daysUntilNextMajorIncome,
+                    view = state.balanceView,
+                    accountChoices = state.accountChoices,
+                    onSelectView = viewModel::selectBalanceView,
                 )
             }
 
@@ -158,7 +169,7 @@ fun HomeScreen(
 
             if (state.sparkline.size >= 2) {
                 item {
-                    SectionCard(title = "Next 8 weeks") {
+                    SectionCard(title = "Next 8 weeks · ${state.balanceView.displayName(state.accountChoices)}") {
                         HomeSparkline(
                             points = state.sparkline,
                             floor = state.floorDisplay,
@@ -199,12 +210,25 @@ private fun SafeToSpendHero(loading: Boolean, safeToSpend: SafeToSpend?) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text(text = "Safe to spend", style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = "Across all accounts included in safe-to-spend",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Spacer(8.dp)
-            if (loading || sts == null) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp))
-                    Spacer(12.dp)
-                    Text("Working out your numbers…", style = MaterialTheme.typography.bodyMedium)
+            if (sts == null) {
+                if (loading) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                        Spacer(12.dp)
+                        Text("Working out your numbers…", style = MaterialTheme.typography.bodyMedium)
+                    }
+                } else {
+                    Text(
+                        text = "Safe to spend isn't available right now.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             } else if (sts.shortfall.isPositive) {
                 val date = sts.bindingDate ?: sts.horizonEnd
@@ -218,49 +242,56 @@ private fun SafeToSpendHero(loading: Boolean, safeToSpend: SafeToSpend?) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
                 )
+                HeroNextIncome(sts, color = MaterialTheme.colorScheme.error)
             } else {
+                val detail = HomeMapping.heroDetail(sts)
                 Text(
                     text = "${sts.weekly.format(showPence = false)} / week",
                     style = MaterialTheme.typography.displaySmall,
                 )
-                val label = sts.nextMajorIncome?.label
-                val date = sts.nextMajorIncome?.date ?: sts.horizonEnd
-                val until = if (label != null) "until $label on ${date.toShortLabel()}" else "until ${date.toShortLabel()}"
                 Text(
-                    text = "${sts.perDay.format(showPence = false)} a day · $until",
+                    text = detail.perDayLine,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                HeroNextIncome(sts, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
 }
 
 @Composable
-private fun PoolBalanceCard(balance: Money, zeroPoint: ZeroPoint, daysUntilNextMoneyIn: Int?) {
+private fun HeroNextIncome(safeToSpend: SafeToSpend, color: Color) {
+    val line = HomeMapping.heroDetail(safeToSpend).nextIncomeLine ?: return
+    Text(text = line, style = MaterialTheme.typography.bodyMedium, color = color)
+}
+
+@Composable
+private fun BalanceCard(
+    balance: Money,
+    zeroPoint: ZeroPoint,
+    view: AccountView,
+    accountChoices: List<Account>,
+    onSelectView: (AccountView) -> Unit,
+) {
     SectionCard {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Column {
-                Text("Your money", style = MaterialTheme.typography.labelLarge)
-                MoneyText(amount = balance, style = MaterialTheme.typography.headlineMedium, isBalance = true)
-                if (zeroPoint == ZeroPoint.OVERDRAFT_LIMIT) {
-                    Text(
-                        text = "above your overdraft limit",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Your money", style = MaterialTheme.typography.labelLarge)
+            if (accountChoices.size >= 2) {
+                AccountViewChip(accounts = accountChoices, selected = view, onSelect = onSelectView)
             }
-            if (daysUntilNextMoneyIn != null) {
-                Column(horizontalAlignment = Alignment.End) {
-                    Text("$daysUntilNextMoneyIn", style = MaterialTheme.typography.headlineMedium)
-                    Text(
-                        text = if (daysUntilNextMoneyIn == 1) "day to next money in" else "days to next money in",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
+        }
+        MoneyText(amount = balance, style = MaterialTheme.typography.headlineMedium, isBalance = true)
+        if (zeroPoint == ZeroPoint.OVERDRAFT_LIMIT) {
+            Text(
+                text = "above your overdraft limit",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

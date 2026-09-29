@@ -111,12 +111,12 @@ class ScenarioEditViewModel(private val container: AppContainer, private val sce
                 .debounce(400)
                 .collectLatest { draft ->
                     computingFlow.value = true
-                    val zeroPoint = container.settingsStore.budgetSettings.first().zeroPoint
-                    val baseline = container.forecastService.full()
-                    val withScenario = container.forecastService.withScenario(draft)
-                    comparisonFlow.value = buildComparison(baseline, withScenario, zeroPoint)
-                    chartsFlow.value = ForecastChartMapping.toChartDays(baseline, zeroPoint) to
-                        ForecastChartMapping.toChartDays(withScenario, zeroPoint)
+                    // Baseline and scenario are worked out from ONE input, and so is the zero point.
+                    val run = container.forecastService.runScenario(draft)
+                    val zeroPoint = run.input.settings.zeroPoint
+                    comparisonFlow.value = buildComparison(run.baseline, run.withScenario, zeroPoint)
+                    chartsFlow.value = ForecastChartMapping.toChartDays(run.baseline, zeroPoint) to
+                        ForecastChartMapping.toChartDays(run.withScenario, zeroPoint)
                     computingFlow.value = false
                 }
         }
@@ -155,10 +155,7 @@ class ScenarioEditViewModel(private val container: AppContainer, private val sce
      * "What-if"). The caller confirms with the user before calling this.
      */
     suspend fun applyToPlan() {
-        val accounts = container.accountRepository.observeAccounts().first()
-        val defaultAccountId = container.settingsStore.budgetSettings.first().defaultAccountId
-            ?: accounts.firstOrNull()?.id
-            ?: return
+        val defaultAccountId = container.accountRepository.defaultAccountId() ?: return
 
         for (item in itemsFlow.value) {
             when (item.type) {

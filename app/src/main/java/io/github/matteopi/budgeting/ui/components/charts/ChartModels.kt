@@ -21,6 +21,13 @@ data class ForecastChartDay(
     val tier1: Money?,
 )
 
+/**
+ * One account's expected-balance line on the forecast chart's "Each account" view, in display
+ * terms. Colours are assigned by the chart, in the order of the list, from
+ * [ChartColors.accountSeries].
+ */
+data class ForecastChartLine(val label: String, val points: List<Pair<LocalDate, Money>>)
+
 /** One segment of a stacked bar, e.g. one category's spend in a week. [amount] is a positive magnitude. */
 data class StackedBarSegment(val label: String, val color: Color, val amount: Money)
 
