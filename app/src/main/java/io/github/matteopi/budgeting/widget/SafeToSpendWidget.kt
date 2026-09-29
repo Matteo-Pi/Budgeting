@@ -115,7 +115,7 @@ private fun WidgetTheme(theme: AppTheme, darkMode: DarkMode, content: @Composabl
 }
 
 @Composable
-private fun MessageContent(text: String) {
+internal fun MessageContent(text: String) {
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
@@ -128,7 +128,7 @@ private fun MessageContent(text: String) {
 }
 
 @Composable
-private fun WidgetContent(result: ForecastResult, presets: List<Preset>, hideAmounts: Boolean) {
+internal fun WidgetContent(result: ForecastResult, presets: List<Preset>, hideAmounts: Boolean) {
     val size = LocalSize.current
     val isTall = size.height >= TALL_HEIGHT_THRESHOLD
     val isWide = size.width >= WIDE_WIDTH_THRESHOLD
@@ -191,7 +191,7 @@ private fun WidgetContent(result: ForecastResult, presets: List<Preset>, hideAmo
         if (isTall && presets.isNotEmpty()) {
             Spacer(modifier = GlanceModifier.height(8.dp))
             Row(modifier = GlanceModifier.fillMaxWidth()) {
-                presets.forEach { preset ->
+                presets.take(MAX_WIDGET_PRESETS).forEach { preset ->
                     Box(
                         modifier = GlanceModifier
                             .defaultWeight()
