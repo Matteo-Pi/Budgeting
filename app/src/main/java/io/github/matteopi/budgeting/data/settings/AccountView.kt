@@ -69,3 +69,10 @@ fun AccountView.resolveForChart(accounts: List<Account>): AccountView = resolve(
 
 /** [resolve] for the balance setting. */
 fun AccountView.resolveForBalance(accounts: List<Account>): AccountView = resolve(accounts, allowEach = false)
+
+/** The text for this view in a selector: "All accounts", "Each account", or the account's name. */
+fun AccountView.displayName(accounts: List<Account>): String = when (this) {
+    AccountView.Total -> "All accounts"
+    AccountView.Each -> "Each account"
+    is AccountView.Single -> accounts.firstOrNull { it.id == accountId }?.name ?: "All accounts"
+}

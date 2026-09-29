@@ -12,17 +12,20 @@ import io.github.matteopi.budgeting.core.analysis.MonthInOut
 import io.github.matteopi.budgeting.core.analysis.Trends
 import io.github.matteopi.budgeting.core.analysis.WeekTotals
 import io.github.matteopi.budgeting.core.model.Account
+import io.github.matteopi.budgeting.core.model.BudgetSettings
 import io.github.matteopi.budgeting.core.model.Category
 import io.github.matteopi.budgeting.core.model.ForecastMode
-import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.TermPeriod
 import io.github.matteopi.budgeting.core.model.Transaction
+import io.github.matteopi.budgeting.data.settings.AccountView
+import io.github.matteopi.budgeting.data.settings.resolveForChart
 import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 /** The period selector on the Insights screen (docs/PLAN.md §6.5 "Insights"). */
 enum class InsightsPeriod(val label: String) {
@@ -38,7 +41,11 @@ data class InsightsUiState(
     val weeklyByCategory: List<WeekTotals> = emptyList(),
     val thisMonthVsAverage: List<CategoryMonthComparison> = emptyList(),
     val termVsHoliday: List<CategoryRegimeAverage> = emptyList(),
-    val balanceHistory: List<Pair<LocalDate, Money>> = emptyList(),
+    val balanceHistory: List<BalanceHistoryLine> = emptyList(),
+    /** The non-archived accounts, for the account selector above the balance history. */
+    val accounts: List<Account> = emptyList(),
+    /** The account view charted (the persisted one, made safe for the accounts that exist). */
+    val chartView: AccountView = AccountView.Total,
     val monthlyInOut: List<MonthInOut> = emptyList(),
     val selectedCategoryId: Long? = null,
 )
@@ -66,8 +73,14 @@ class InsightsViewModel(private val container: AppContainer) : ViewModel() {
             CoreData(accounts, categories, transactions, terms, today)
         }
 
-        combine(coreFlow, container.settingsStore.budgetSettings, periodFlow, selectedCategoryFlow) { core, settings, period, selectedCategory ->
-            buildState(core, settings.historyStartDate, period, selectedCategory)
+        combine(
+            coreFlow,
+            container.settingsStore.budgetSettings,
+            container.settingsStore.appSettings,
+            periodFlow,
+            selectedCategoryFlow,
+        ) { core, settings, appSettings, period, selectedCategory ->
+            buildState(core, settings, appSettings.chartAccountView, period, selectedCategory)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), InsightsUiState())
 
@@ -79,7 +92,17 @@ class InsightsViewModel(private val container: AppContainer) : ViewModel() {
         selectedCategoryFlow.value = if (selectedCategoryFlow.value == categoryId) null else categoryId
     }
 
-    private fun buildState(core: CoreData, historyStart: LocalDate?, period: InsightsPeriod, selectedCategoryId: Long?): InsightsUiState {
+    fun selectChartView(view: AccountView) {
+        viewModelScope.launch { container.settingsStore.setChartAccountView(view) }
+    }
+
+    private fun buildState(
+        core: CoreData,
+        settings: BudgetSettings,
+        requestedChartView: AccountView,
+        period: InsightsPeriod,
+        selectedCategoryId: Long?,
+    ): InsightsUiState {
         val to = core.today
         val from = when (period) {
             InsightsPeriod.WEEKS_12 -> to.minusWeeks(12)
@@ -93,8 +116,10 @@ class InsightsViewModel(private val container: AppContainer) : ViewModel() {
         }
 
         val weekly = Trends.weeklyByCategory(core.accounts, core.categories, core.transactions, from, to)
-        val termVsHoliday = Trends.termVsHoliday(core.accounts, core.categories, core.transactions, core.terms, historyStart)
-        val balanceHistory = Trends.balanceHistory(core.accounts, core.transactions, from, to)
+        val termVsHoliday = Trends.termVsHoliday(core.accounts, core.categories, core.transactions, core.terms, settings.historyStartDate)
+        val liveAccounts = core.accounts.filter { !it.archived }
+        val chartView = requestedChartView.resolveForChart(liveAccounts)
+        val balanceHistory = InsightsMapping.balanceHistory(chartView, core.accounts, core.transactions, from, to, settings.zeroPoint)
         val monthlyInOut = Trends.monthlyInOut(core.accounts, core.categories, core.transactions, months, to)
 
         val learnedCategoryIds = core.categories.filter { it.forecastMode == ForecastMode.LEARNED }.map { it.id }
@@ -108,6 +133,8 @@ class InsightsViewModel(private val container: AppContainer) : ViewModel() {
             thisMonthVsAverage = monthComparison,
             termVsHoliday = termVsHoliday,
             balanceHistory = balanceHistory,
+            accounts = liveAccounts,
+            chartView = chartView,
             monthlyInOut = monthlyInOut,
             selectedCategoryId = selectedCategoryId,
         )

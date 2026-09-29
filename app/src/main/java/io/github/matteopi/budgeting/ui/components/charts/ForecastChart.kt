@@ -2,6 +2,7 @@ package io.github.matteopi.budgeting.ui.components.charts
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,6 +50,11 @@ private val DAY_MONTH_FORMATTER = DateTimeFormatter.ofPattern("d MMM", Locale.EN
  * in [days] must already be converted to the user's display terms (see
  * [io.github.matteopi.budgeting.core.forecast.Balances.toDisplay]) so this composable stays a
  * pure function of plain data. See docs/PLAN.md §6.11.
+ *
+ * With [lines] set (the "Each account" view) it instead draws one expected-balance line per
+ * account plus a legend, the floor line, term shading and the today marker — no band, buffer line
+ * or baseline. [days] still supplies the date axis and the term shading, and tapping shows every
+ * account's balance for that day.
  */
 @Composable
 fun ForecastChart(
@@ -57,16 +64,18 @@ fun ForecastChart(
     modifier: Modifier = Modifier,
     showTier1: Boolean = false,
     scenario: List<ForecastChartDay>? = null,
+    lines: List<ForecastChartLine>? = null,
     onSelectDay: (LocalDate) -> Unit = {},
 ) {
     if (days.isEmpty()) return
     val colors = rememberChartColors()
     val textMeasurer = rememberTextMeasurer()
     var selected by remember(days) { mutableStateOf<ForecastChartDay?>(null) }
+    val eachAccount = lines != null
 
     Column(modifier = modifier) {
         val infoDay = selected ?: days.firstOrNull { it.date == today } ?: days.first()
-        SelectionLabel(infoDay)
+        if (lines != null) LinesSelectionLabel(infoDay.date, lines) else SelectionLabel(infoDay)
 
         Canvas(
             modifier = Modifier
@@ -97,13 +106,17 @@ fun ForecastChart(
             }
 
             val allValues = mutableListOf(0.0, buffer.pence.toDouble())
-            for (d in days) {
-                allValues += d.p50.pence.toDouble()
-                d.p10?.let { allValues += it.pence.toDouble() }
-                d.p90?.let { allValues += it.pence.toDouble() }
-                if (showTier1) d.tier1?.let { allValues += it.pence.toDouble() }
+            if (lines != null) {
+                for (line in lines) for (point in line.points) allValues += point.second.pence.toDouble()
+            } else {
+                for (d in days) {
+                    allValues += d.p50.pence.toDouble()
+                    d.p10?.let { allValues += it.pence.toDouble() }
+                    d.p90?.let { allValues += it.pence.toDouble() }
+                    if (showTier1) d.tier1?.let { allValues += it.pence.toDouble() }
+                }
+                scenario?.forEach { allValues += it.p50.pence.toDouble() }
             }
-            scenario?.forEach { allValues += it.p50.pence.toDouble() }
             val dataMin = allValues.min()
             val dataMax = allValues.max()
             val rawRange = dataMax - dataMin
@@ -163,7 +176,7 @@ fun ForecastChart(
             }
 
             // P10-P90 uncertainty band.
-            if (days.any { it.p10 != null && it.p90 != null }) {
+            if (!eachAccount && days.any { it.p10 != null && it.p90 != null }) {
                 val band = Path()
                 var started = false
                 for (d in days) {
@@ -196,7 +209,7 @@ fun ForecastChart(
             )
 
             // Buffer line.
-            if (buffer.pence > 0) {
+            if (!eachAccount && buffer.pence > 0) {
                 val bufferY = yFor(buffer.pence)
                 drawLine(
                     color = colors.warning,
@@ -208,7 +221,7 @@ fun ForecastChart(
             }
 
             // Tier-1 dashed baseline.
-            if (showTier1) {
+            if (!eachAccount && showTier1) {
                 val tier1Path = Path()
                 var startedTier1 = false
                 for (d in days) {
@@ -233,17 +246,34 @@ fun ForecastChart(
                 )
             }
 
-            // P50 / expected line.
-            val p50Path = Path()
-            days.forEachIndexed { i, d ->
-                val x = xFor(d.date)
-                val y = yFor(d.p50.pence)
-                if (i == 0) p50Path.moveTo(x, y) else p50Path.lineTo(x, y)
+            if (lines != null) {
+                // One expected-balance line per account.
+                lines.forEachIndexed { index, line ->
+                    val linePath = Path()
+                    line.points.forEachIndexed { i, point ->
+                        val x = xFor(point.first)
+                        val y = yFor(point.second.pence)
+                        if (i == 0) linePath.moveTo(x, y) else linePath.lineTo(x, y)
+                    }
+                    drawPath(
+                        linePath,
+                        color = colors.accountColor(index),
+                        style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round),
+                    )
+                }
+            } else {
+                // P50 / expected line.
+                val p50Path = Path()
+                days.forEachIndexed { i, d ->
+                    val x = xFor(d.date)
+                    val y = yFor(d.p50.pence)
+                    if (i == 0) p50Path.moveTo(x, y) else p50Path.lineTo(x, y)
+                }
+                drawPath(p50Path, color = colors.seriesPrimary, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round))
             }
-            drawPath(p50Path, color = colors.seriesPrimary, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round))
 
             // Scenario overlay (P50 only).
-            if (scenario != null && scenario.isNotEmpty()) {
+            if (!eachAccount && scenario != null && scenario.isNotEmpty()) {
                 val scenarioPath = Path()
                 scenario.forEachIndexed { i, d ->
                     val x = xFor(d.date)
@@ -260,7 +290,11 @@ fun ForecastChart(
             }
         }
 
-        if (showTier1 || scenario != null) {
+        if (lines != null) {
+            Row(modifier = Modifier.padding(top = 4.dp).horizontalScroll(rememberScrollState())) {
+                lines.forEachIndexed { index, line -> LegendItem(line.label, colors.accountColor(index)) }
+            }
+        } else if (showTier1 || scenario != null) {
             Row(modifier = Modifier.padding(top = 4.dp)) {
                 LegendItem("Expected", colors.seriesPrimary)
                 if (showTier1) LegendItem("Tier-1 baseline", colors.secondaryInk)
@@ -294,7 +328,19 @@ private fun SelectionLabel(day: ForecastChartDay) {
 }
 
 @Composable
-private fun LegendItem(label: String, color: Color) {
+private fun LinesSelectionLabel(date: LocalDate, lines: List<ForecastChartLine>) {
+    val values = lines.joinToString(" · ") { line ->
+        val value = line.points.firstOrNull { it.first == date }?.second
+        "${line.label} ${value?.format(showPence = false) ?: "–"}"
+    }
+    Text(
+        text = "${date.format(DAY_MONTH_FORMATTER)}: $values",
+        style = MaterialTheme.typography.bodySmall,
+    )
+}
+
+@Composable
+internal fun LegendItem(label: String, color: Color) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(end = 12.dp)) {
         Canvas(modifier = Modifier.size(8.dp)) { drawCircle(color = color) }
         Spacer(modifier = Modifier.width(4.dp))

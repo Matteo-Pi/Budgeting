@@ -31,8 +31,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.Regime
+import io.github.matteopi.budgeting.ui.components.AccountViewSelector
 import io.github.matteopi.budgeting.ui.components.EmptyState
+import io.github.matteopi.budgeting.ui.components.ForecastErrorCard
 import io.github.matteopi.budgeting.ui.components.MoneyText
 
 /**
@@ -69,7 +72,7 @@ fun TimelineScreen(
             ) { CircularProgressIndicator() }
 
             state.weeks.isEmpty() -> EmptyState(
-                message = "Nothing to show yet.",
+                message = state.error?.let { "Couldn't update the forecast: $it" } ?: "Nothing to show yet.",
                 modifier = Modifier.fillMaxSize().padding(innerPadding),
             )
 
@@ -78,7 +81,39 @@ fun TimelineScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                state.error?.let { error ->
+                    item { ForecastErrorCard(error) }
+                }
+                if (state.accounts.size >= 2) {
+                    item {
+                        AccountViewSelector(
+                            accounts = state.accounts,
+                            selected = state.view,
+                            onSelect = viewModel::selectView,
+                        )
+                    }
+                }
                 items(state.weeks) { week -> WeekCard(week) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BalanceRow(label: String, p10: Money?, p50: Money, p90: Money?) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(end = 8.dp))
+        Column(horizontalAlignment = Alignment.End) {
+            MoneyText(p50, isBalance = true)
+            if (p10 != null && p90 != null) {
+                Text(
+                    "${p10.format(showPence = false)} – ${p90.format(showPence = false)}",
+                    style = MaterialTheme.typography.labelSmall,
+                )
             }
         }
     }
@@ -130,32 +165,35 @@ private fun WeekCard(week: TimelineWeek) {
                 }
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text("Expected spending", style = MaterialTheme.typography.bodyMedium)
-                MoneyText(week.expectedLearned)
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("Balance (end of week)", style = MaterialTheme.typography.bodyMedium)
-                Column(horizontalAlignment = Alignment.End) {
-                    MoneyText(week.endBalanceP50, isBalance = true)
-                    if (week.endBalanceP10 != null && week.endBalanceP90 != null) {
-                        Text(
-                            "${week.endBalanceP10.format(showPence = false)} – ${week.endBalanceP90.format(showPence = false)}",
-                            style = MaterialTheme.typography.labelSmall,
-                        )
-                    }
+            if (week.showPoolFigures) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text("Expected spending", style = MaterialTheme.typography.bodyMedium)
+                    MoneyText(week.expectedLearned)
                 }
             }
 
-            if (week.reserved.pence > 0) {
+            if (week.accountBalances.isEmpty()) {
+                BalanceRow(
+                    label = "Balance (end of week)",
+                    p10 = week.endBalanceP10,
+                    p50 = week.endBalanceP50,
+                    p90 = week.endBalanceP90,
+                )
+            } else {
+                week.accountBalances.forEach { balance ->
+                    BalanceRow(
+                        label = "${balance.name} (end of week)",
+                        p10 = balance.p10,
+                        p50 = balance.p50,
+                        p90 = balance.p90,
+                    )
+                }
+            }
+
+            if (week.showPoolFigures && week.reserved.pence > 0) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,

@@ -1,12 +1,21 @@
 package io.github.matteopi.budgeting.ui.insights
 
+import io.github.matteopi.budgeting.core.analysis.Trends
 import io.github.matteopi.budgeting.core.analysis.WeekTotals
+import io.github.matteopi.budgeting.core.forecast.Balances
+import io.github.matteopi.budgeting.core.model.Account
 import io.github.matteopi.budgeting.core.model.Money
+import io.github.matteopi.budgeting.core.model.Transaction
+import io.github.matteopi.budgeting.core.model.ZeroPoint
+import io.github.matteopi.budgeting.data.settings.AccountView
 import java.time.LocalDate
 import java.time.YearMonth
 
 /** This calendar month's total for a category vs. the average of the other months in the period. */
 data class CategoryMonthComparison(val categoryId: Long, val thisMonth: Money, val average: Money)
+
+/** One balance-history line in display terms; [accountId] is null for the pool total. */
+data class BalanceHistoryLine(val accountId: Long?, val label: String, val points: List<Pair<LocalDate, Money>>)
 
 /**
  * Pure helpers for the Insights screen, built only on [io.github.matteopi.budgeting.core.analysis.Trends]'
@@ -32,6 +41,70 @@ object InsightsMapping {
             }
             CategoryMonthComparison(categoryId, thisMonthTotal, average)
         }
+    }
+
+    /**
+     * The balance-history line(s) for [view], from [from] to [to], converted to display terms:
+     * the pool total ([AccountView.Total]), one account ([AccountView.Single], converted with its
+     * own overdraft) or one line per non-archived account in creation order ([AccountView.Each]).
+     * A single account that is missing or archived falls back to the pool total.
+     *
+     * A single account's history reuses [Trends.balanceHistory] with a one-account list (the
+     * account is treated as a pool member for that call), so it counts every transaction on it,
+     * transfers and opening balance included, like the pool line does.
+     */
+    fun balanceHistory(
+        view: AccountView,
+        accounts: List<Account>,
+        transactions: List<Transaction>,
+        from: LocalDate,
+        to: LocalDate,
+        zeroPoint: ZeroPoint,
+    ): List<BalanceHistoryLine> {
+        val live = accounts.filter { !it.archived }.sortedBy { it.id }
+        return when (view) {
+            AccountView.Total -> listOf(totalLine(accounts, transactions, from, to, zeroPoint))
+            is AccountView.Single -> {
+                val account = live.firstOrNull { it.id == view.accountId }
+                if (account == null) {
+                    listOf(totalLine(accounts, transactions, from, to, zeroPoint))
+                } else {
+                    listOf(accountLine(account, transactions, from, to, zeroPoint))
+                }
+            }
+            AccountView.Each ->
+                if (live.isEmpty()) {
+                    listOf(totalLine(accounts, transactions, from, to, zeroPoint))
+                } else {
+                    live.map { accountLine(it, transactions, from, to, zeroPoint) }
+                }
+        }
+    }
+
+    private fun totalLine(
+        accounts: List<Account>,
+        transactions: List<Transaction>,
+        from: LocalDate,
+        to: LocalDate,
+        zeroPoint: ZeroPoint,
+    ): BalanceHistoryLine {
+        val overdraft = Balances.poolOverdraft(accounts)
+        val points = Trends.balanceHistory(accounts, transactions, from, to)
+            .map { (date, raw) -> date to Balances.toDisplay(raw, overdraft, zeroPoint) }
+        return BalanceHistoryLine(accountId = null, label = "All accounts", points = points)
+    }
+
+    private fun accountLine(
+        account: Account,
+        transactions: List<Transaction>,
+        from: LocalDate,
+        to: LocalDate,
+        zeroPoint: ZeroPoint,
+    ): BalanceHistoryLine {
+        val oneAccount = listOf(account.copy(includeInSafeToSpend = true, archived = false))
+        val points = Trends.balanceHistory(oneAccount, transactions.filter { it.accountId == account.id }, from, to)
+            .map { (date, raw) -> date to Balances.toDisplay(raw, account.overdraftLimit, zeroPoint) }
+        return BalanceHistoryLine(accountId = account.id, label = account.name, points = points)
     }
 
     /** The one weekly total closest to the middle of a sorted-by-value list — a simple, robust median. */

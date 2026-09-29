@@ -43,7 +43,8 @@ object ForecastChartMapping {
         return when (option) {
             ForecastHorizonOption.WEEKS_4 -> minOf(result.today.plusWeeks(4), cap)
             ForecastHorizonOption.WEEKS_12 -> minOf(result.today.plusWeeks(12), cap)
-            ForecastHorizonOption.UNTIL_NEXT_INCOME -> minOf(result.safeToSpend.horizonEnd, cap)
+            // safeToSpend.horizonEnd is now always the forecast end, so "until next income" is the income itself.
+            ForecastHorizonOption.UNTIL_NEXT_INCOME -> minOf(result.safeToSpend.nextMajorIncome?.date ?: cap, cap)
             ForecastHorizonOption.WEEKS_26 -> minOf(result.today.plusWeeks(26), cap)
         }
     }

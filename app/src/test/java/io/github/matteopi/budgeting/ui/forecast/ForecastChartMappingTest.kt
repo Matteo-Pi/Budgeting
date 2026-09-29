@@ -107,6 +107,25 @@ class ForecastChartMappingTest {
     }
 
     @Test
+    fun horizonEndDate_untilNextIncomeStopsAtTheIncomeWhenThereIsOne() {
+        val end = today.plusDays(90)
+        val incomeDate = today.plusDays(21)
+        val base = result(listOf(day(today, 0), day(end, 0)))
+        val income = CommittedFlow(
+            date = incomeDate,
+            amount = Money.pounds(1_000),
+            label = "Student loan",
+            source = io.github.matteopi.budgeting.core.forecast.FlowSource.SCHEDULED,
+            sourceId = 1,
+            categoryId = null,
+            accountId = null,
+            isMajorIncome = true,
+        )
+        val r = base.copy(safeToSpend = base.safeToSpend.copy(nextMajorIncome = income))
+        assertEquals(incomeDate, ForecastChartMapping.horizonEndDate(ForecastHorizonOption.UNTIL_NEXT_INCOME, r))
+    }
+
+    @Test
     fun riskSentence_belowFivePercentIsReassuring() {
         val risk = RiskSummary(
             probBelowFloor = 0.04,

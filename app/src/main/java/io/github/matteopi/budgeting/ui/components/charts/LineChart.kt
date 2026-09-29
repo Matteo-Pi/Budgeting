@@ -1,8 +1,13 @@
 package io.github.matteopi.budgeting.ui.components.charts
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -12,6 +17,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -20,7 +26,8 @@ import java.time.LocalDate
 
 /**
  * One or more lines over time, e.g. balance history. [referenceLine] (default £0) draws a dashed
- * horizontal reference. See docs/PLAN.md §6.11.
+ * horizontal reference. With two or more series a legend (colour + name) is shown under the chart,
+ * so a line is never identified by colour alone. See docs/PLAN.md §6.11.
  */
 @Composable
 fun LineChart(
@@ -33,7 +40,25 @@ fun LineChart(
     val colors = rememberChartColors()
     val textMeasurer = rememberTextMeasurer()
 
-    Canvas(modifier = modifier.fillMaxWidth().height(160.dp)) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        LineChartCanvas(series, points, referenceLine, colors, textMeasurer)
+        if (series.size > 1) {
+            Row(modifier = Modifier.padding(top = 4.dp).horizontalScroll(rememberScrollState())) {
+                series.forEach { s -> LegendItem(s.label, s.color) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LineChartCanvas(
+    series: List<LineChartSeries>,
+    points: List<Pair<LocalDate, Money>>,
+    referenceLine: Money?,
+    colors: ChartColors,
+    textMeasurer: TextMeasurer,
+) {
+    Canvas(modifier = Modifier.fillMaxWidth().height(160.dp)) {
         val plotLeft = 44.dp.toPx()
         val plotTop = 8.dp.toPx()
         val plotBottom = size.height - 8.dp.toPx()
