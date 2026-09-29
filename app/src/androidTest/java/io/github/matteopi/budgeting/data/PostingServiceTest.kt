@@ -20,6 +20,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -290,8 +291,13 @@ class PostingServiceTest {
         )
         val item = addItem("Deposit", account, phone, Money(-5_000), date = today)
 
+        // Line every caller up behind a gate so they really do start at the same moment, as the
+        // app-start posting and the daily worker can.
         coroutineScope {
-            (1..8).map { async(Dispatchers.Default) { posting.postDue(today) } }.awaitAll()
+            val gate = CompletableDeferred<Unit>()
+            val callers = (1..8).map { async(Dispatchers.Default) { gate.await(); posting.postDue(today) } }
+            gate.complete(Unit)
+            callers.awaitAll()
         }
 
         assertEquals(4, postedFromRule(rule.id).size, "four weekly occurrences, each posted once")

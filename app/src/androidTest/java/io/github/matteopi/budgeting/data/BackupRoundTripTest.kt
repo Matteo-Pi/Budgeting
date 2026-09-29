@@ -401,13 +401,16 @@ class BackupRoundTripTest {
         assertEquals(e.settings, a.settings, "budget settings")
     }
 
-    /** The real export path: models -> DTOs -> JSON text -> decoded. */
-    private fun exportAndDecode(data: BackupData, appSettings: Map<String, String> = emptyMap()): BackupDecodeResult.Success {
-        val json = BackupCodec.encode(BackupMapper.toBackup(data, exportedAt = "2026-09-29T12:00:00Z", appSettings = appSettings))
+    /** Decodes backup JSON, failing the test (with the reasons) if the app cannot read its own file. */
+    private fun decodeOrFail(json: String): BackupDecodeResult.Success {
         val decoded = BackupCodec.decode(json)
         return decoded as? BackupDecodeResult.Success
             ?: throw AssertionError("The app's own backup did not decode: $decoded")
     }
+
+    /** The real export path: models -> DTOs -> JSON text -> decoded. */
+    private fun exportAndDecode(data: BackupData, appSettings: Map<String, String> = emptyMap()): BackupDecodeResult.Success =
+        decodeOrFail(BackupCodec.encode(BackupMapper.toBackup(data, exportedAt = "2026-09-29T12:00:00Z", appSettings = appSettings)))
 
     /** An empty database and default budget settings, as after clearing the app's data. */
     private suspend fun clearDatabase() {
@@ -591,9 +594,7 @@ class BackupRoundTripTest {
 
         val json = vm.buildExportJson()
 
-        val decoded = BackupCodec.decode(json)
-        assertTrue(decoded is BackupDecodeResult.Success, "a backup made by the app decodes: $decoded")
-        val success = decoded as BackupDecodeResult.Success
+        val success = decodeOrFail(json)
         assertSameBackup(container.backupRepository.readAll(), success.data)
         assertTrue(success.exportedAt.isNotEmpty())
     }
@@ -617,9 +618,7 @@ class BackupRoundTripTest {
         container.settingsStore.setTheme(AppTheme.PAPER)
         container.settingsStore.setDarkMode(DarkMode.SYSTEM)
 
-        val decoded = BackupCodec.decode(json)
-        assertTrue(decoded is BackupDecodeResult.Success, "decode: $decoded")
-        vm.confirmRestore(decoded as BackupDecodeResult.Success)
+        vm.confirmRestore(decodeOrFail(json))
 
         assertSameBackup(original, container.backupRepository.readAll())
         val after = container.settingsStore.appSettings.first()
@@ -645,9 +644,7 @@ class BackupRoundTripTest {
         clearDatabase()
         container.settingsStore.setChartAccountView(AccountView.Total)
         container.settingsStore.setBalanceView(AccountView.Total)
-        val decoded = BackupCodec.decode(json)
-        assertTrue(decoded is BackupDecodeResult.Success, "decode: $decoded")
-        vm.confirmRestore(decoded as BackupDecodeResult.Success)
+        vm.confirmRestore(decodeOrFail(json))
 
         val after = container.settingsStore.appSettings.first()
         assertEquals(settingsBefore.chartAccountView, after.chartAccountView, "the chart's account view is part of the backup")

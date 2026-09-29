@@ -84,7 +84,11 @@ object DataTestSupport {
     suspend fun accountById(id: Long): Account =
         accounts().firstOrNull { it.id == id } ?: throw AssertionError("No account with id $id")
 
-    /** Creates an account through the repository (so it gets an opening-balance transaction) and returns it as stored. */
+    /**
+     * Creates an account through the repository (so it gets an opening-balance transaction) and returns it as stored.
+     * Waits for the start-up category seeding first: several things a test does next (reconciling, importing,
+     * the forecast) need the categories to exist.
+     */
     suspend fun createAccount(
         name: String,
         type: AccountType = AccountType.CURRENT,
@@ -94,6 +98,7 @@ object DataTestSupport {
         includeInPool: Boolean = true,
         sortOrder: Int = 0,
     ): Account {
+        awaitCategories()
         val id = container.accountRepository.createAccount(
             Account(
                 name = name,

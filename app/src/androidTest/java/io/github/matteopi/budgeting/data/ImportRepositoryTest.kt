@@ -259,6 +259,31 @@ class ImportRepositoryTest {
     }
 
     @Test
+    fun undoingTheOlderImportFirstKeepsTheBalanceHistoryConsistent() = runBlocking<Unit> {
+        // The import screen lists every past batch with an Undo button, in any order.
+        val account = createAccount("Current", opening = Money(50_000), date = today.minusDays(10))
+        val first = importInto(account.id, statement(), fileName = "one.csv")
+        importInto(
+            account.id,
+            listOf(
+                ParsedRow(today.minusDays(90), Money(-1_000), "CARD PAYMENT TO ASDA", null, 0),
+                ParsedRow(today.minusDays(80), Money(2_500), "FASTER PAYMENTS RECEIPT FROM DAD", null, 1),
+            ),
+            fileName = "two.csv",
+        )
+
+        container.importRepository.undoBatch(first.id)
+
+        assertEquals(Money(50_000), DataTestSupport.balance(account.id), "today's balance is right")
+        // Nothing happens on the account between the second file's last row and the day it was opened
+        // (ten days ago), so from that row on the balance is simply what the account opened with.
+        assertEquals(Money(50_000), DataTestSupport.balanceAsOf(account.id, today.minusDays(80)), "after the second file's last row")
+        assertEquals(Money(50_000), DataTestSupport.balanceAsOf(account.id, today.minusDays(41)), "the day before the first file started")
+        assertEquals(Money(50_000), DataTestSupport.balanceAsOf(account.id, today.minusDays(30)), "in the middle of the undone file's range")
+        assertEquals(Money(48_500), assertNotNull(openingBalanceOf(account.id)).amount, "the effective opening balance is 500.00 less the second file's net 15.00")
+    }
+
+    @Test
     fun undoAlsoWorksForRowsThatDoNotMoveTheOpeningBalance() = runBlocking<Unit> {
         val account = createAccount("Current", opening = Money(50_000), date = today.minusDays(30))
         val ledgerBefore = ledger()
