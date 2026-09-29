@@ -293,7 +293,8 @@ private fun ScenarioItemEditor(
     onSave: (ScenarioItem) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState()
+    // Open fully: a form half off the screen hides its later fields and its Save button.
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var type by remember { mutableStateOf(initial?.type ?: ScenarioItemType.ONE_OFF) }
     var label by remember { mutableStateOf(initial?.label ?: "") }
     var isOutflow by remember { mutableStateOf(initial?.amount?.isNegative ?: true) }

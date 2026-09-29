@@ -48,7 +48,8 @@ fun TransactionEditSheet(
     onSaveTransfer: (amount: Money, date: LocalDate, label: String) -> Unit,
     onDelete: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState()
+    // Open fully: a form half off the screen hides its later fields and its Save button.
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         when (row) {
             is ActivityRow.Single -> SingleTransactionEditor(
