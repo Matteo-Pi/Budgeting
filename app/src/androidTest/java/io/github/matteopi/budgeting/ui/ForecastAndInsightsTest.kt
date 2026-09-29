@@ -247,12 +247,14 @@ class ForecastAndInsightsTest : UiTest() {
         val groceriesRow = hasText("Groceries") and hasClickAction()
         waitForExists(groceriesRow, "Groceries in this month vs. average")
         tap(groceriesRow, "the Groceries row")
+        // Its weekly bars open in a card of their own, which the list scrolls to (see the screenshot).
         shot("insights-04-category-detail")
         tap(groceriesRow, "the Groceries row")
         waitForExists(groceriesRow, "the Groceries row after closing its detail")
 
-        // Balance history: the same account views as the forecast chart.
-        scrollIntoView(txt("Balance history"))
+        // Balance history: the same account views as the forecast chart. It is near the end of the list.
+        swipeListUp(3)
+        waitForExists(txt("Balance history"), "the Balance history card")
         waitForExists(selectedChip("All accounts"), "'All accounts' selected by default")
         shot("insights-05-balance-all")
         tapChip("Lloyds current")

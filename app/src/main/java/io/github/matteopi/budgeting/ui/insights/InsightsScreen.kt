@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -18,6 +19,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +54,9 @@ import io.github.matteopi.budgeting.ui.forecast.toShortLabel
  * averages, balance history and income vs. spending, over a chosen period. Tapping a category
  * expands its own weekly bars with a median line (docs/PLAN.md §6.5 "Insights").
  */
+/** The category detail card follows the period chips, weekly spending and this month vs. average. */
+private const val CATEGORY_DETAIL_ITEM_INDEX = 3
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InsightsScreen(
@@ -60,12 +65,20 @@ fun InsightsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val categoryNames = state.categories.associate { it.id to it.name }
+    val listState = rememberLazyListState()
+
+    // A tapped category's weekly bars open as a card below "This month vs. average", usually off
+    // screen: bring it into view so the tap visibly does something.
+    LaunchedEffect(state.selectedCategoryId) {
+        if (state.selectedCategoryId != null) listState.animateScrollToItem(CATEGORY_DETAIL_ITEM_INDEX)
+    }
 
     Scaffold(
         modifier = modifier,
         topBar = { TopAppBar(title = { Text("Insights") }) },
     ) { innerPadding ->
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize().padding(innerPadding),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),

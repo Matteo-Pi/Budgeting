@@ -26,6 +26,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
@@ -560,6 +562,17 @@ abstract class UiTest {
         for (i in 0 until lists) {
             runCatching { compose.onAllNodes(verticalLazyList)[i].performScrollToNode(matcher) }
             if (exists(matcher)) return
+        }
+    }
+
+    /**
+     * Swipes the screen's list up [times] times, like a finger. Unlike the semantics-based scrolls,
+     * this also lays out cards that the list has composed ahead of time but not yet placed on screen.
+     */
+    fun swipeListUp(times: Int = 1) {
+        repeat(times) {
+            compose.onAllNodes(verticalLazyList).onFirst().performTouchInput { swipeUp() }
+            compose.waitForIdle()
         }
     }
 

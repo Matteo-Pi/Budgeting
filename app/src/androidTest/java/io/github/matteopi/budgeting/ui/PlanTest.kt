@@ -202,9 +202,12 @@ class PlanTest : UiTest() {
         val before = blocking { appContainer.planRepository.observeScheduledItems().first() }
         assertTrue("Nothing may be created without dates", before.isEmpty())
 
-        pickDate("Date", shown = today, target = today.plusDays(30), index = 0)
-        pickDate("Date", shown = today, target = today.plusDays(100), index = 1)
-        pickDate("Date", shown = today, target = today.plusDays(170), index = 2)
+        // Each instalment's date field reads "Pick a date" until chosen, so pick the next blank one each
+        // time (the list only lays out the fields on screen, so counting fields by index would not work).
+        for (target in listOf(today.plusDays(30), today.plusDays(100), today.plusDays(170))) {
+            tap(field("Date") and hasText("Pick a date"), "the next blank instalment date")
+            chooseInDatePicker(shown = today, target = target)
+        }
         waitForNoText("Pick a date")
         shot("plan-16-student-loan-dated")
         tapText("Create the three instalments")
@@ -214,6 +217,7 @@ class PlanTest : UiTest() {
         val items = blocking { appContainer.planRepository.observeScheduledItems().first() }
         assertEquals(3, items.size)
         assertEquals(listOf(153_333L, 153_333L, 153_334L), items.sortedBy { it.date }.map { it.amount.pence })
+        assertEquals(listOf(today.plusDays(30), today.plusDays(100), today.plusDays(170)), items.map { it.date }.sorted())
         assertTrue(items.all { it.isMajorIncome && it.postingMode == PostingMode.CONFIRM && it.label == "Student loan" })
         assertEquals(ledger.lloydsId, items.first().accountId)
         shot("plan-17-plan-after-student-loan")
