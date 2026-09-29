@@ -59,6 +59,8 @@ fun BarChart(
         val groupWidth = (size.width - plotLeft) / groups.size
         val gap = 2.dp.toPx()
 
+        // Labels that would overlap the previous one are left out (12 weekly dates don't all fit).
+        var labelsEndX = Float.NEGATIVE_INFINITY
         groups.forEachIndexed { groupIndex, group ->
             val barsCount = group.bars.size.coerceAtLeast(1)
             val barWidth = ((groupWidth * 0.7f - gap * (barsCount - 1)) / barsCount).coerceAtLeast(4f)
@@ -70,10 +72,14 @@ fun BarChart(
                 val barHeight = abs(y - zeroY)
                 drawRect(color = bar.color, topLeft = Offset(x, top), size = Size(barWidth, barHeight))
             }
-            val labelWidth = textMeasurer.measure(group.label, labelStyle).size.width
+            val label = textMeasurer.measure(group.label, labelStyle)
+            val labelWidth = label.size.width
             val labelX = (plotLeft + groupWidth * (groupIndex + 0.5f) - labelWidth / 2f)
                 .coerceIn(0f, (size.width - labelWidth).coerceAtLeast(0f))
-            drawText(textMeasurer, group.label, Offset(labelX, plotBottom + 4.dp.toPx()), labelStyle)
+            if (labelX >= labelsEndX) {
+                drawText(textLayoutResult = label, topLeft = Offset(labelX, plotBottom + 4.dp.toPx()))
+                labelsEndX = labelX + labelWidth + 6.dp.toPx()
+            }
         }
 
         referenceLine?.let { ref ->

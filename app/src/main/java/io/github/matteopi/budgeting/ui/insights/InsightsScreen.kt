@@ -229,7 +229,12 @@ private fun CategoryWeeklyDetail(category: Category, weekly: List<WeekTotals>) {
     BarChart(
         groups = entries.map { BarChartGroup(it.label, listOf(it)) },
         referenceLine = Money(median),
-        referenceLabel = "Median",
+    )
+    // Explained underneath: a label drawn on the chart sat on top of the bars and couldn't be read.
+    Text(
+        text = "Dashed line: your median week, ${Money(median).format()}",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
