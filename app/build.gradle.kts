@@ -110,6 +110,7 @@ dependencies {
     androidTestImplementation(libs.kotlin.test.junit)
     androidTestImplementation(libs.androidx.test.storage)
     androidTestImplementation(libs.androidx.work.testing)
+    androidTestImplementation(libs.androidx.glance.appwidget.testing)
     androidTestUtil(libs.androidx.test.orchestrator)
     androidTestUtil(libs.androidx.test.services)
     debugImplementation(libs.compose.ui.test.manifest)
