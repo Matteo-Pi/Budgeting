@@ -22,11 +22,13 @@ import io.github.matteopi.budgeting.core.model.TermPeriod
 import io.github.matteopi.budgeting.core.model.ZeroPoint
 import io.github.matteopi.budgeting.data.repo.AccountRepository
 import io.github.matteopi.budgeting.data.repo.CategoryRepository
+import io.github.matteopi.budgeting.data.repo.DefaultAccount
 import io.github.matteopi.budgeting.data.repo.PlanRepository
 import io.github.matteopi.budgeting.data.settings.SettingsStore
 import io.github.matteopi.budgeting.domain.Clock
 import io.github.matteopi.budgeting.ui.plan.Direction
 import io.github.matteopi.budgeting.ui.plan.LoanInstalment
+import io.github.matteopi.budgeting.ui.plan.LoanInstalments
 import io.github.matteopi.budgeting.ui.plan.LoanSplit
 import io.github.matteopi.budgeting.ui.plan.signedAmount
 import java.time.LocalDate
@@ -92,7 +94,13 @@ class OnboardingViewModel(
     init {
         viewModelScope.launch {
             accountRepository.observeAccounts().collect { accounts ->
-                _state.update { it.copy(accounts = accounts, loanAccountId = it.loanAccountId ?: accounts.firstOrNull()?.id) }
+                _state.update {
+                    it.copy(
+                        accounts = accounts,
+                        loanAccountId = it.loanAccountId
+                            ?: DefaultAccount.resolveId(accounts, it.budgetSettings.defaultAccountId),
+                    )
+                }
             }
         }
         viewModelScope.launch {
@@ -103,12 +111,15 @@ class OnboardingViewModel(
         viewModelScope.launch {
             planRepository.observeTermPeriods().collect { terms ->
                 _state.update { s ->
-                    // Only set the defaults the first time terms are seen — once the person has
-                    // started editing an instalment date, a later term edit shouldn't reset it.
+                    // Blank instalment dates fill in as terms are added; a date the person has
+                    // already picked is never overwritten by a later term edit.
+                    val defaults = InstalmentDefaults.defaultDates(terms, s.today)
                     val instalments = if (s.loanInstalments.isEmpty()) {
-                        InstalmentDefaults.defaultDates(terms, s.today).map { LoanInstalment(date = it) }
+                        defaults.map { LoanInstalment(date = it) }
                     } else {
-                        s.loanInstalments
+                        s.loanInstalments.mapIndexed { i, inst ->
+                            if (inst.date == null) inst.copy(date = defaults.getOrNull(i)) else inst
+                        }
                     }
                     s.copy(terms = terms, loanInstalments = instalments)
                 }
@@ -124,7 +135,14 @@ class OnboardingViewModel(
             planRepository.observePredictions().collect { predictions -> _state.update { it.copy(predictions = predictions) } }
         }
         viewModelScope.launch {
-            settingsStore.budgetSettings.collect { settings -> _state.update { it.copy(budgetSettings = settings) } }
+            settingsStore.budgetSettings.collect { settings ->
+                _state.update {
+                    it.copy(
+                        budgetSettings = settings,
+                        loanAccountId = it.loanAccountId ?: DefaultAccount.resolveId(it.accounts, settings.defaultAccountId),
+                    )
+                }
+            }
         }
     }
 
@@ -170,7 +188,10 @@ class OnboardingViewModel(
     fun setLoanTotalText(value: String) = _state.update { it.copy(loanTotalText = value, loanErrorMessage = null) }
 
     fun setLoanInstalmentDate(index: Int, date: LocalDate) = _state.update { s ->
-        s.copy(loanInstalments = s.loanInstalments.mapIndexed { i, inst -> if (i == index) inst.copy(date = date) else inst })
+        s.copy(
+            loanInstalments = s.loanInstalments.mapIndexed { i, inst -> if (i == index) inst.copy(date = date) else inst },
+            loanErrorMessage = null,
+        )
     }
 
     fun setLoanInstalmentAmountText(index: Int, text: String) = _state.update { s ->
@@ -196,6 +217,11 @@ class OnboardingViewModel(
             _state.update { it.copy(loanErrorMessage = "Choose an account.") }
             return
         }
+        val dates = LoanInstalments.datesOrNull(current.loanInstalments)
+        if (dates == null) {
+            _state.update { it.copy(loanErrorMessage = LoanInstalments.MISSING_DATE_MESSAGE) }
+            return
+        }
         val amounts: List<Money> = if (current.loanSplitMode) {
             val total = Money.parse(current.loanTotalText)
             if (total == null || total.isZero) {
@@ -212,14 +238,14 @@ class OnboardingViewModel(
             parsed.map { it!! }
         }
         viewModelScope.launch {
-            current.loanInstalments.forEachIndexed { index, instalment ->
+            dates.forEachIndexed { index, date ->
                 planRepository.addScheduledItem(
                     ScheduledItem(
                         label = "Student loan",
                         accountId = accountId,
                         categoryId = category.id,
                         amount = Direction.IN.signedAmount(amounts[index]),
-                        date = instalment.date,
+                        date = date,
                         postingMode = PostingMode.CONFIRM,
                         isMajorIncome = true,
                     ),

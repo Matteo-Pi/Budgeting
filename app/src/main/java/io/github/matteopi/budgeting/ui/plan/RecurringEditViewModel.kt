@@ -16,7 +16,10 @@ import io.github.matteopi.budgeting.core.model.PostingMode
 import io.github.matteopi.budgeting.core.model.RecurringRule
 import io.github.matteopi.budgeting.data.repo.AccountRepository
 import io.github.matteopi.budgeting.data.repo.CategoryRepository
+import io.github.matteopi.budgeting.data.repo.DefaultAccount
 import io.github.matteopi.budgeting.data.repo.PlanRepository
+import io.github.matteopi.budgeting.data.repo.RuleStart
+import io.github.matteopi.budgeting.data.settings.SettingsStore
 import io.github.matteopi.budgeting.domain.Clock
 import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,6 +41,8 @@ data class RecurringEditUiState(
     val frequency: Frequency = Frequency.MONTHLY,
     val intervalText: String = "1",
     val startDate: LocalDate,
+    /** Today, for the "payments before today are treated as already paid" note and the preview. */
+    val today: LocalDate,
     val hasEndDate: Boolean = false,
     val endDate: LocalDate? = null,
     val postingMode: PostingMode = PostingMode.AUTO,
@@ -51,13 +56,20 @@ data class RecurringEditUiState(
     val saved: Boolean = false,
     val showDeleteConfirm: Boolean = false,
 ) {
-    /** The next 3 occurrence dates for the current form values, for the preview. */
+    /** True when the start date is in the past: those earlier payments are treated as already paid. */
+    val startsInPast: Boolean
+        get() = RuleStart.startsInPast(startDate, today)
+
+    /**
+     * The next 3 occurrence dates for the current form values, for the preview: counted from the
+     * start date if it is still ahead, otherwise from tomorrow (earlier ones count as already paid).
+     */
     val previewDates: List<LocalDate>
         get() {
             val interval = intervalText.toIntOrNull() ?: 1
-            val from = startDate
+            val from = if (startDate.isAfter(today)) startDate else today.plusDays(1)
             val to = from.plusYears(10)
-            return Recurrence.occurrences(frequency, interval, from, if (hasEndDate) endDate else null, from, to)
+            return Recurrence.occurrences(frequency, interval, startDate, if (hasEndDate) endDate else null, from, to)
                 .take(3)
         }
 }
@@ -67,20 +79,27 @@ class RecurringEditViewModel(
     private val planRepository: PlanRepository,
     private val categoryRepository: CategoryRepository,
     private val accountRepository: AccountRepository,
+    private val settingsStore: SettingsStore,
     clock: Clock,
 ) : ViewModel() {
-    private val _state = MutableStateFlow(RecurringEditUiState(ruleId = ruleId, startDate = clock.today()))
+    private val _state = MutableStateFlow(
+        RecurringEditUiState(ruleId = ruleId, startDate = clock.today(), today = clock.today()),
+    )
     val state: StateFlow<RecurringEditUiState> = _state.asStateFlow()
 
     init {
         viewModelScope.launch {
-            combine(accountRepository.observeAccounts(), categoryRepository.observeCategories()) { a, c -> a to c }
-                .collect { (accounts, categories) ->
+            combine(
+                accountRepository.observeAccounts(),
+                categoryRepository.observeCategories(),
+                settingsStore.budgetSettings,
+            ) { accounts, categories, settings -> Triple(accounts, categories, settings.defaultAccountId) }
+                .collect { (accounts, categories, defaultAccountId) ->
                     _state.update {
                         it.copy(
                             accounts = accounts,
                             categories = categories,
-                            accountId = it.accountId ?: accounts.firstOrNull()?.id,
+                            accountId = it.accountId ?: DefaultAccount.resolveId(accounts, defaultAccountId),
                         )
                     }
                 }
@@ -240,6 +259,7 @@ class RecurringEditViewModel(
                     planRepository = app.container.planRepository,
                     categoryRepository = app.container.categoryRepository,
                     accountRepository = app.container.accountRepository,
+                    settingsStore = app.container.settingsStore,
                     clock = app.container.clock,
                 )
             }

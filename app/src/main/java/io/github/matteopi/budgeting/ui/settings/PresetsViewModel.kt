@@ -11,7 +11,9 @@ import io.github.matteopi.budgeting.core.model.Category
 import io.github.matteopi.budgeting.core.model.Preset
 import io.github.matteopi.budgeting.data.repo.AccountRepository
 import io.github.matteopi.budgeting.data.repo.CategoryRepository
+import io.github.matteopi.budgeting.data.repo.DefaultAccount
 import io.github.matteopi.budgeting.data.repo.PresetRepository
+import io.github.matteopi.budgeting.data.settings.SettingsStore
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -23,23 +25,28 @@ class PresetsViewModel(
     private val presetRepository: PresetRepository,
     categoryRepository: CategoryRepository,
     accountRepository: AccountRepository,
+    settingsStore: SettingsStore,
 ) : ViewModel() {
 
     data class UiState(
         val presets: List<Preset> = emptyList(),
         val categories: List<Category> = emptyList(),
         val accounts: List<Account> = emptyList(),
+        /** The name of the account presets without an account of their own are logged against. */
+        val defaultAccountName: String? = null,
     )
 
     val uiState: StateFlow<UiState> = combine(
         presetRepository.observePresets(),
         categoryRepository.observeCategories(),
         accountRepository.observeAccounts(),
-    ) { presets, categories, accounts ->
+        settingsStore.budgetSettings,
+    ) { presets, categories, accounts, settings ->
         UiState(
             presets = presets,
             categories = categories.filter { !it.archived },
             accounts = accounts.filter { !it.archived },
+            defaultAccountName = DefaultAccount.resolve(accounts, settings.defaultAccountId)?.name,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UiState())
 
@@ -75,6 +82,7 @@ class PresetsViewModel(
                     presetRepository = container.presetRepository,
                     categoryRepository = container.categoryRepository,
                     accountRepository = container.accountRepository,
+                    settingsStore = container.settingsStore,
                 )
             }
         }

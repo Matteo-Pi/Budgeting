@@ -46,6 +46,7 @@ class AppContainer(context: Context) {
         categoryDao = database.categoryDao(),
         clock = clock,
         widgetUpdater = widgetUpdater,
+        settingsStore = settingsStore,
     )
 
     val transactionRepository = TransactionRepository(
@@ -63,6 +64,7 @@ class AppContainer(context: Context) {
     val planRepository = PlanRepository(
         planDao = database.planDao(),
         widgetUpdater = widgetUpdater,
+        clock = clock,
     )
 
     val scenarioRepository = ScenarioRepository(

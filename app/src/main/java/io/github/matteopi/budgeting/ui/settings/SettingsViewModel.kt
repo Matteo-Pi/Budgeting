@@ -9,9 +9,11 @@ import io.github.matteopi.budgeting.core.model.Account
 import io.github.matteopi.budgeting.core.model.BudgetSettings
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.ZeroPoint
+import io.github.matteopi.budgeting.data.repo.DefaultAccount
 import io.github.matteopi.budgeting.data.settings.AppSettings
 import io.github.matteopi.budgeting.data.settings.AppTheme
 import io.github.matteopi.budgeting.data.settings.DarkMode
+import io.github.matteopi.budgeting.domain.ForecastDiagnostics
 import java.time.DayOfWeek
 import java.time.LocalDate
 import kotlinx.coroutines.flow.SharingStarted
@@ -26,6 +28,10 @@ data class SettingsUiState(
     val budgetSettings: BudgetSettings = BudgetSettings(),
     val appSettings: AppSettings = AppSettings(),
     val accounts: List<Account> = emptyList(),
+    /** The default account as the rest of the app sees it: the chosen one if it is live, else the first created. */
+    val resolvedDefaultAccountId: Long? = null,
+    /** One line for Settings > About saying what the forecast last computed (or why it failed). */
+    val forecastDiagnostics: String = "",
 )
 
 class SettingsViewModel(private val container: AppContainer) : ViewModel() {
@@ -33,8 +39,16 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
         container.settingsStore.budgetSettings,
         container.settingsStore.appSettings,
         container.accountRepository.observeAccounts(),
-    ) { budgetSettings, appSettings, accounts ->
-        SettingsUiState(loaded = true, budgetSettings = budgetSettings, appSettings = appSettings, accounts = accounts)
+        container.forecastService.state,
+    ) { budgetSettings, appSettings, accounts, forecastState ->
+        SettingsUiState(
+            loaded = true,
+            budgetSettings = budgetSettings,
+            appSettings = appSettings,
+            accounts = accounts,
+            resolvedDefaultAccountId = DefaultAccount.resolveId(accounts, budgetSettings.defaultAccountId),
+            forecastDiagnostics = ForecastDiagnostics.describe(forecastState),
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
     fun today(): LocalDate = container.clock.today()

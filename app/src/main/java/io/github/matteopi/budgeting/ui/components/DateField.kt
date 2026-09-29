@@ -32,7 +32,6 @@ fun formatDisplayDate(date: LocalDate): String = date.format(DISPLAY_DATE_FORMAT
  * A read-only field that opens a Material 3 date picker dialog when tapped. [maxDate], if set, disables
  * later dates (e.g. a transaction can't be dated in the future).
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DateField(
     label: String,
@@ -52,34 +51,55 @@ fun DateField(
     )
 
     if (showPicker) {
-        val initialMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
-        val maxMillis = maxDate?.atStartOfDay(ZoneOffset.UTC)?.toInstant()?.toEpochMilli()
-        val selectableDates = remember(maxMillis) {
-            object : SelectableDates {
-                override fun isSelectableDate(utcTimeMillis: Long): Boolean =
-                    maxMillis == null || utcTimeMillis <= maxMillis
-            }
-        }
-        val state = rememberDatePickerState(
-            initialSelectedDateMillis = initialMillis,
-            selectableDates = selectableDates,
+        DatePickerDialogFor(
+            initialDate = date,
+            maxDate = maxDate,
+            onDateChange = onDateChange,
+            onDismiss = { showPicker = false },
         )
-        DatePickerDialog(
-            onDismissRequest = { showPicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    val millis = state.selectedDateMillis
-                    if (millis != null) {
-                        onDateChange(Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate())
-                    }
-                    showPicker = false
-                }) { Text("OK") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPicker = false }) { Text("Cancel") }
-            },
-        ) {
-            DatePicker(state = state)
+    }
+}
+
+/**
+ * The date-picker dialog shared by [DateField] and [OptionalDateField]: opens on [initialDate],
+ * disables dates after [maxDate] (if set), calls [onDateChange] with the chosen date on OK, and
+ * calls [onDismiss] however it closes.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun DatePickerDialogFor(
+    initialDate: LocalDate,
+    maxDate: LocalDate?,
+    onDateChange: (LocalDate) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val initialMillis = initialDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+    val maxMillis = maxDate?.atStartOfDay(ZoneOffset.UTC)?.toInstant()?.toEpochMilli()
+    val selectableDates = remember(maxMillis) {
+        object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+                maxMillis == null || utcTimeMillis <= maxMillis
         }
+    }
+    val state = rememberDatePickerState(
+        initialSelectedDateMillis = initialMillis,
+        selectableDates = selectableDates,
+    )
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = {
+                val millis = state.selectedDateMillis
+                if (millis != null) {
+                    onDateChange(Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate())
+                }
+                onDismiss()
+            }) { Text("OK") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    ) {
+        DatePicker(state = state)
     }
 }

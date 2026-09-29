@@ -101,6 +101,7 @@ fun PresetsScreen(
                         preset = preset,
                         categoryName = state.categories.firstOrNull { it.id == preset.categoryId }?.name ?: "",
                         accountName = state.accounts.firstOrNull { it.id == preset.accountId }?.name,
+                        defaultAccountName = state.defaultAccountName,
                         canMoveUp = index > 0,
                         canMoveDown = index < ordered.lastIndex,
                         onMoveUp = { viewModel.moveUp(preset.id) },
@@ -118,6 +119,7 @@ fun PresetsScreen(
             preset = null,
             categories = state.categories,
             accounts = state.accounts,
+            defaultAccountName = state.defaultAccountName,
             onDismiss = { showAddDialog = false },
             onSave = { preset ->
                 viewModel.save(preset)
@@ -131,6 +133,7 @@ fun PresetsScreen(
             preset = preset,
             categories = state.categories,
             accounts = state.accounts,
+            defaultAccountName = state.defaultAccountName,
             onDismiss = { editingPreset = null },
             onSave = { updated ->
                 viewModel.save(updated)
@@ -158,6 +161,7 @@ private fun PresetRow(
     preset: Preset,
     categoryName: String,
     accountName: String?,
+    defaultAccountName: String?,
     canMoveUp: Boolean,
     canMoveDown: Boolean,
     onMoveUp: () -> Unit,
@@ -171,7 +175,7 @@ private fun PresetRow(
                 Text(preset.label, style = MaterialTheme.typography.titleMedium)
                 val direction = if (preset.flow == CategoryFlow.OUT) "Out" else "In"
                 Text(
-                    text = "$direction · ${preset.amount.format()} · $categoryName · ${accountName ?: "Default account"}",
+                    text = "$direction · ${preset.amount.format()} · $categoryName · ${accountName ?: defaultAccountLabel(defaultAccountName)}",
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
@@ -192,6 +196,7 @@ private fun PresetEditDialog(
     preset: Preset?,
     categories: List<Category>,
     accounts: List<Account>,
+    defaultAccountName: String?,
     onDismiss: () -> Unit,
     onSave: (Preset) -> Unit,
 ) {
@@ -245,7 +250,7 @@ private fun PresetEditDialog(
                 FilterChip(
                     selected = accountId == null,
                     onClick = { accountId = null },
-                    label = { Text("Use default account") },
+                    label = { Text("Use ${defaultAccountLabel(defaultAccountName).replaceFirstChar { it.lowercase() }}") },
                 )
                 AccountPicker(
                     accounts = accounts,
@@ -285,3 +290,7 @@ private fun PresetEditDialog(
         },
     )
 }
+
+/** "Default account" or "Default account (Santander current)": the account a preset without its own is logged against. */
+private fun defaultAccountLabel(defaultAccountName: String?): String =
+    if (defaultAccountName != null) "Default account ($defaultAccountName)" else "Default account"

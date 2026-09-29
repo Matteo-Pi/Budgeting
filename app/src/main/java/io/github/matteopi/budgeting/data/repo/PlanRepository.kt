@@ -7,6 +7,7 @@ import io.github.matteopi.budgeting.core.model.ScheduledItem
 import io.github.matteopi.budgeting.core.model.SinkingFund
 import io.github.matteopi.budgeting.core.model.TermPeriod
 import io.github.matteopi.budgeting.data.db.dao.PlanDao
+import io.github.matteopi.budgeting.domain.Clock
 import io.github.matteopi.budgeting.widget.WidgetUpdater
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -15,13 +16,19 @@ import kotlinx.coroutines.flow.map
 class PlanRepository(
     private val planDao: PlanDao,
     private val widgetUpdater: WidgetUpdater,
+    private val clock: Clock,
 ) {
     // Recurring rules.
     fun observeRecurringRules(): Flow<List<RecurringRule>> =
         planDao.observeRecurringRules().map { list -> list.map { it.toModel() } }
 
+    /**
+     * Inserts [rule]. A rule that starts on or before today is stored as already posted through
+     * today: its earlier payments are in the opening balance and must not be posted again (see
+     * [RuleStart]). This covers the Recurring editor, onboarding and applying a what-if scenario.
+     */
     suspend fun addRecurringRule(rule: RecurringRule): Long {
-        val id = planDao.insertRecurringRule(rule.toEntity())
+        val id = planDao.insertRecurringRule(RuleStart.withInitialPostedThrough(rule, clock.today()).toEntity())
         widgetUpdater.requestUpdate()
         return id
     }

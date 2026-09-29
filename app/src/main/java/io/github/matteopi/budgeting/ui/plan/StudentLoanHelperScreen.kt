@@ -30,7 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.ui.components.AccountPicker
-import io.github.matteopi.budgeting.ui.components.DateField
+import io.github.matteopi.budgeting.ui.components.OptionalDateField
 import io.github.matteopi.budgeting.ui.components.MoneyText
 
 /** Creates the three termly student loan instalments as scheduled items (WP-U3). */
@@ -68,7 +68,8 @@ fun StudentLoanHelperScreen(
             item {
                 Text(
                     text = "Creates three scheduled instalments in the \"${state.category?.name ?: "Student loan"}\" " +
-                        "category, dated to your next three terms. Confirm each one when it arrives.",
+                        "category, dated to your next three terms. If you haven't entered that many terms, " +
+                        "pick the missing dates yourself. Confirm each one when it arrives.",
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
@@ -98,7 +99,7 @@ fun StudentLoanHelperScreen(
             itemsIndexed(state.instalments) { index, instalment ->
                 Column {
                     Text("Instalment ${index + 1}", style = MaterialTheme.typography.titleMedium)
-                    DateField(
+                    OptionalDateField(
                         label = "Date",
                         date = instalment.date,
                         onDateChange = { viewModel.setInstalmentDate(index, it) },

@@ -131,9 +131,15 @@ fun SettingsScreen(
                     BufferField(uiState.budgetSettings.buffer, viewModel::setBuffer)
                 }
                 SectionCard(title = "Default account") {
+                    Text(
+                        "Used by quick add, presets and the widget. Until you choose, it is the first account you created.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(8.dp))
                     AccountPicker(
-                        accounts = uiState.accounts,
-                        selectedAccountId = uiState.budgetSettings.defaultAccountId,
+                        accounts = uiState.accounts.filter { !it.archived },
+                        selectedAccountId = uiState.resolvedDefaultAccountId,
                         onSelect = { id -> viewModel.setDefaultAccountId(id) },
                     )
                 }
@@ -171,7 +177,7 @@ fun SettingsScreen(
                     )
                 }
                 SectionCard(title = "About") {
-                    AboutSection()
+                    AboutSection(forecastDiagnostics = uiState.forecastDiagnostics)
                 }
             }
         }
@@ -445,10 +451,18 @@ private fun DataSection(onOpenStatementImport: () -> Unit, onOpenBackup: () -> U
 }
 
 @Composable
-private fun AboutSection() {
+private fun AboutSection(forecastDiagnostics: String) {
     val context = LocalContext.current
     val versionName = remember {
         runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "unknown"
     }
     Text("Version $versionName", style = MaterialTheme.typography.bodyMedium)
+    if (forecastDiagnostics.isNotEmpty()) {
+        Spacer(Modifier.height(4.dp))
+        Text(
+            forecastDiagnostics,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }

@@ -23,7 +23,7 @@ class LogPresetAction : ActionCallback {
         val presetId = parameters[PresetIdKey] ?: return
         val container = (context.applicationContext as BudgetApp).container
         val preset = container.presetRepository.observePresets().first().firstOrNull { it.id == presetId } ?: return
-        val defaultAccountId = container.settingsStore.budgetSettings.first().defaultAccountId
+        val defaultAccountId = container.accountRepository.defaultAccountId()
         container.transactionRepository.logPreset(preset, defaultAccountId, container.clock.today())
 
         SafeToSpendWidget().updateAll(context)
