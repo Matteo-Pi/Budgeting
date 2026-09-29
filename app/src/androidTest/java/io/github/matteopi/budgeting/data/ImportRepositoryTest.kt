@@ -258,9 +258,14 @@ class ImportRepositoryTest {
         assertTrue(container.importRepository.observeBatches().first().isEmpty())
     }
 
+    /**
+     * The import screen lists every past batch with an Undo button, in any order. The second import's
+     * opening-balance move is built on top of the first import's move (it reverses it), so removing the
+     * first import leaves a reversal with nothing to reverse: today's balance stays right but the history
+     * before the account's opening date reads wrong. Expected to fail until undo handles this.
+     */
     @Test
     fun undoingTheOlderImportFirstKeepsTheBalanceHistoryConsistent() = runBlocking<Unit> {
-        // The import screen lists every past batch with an Undo button, in any order.
         val account = createAccount("Current", opening = Money(50_000), date = today.minusDays(10))
         val first = importInto(account.id, statement(), fileName = "one.csv")
         importInto(

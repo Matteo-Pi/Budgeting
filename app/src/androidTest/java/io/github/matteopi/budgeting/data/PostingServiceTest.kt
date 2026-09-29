@@ -263,12 +263,12 @@ class PostingServiceTest {
     fun callingPostDueTwiceNeverDuplicates() = runBlocking<Unit> {
         val account = createAccount("Current", opening = Money(100_000))
         val gym = DataTestSupport.category("Subscriptions")
-        val phone = DataTestSupport.category("Rent & bills")
+        val bills = DataTestSupport.category("Rent & bills")
         val rule = addRule(
             "Gym", account, gym, Money(-1_000),
             start = today.minusDays(21), frequency = Frequency.WEEKLY, postedThrough = today.minusDays(22),
         )
-        val item = addItem("Deposit", account, phone, Money(-5_000), date = today)
+        val item = addItem("Deposit", account, bills, Money(-5_000), date = today)
 
         posting.postDue(today)
         val afterFirst = transactions().size
@@ -284,12 +284,12 @@ class PostingServiceTest {
     fun concurrentPostDueCallsNeverDuplicate() = runBlocking<Unit> {
         val account = createAccount("Current", opening = Money(100_000))
         val gym = DataTestSupport.category("Subscriptions")
-        val phone = DataTestSupport.category("Rent & bills")
+        val bills = DataTestSupport.category("Rent & bills")
         val rule = addRule(
             "Gym", account, gym, Money(-1_000),
             start = today.minusDays(21), frequency = Frequency.WEEKLY, postedThrough = today.minusDays(22),
         )
-        val item = addItem("Deposit", account, phone, Money(-5_000), date = today)
+        val item = addItem("Deposit", account, bills, Money(-5_000), date = today)
 
         // Line every caller up behind a gate so they really do start at the same moment, as the
         // app-start posting and the daily worker can.
