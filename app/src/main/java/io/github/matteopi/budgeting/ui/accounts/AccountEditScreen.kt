@@ -50,6 +50,8 @@ fun AccountEditScreen(
     accountId: Long?,
     onBack: () -> Unit,
     onSaved: () -> Unit,
+    /** After archiving or deleting: close the edit screen and the account's detail screen behind it. */
+    onRemoved: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AccountEditViewModel = viewModel(factory = remember(accountId) { AccountEditViewModel.factory(accountId) }),
 ) {
@@ -57,8 +59,11 @@ fun AccountEditScreen(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var typeMenuExpanded by remember { mutableStateOf(false) }
 
-    LaunchedEffect(state.saved, state.deleted) {
-        if (state.saved || state.deleted) onSaved()
+    LaunchedEffect(state.saved, state.removed) {
+        when {
+            state.removed -> onRemoved()
+            state.saved -> onSaved()
+        }
     }
 
     Scaffold(

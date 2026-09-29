@@ -23,7 +23,11 @@ import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.TxKind
 import io.github.matteopi.budgeting.ui.components.MoneyText
 
-/** One row on Home's recent activity or the Activity list: a single transaction or a transfer. */
+/**
+ * One row on Home's recent activity, the Activity list or an account's page: a single transaction
+ * or a transfer. A transfer shows the amount received unless [perspectiveAccountId] is the account
+ * it left, where it shows the amount leaving.
+ */
 @Composable
 fun ActivityRowView(
     row: ActivityRow,
@@ -31,6 +35,7 @@ fun ActivityRowView(
     accountsById: Map<Long, Account>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    perspectiveAccountId: Long? = null,
 ) {
     val (title, subtitle, amount, dotColor, badge) = when (row) {
         is ActivityRow.Single -> {
@@ -49,7 +54,8 @@ fun ActivityRowView(
             val fromName = accountsById[row.from.accountId]?.name.orEmpty()
             val toName = accountsById[row.to.accountId]?.name.orEmpty()
             val title = row.from.label.ifBlank { "Transfer" }
-            RowContent(title, "$fromName → $toName", row.to.amount, Color(0xFF9E9E9E), null)
+            val amount = if (perspectiveAccountId == row.from.accountId) row.from.amount else row.to.amount
+            RowContent(title, "$fromName → $toName", amount, Color(0xFF9E9E9E), null)
         }
     }
 

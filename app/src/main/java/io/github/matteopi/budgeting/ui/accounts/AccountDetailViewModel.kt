@@ -85,6 +85,11 @@ class AccountDetailViewModel(
             .filter { it.accountId == accountId }
             .sortedWith(compareByDescending<Transaction> { it.date }.thenByDescending { it.createdAtEpochMillis })
             .take(30)
+        // The other leg of each transfer, so a transfer reads "From → To" rather than as a lone entry.
+        val transferGroups = accountTransactions.mapNotNull { it.transferGroupId }.toSet()
+        val otherLegs = core.transactions.filter { tx ->
+            tx.accountId != accountId && tx.transferGroupId?.let { it in transferGroups } == true
+        }
         AccountDetailUiState(
             loading = false,
             account = account,
@@ -92,7 +97,7 @@ class AccountDetailViewModel(
             zeroPoint = core.zeroPoint,
             rawBalance = raw,
             displayBalance = display,
-            recentRows = ActivityGrouping.buildRows(accountTransactions),
+            recentRows = ActivityGrouping.buildRows(accountTransactions + otherLegs),
             categoriesById = categories.associateBy { it.id },
             accountsById = core.accounts.associateBy { it.id },
             otherAccounts = core.accounts.filter { it.id != accountId && !it.archived },

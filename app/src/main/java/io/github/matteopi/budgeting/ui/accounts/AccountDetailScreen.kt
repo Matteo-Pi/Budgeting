@@ -126,6 +126,7 @@ fun AccountDetailScreen(
                                 categoriesById = state.categoriesById,
                                 accountsById = state.accountsById,
                                 onClick = {},
+                                perspectiveAccountId = accountId,
                             )
                         }
                     }

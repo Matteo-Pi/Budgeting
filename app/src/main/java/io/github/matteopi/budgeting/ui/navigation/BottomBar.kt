@@ -41,12 +41,14 @@ fun BudgetBottomBar(navController: NavHostController) {
                 selected = selected,
                 onClick = {
                     if (!selected) {
-                        // Standard tab behaviour: keep one copy of each tab on top of Home and
-                        // remember each tab's scroll/state, instead of piling up the back stack.
+                        // A tab always opens its own screen, with only Home beneath it so Back
+                        // returns to Home and the back stack never piles up. Sub-screens left open
+                        // (an account page, Regular costs, ...) are not brought back: the routes are
+                        // flat, so a restored sub-screen would leave no tab highlighted and tapping
+                        // the tab again would restore the same sub-screen instead of the tab.
                         navController.navigate(item.route) {
-                            popUpTo<Route.Home> { saveState = true }
+                            popUpTo<Route.Home>()
                             launchSingleTop = true
-                            restoreState = true
                         }
                     }
                 },

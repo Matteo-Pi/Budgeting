@@ -622,7 +622,8 @@ lastExportDate: LocalDate?, theme: AppTheme = PAPER, darkMode: DarkMode = SYSTEM
 
 ### 6.5 Navigation and screens
 Single activity (`MainActivity : FragmentActivity`) + `QuickAddActivity`. Navigation Compose
-with type-safe `@Serializable` routes. Bottom bar (5): **Home, Activity, Forecast, Plan, Insights**.
+with type-safe `@Serializable` routes. Bottom bar (5): **Home, Activity, Forecast, Plan, Insights**. Tapping a tab always opens that tab's own screen with only Home beneath it (sub-screens
+left open on a tab are not restored); archiving or deleting an account closes its detail screen.
 Settings from the Home top bar. Use Material 3; `@OptIn(ExperimentalMaterial3Api::class)`
 where needed (TopAppBar, DatePicker, ModalBottomSheet).
 

@@ -39,7 +39,7 @@ class HomeAndSettingsTest : UiTest() {
 
     /** The chip beside "Your money" (Accounts rows can have the same text, but they come later on the screen). */
     private fun openYourMoneyMenu(currentLabel: String) {
-        tap(hasText(currentLabel) and hasClickAction(), "the account chip on the 'Your money' card", index = 0)
+        tap(hasTestTag("account-view-chip") and hasText(currentLabel), "the account chip on the 'Your money' card")
     }
 
     @Test
@@ -392,7 +392,7 @@ class HomeAndSettingsTest : UiTest() {
         assertTrue("Meal deal is listed first", topOf(txt("Meal deal")) < topOf(txt("Bus")))
 
         // Move the second one up: the order swaps.
-        tapIcon("Move up")
+        tapNearestTo(txt("Bus"), hasContentDescription("Move up") and hasClickAction(), "Bus's Move up button")
         waitFor("Bus to move above Meal deal") { topOf(txt("Bus")) < topOf(txt("Meal deal")) }
         shot("settings-17-presets-reordered")
 

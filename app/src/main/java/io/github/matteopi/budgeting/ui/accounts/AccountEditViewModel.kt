@@ -30,7 +30,8 @@ data class AccountEditUiState(
     val includeInPool: Boolean = true,
     val archived: Boolean = false,
     val saved: Boolean = false,
-    val deleted: Boolean = false,
+    /** The account was archived or deleted, so its own screens (detail and edit) should close. */
+    val removed: Boolean = false,
 ) {
     val isNew: Boolean get() = accountId == null
     val nameValid: Boolean get() = name.isNotBlank()
@@ -114,7 +115,7 @@ class AccountEditViewModel(
         val id = _uiState.value.accountId ?: return
         viewModelScope.launch {
             accountRepository.archive(id)
-            _uiState.update { it.copy(saved = true) }
+            _uiState.update { it.copy(removed = true) }
         }
     }
 
@@ -122,7 +123,7 @@ class AccountEditViewModel(
         val id = _uiState.value.accountId ?: return
         viewModelScope.launch {
             accountRepository.delete(id)
-            _uiState.update { it.copy(deleted = true) }
+            _uiState.update { it.copy(removed = true) }
         }
     }
 

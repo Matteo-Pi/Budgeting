@@ -18,6 +18,7 @@ import java.time.LocalDate
 import kotlinx.coroutines.flow.first
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -27,6 +28,11 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class ForecastAndInsightsTest : UiTest() {
+
+    @Before
+    fun seedBudget() {
+        seedStandardBudget()
+    }
 
     private fun selectedChip(text: String) = hasText(text) and isSelected()
 

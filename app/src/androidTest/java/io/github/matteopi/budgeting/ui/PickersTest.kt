@@ -57,7 +57,7 @@ class PickersTest : UiTest() {
         waitForExists(datePickerButton("OK"), "the date picker")
         shot("pickers-02-date-picker-open")
         val target = otherDayThisMonth(today)
-        tap(dayInDatePicker(target.dayOfMonth), "day ${target.dayOfMonth}")
+        tap(dayInDatePicker(target), "day ${target.dayOfMonth}")
         shot("pickers-03-date-picker-day-chosen")
         tap(datePickerButton("OK"), "OK")
         waitUntilGone(datePickerButton("OK"), "the date picker")
@@ -69,7 +69,7 @@ class PickersTest : UiTest() {
         tapField("End date")
         waitForExists(datePickerButton("Cancel"), "the date picker")
         val other = otherDayThisMonth(today).let { if (it == target) it.plusDays(1) else it }
-        tap(dayInDatePicker(other.dayOfMonth), "day ${other.dayOfMonth}")
+        tap(dayInDatePicker(other), "day ${other.dayOfMonth}")
         tap(datePickerButton("Cancel"), "Cancel")
         waitUntilGone(datePickerButton("OK"), "the date picker")
         assertFieldValue("End date", today.asFieldText())
@@ -117,8 +117,8 @@ class PickersTest : UiTest() {
         waitForExists(datePickerButton("OK"), "the date picker")
         val tomorrow = today.plusDays(1)
         if (tomorrow.month == today.month) {
-            waitForExists(dayInDatePicker(tomorrow.dayOfMonth), "tomorrow's cell")
-            compose.onAllNodes(dayInDatePicker(tomorrow.dayOfMonth))[0].assertIsNotEnabled()
+            waitForExists(dayInDatePicker(tomorrow), "tomorrow's cell")
+            compose.onAllNodes(dayInDatePicker(tomorrow))[0].assertIsNotEnabled()
         }
         shot("pickers-08-date-picker-future-disabled")
 

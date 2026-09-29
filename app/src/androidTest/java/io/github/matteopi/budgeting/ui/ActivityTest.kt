@@ -3,8 +3,11 @@ package io.github.matteopi.budgeting.ui
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelected
+import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.matteopi.budgeting.testing.UiTest
 import io.github.matteopi.budgeting.testing.appContainer
@@ -51,7 +54,9 @@ class ActivityTest : UiTest() {
         waitForExists(row("Top up", "£50.00") and hasText("Lloyds current → Santander current"), "the Top up transfer row")
         waitForExists(hasText("Opening balance") and hasText("Lloyds current · Opening balance"), "Lloyds' opening balance row")
 
-        // Newest day first.
+        // Newest day first. Waiting for the rows above may have scrolled the list, so go back to the top.
+        compose.onAllNodes(hasScrollToIndexAction()).onFirst().performScrollToIndex(0)
+        compose.waitForIdle()
         val order = listOf(
             "Today",
             "Yesterday",

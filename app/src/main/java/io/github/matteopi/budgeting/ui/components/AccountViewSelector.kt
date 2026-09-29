@@ -19,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import io.github.matteopi.budgeting.core.model.Account
 import io.github.matteopi.budgeting.data.settings.AccountView
@@ -81,6 +82,7 @@ fun AccountViewChip(
     Box(modifier = modifier) {
         AssistChip(
             onClick = { expanded = true },
+            modifier = Modifier.testTag("account-view-chip"),
             label = { Text(selected.displayName(accounts)) },
             trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
         )

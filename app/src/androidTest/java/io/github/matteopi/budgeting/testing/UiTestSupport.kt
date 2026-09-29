@@ -11,6 +11,7 @@ import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollToIndexAction
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
@@ -20,6 +21,7 @@ import androidx.compose.ui.test.isSelected
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
@@ -491,7 +493,7 @@ abstract class UiTest {
             node.children.forEach { walk(it, depth + 1) }
         }
         compose.onAllNodes(isRoot()).fetchSemanticsNodes().forEach { walk(it, 0) }
-        sb.toString().take(2200)
+        sb.toString().take(4000)
     }.getOrElse { "(screen dump failed: $it)" }
 
     // ----- waiting -----
@@ -564,6 +566,13 @@ abstract class UiTest {
     /** Scrolls so that the matching node is on screen (lazy lists are searched; failures to scroll are ignored). */
     fun scrollIntoView(matcher: SemanticsMatcher, index: Int = 0) {
         if (!exists(matcher)) scrollLazyListsTo(matcher)
+        // performScrollTo only scrolls the closest scrolling parent, so a chip in a sideways-scrolling
+        // row can stay below the fold of the screen's own scroll. Bring the row itself into view first.
+        runCatching {
+            compose.onAllNodes(hasScrollAction() and hasAnyDescendant(matcher) and hasAnyAncestor(hasScrollAction()))
+                .onFirst()
+                .performScrollTo()
+        }
         runCatching { compose.onAllNodes(matcher)[index].performScrollTo() }
     }
 
@@ -616,8 +625,18 @@ abstract class UiTest {
         compose.waitForIdle()
     }
 
-    /** Taps a bottom-bar tab ("Home", "Activity", "Forecast", "Plan", "Insights"). */
-    fun goToTab(name: String) = tap(clickableText(name), "the '$name' tab")
+    /**
+     * Opens a bottom-bar tab ("Home", "Activity", "Forecast", "Plan", "Insights") at its own screen. A
+     * tab remembers the screen that was open on it (e.g. an account page opened from Home) and brings
+     * it back; no tab is highlighted there, and tapping the tab again goes to the tab's own screen.
+     */
+    fun goToTab(name: String) {
+        val tab = clickableText(name)
+        val selectedTab = hasText(name) and isSelected()
+        tap(tab, "the '$name' tab")
+        if (!exists(selectedTab)) tap(tab, "the '$name' tab again")
+        waitForExists(selectedTab, "the '$name' tab to be selected")
+    }
 
     fun openSettings() {
         tapIcon("Settings")
@@ -689,8 +708,23 @@ abstract class UiTest {
 
     fun datePickerButton(text: String): SemanticsMatcher = hasText(text) and hasClickAction() and inDatePicker
 
-    /** A day cell of the month the picker shows (disabled days have no click action, so it is not required here). */
-    fun dayInDatePicker(day: Int): SemanticsMatcher = hasText(day.toString()) and inDatePicker
+    /**
+     * The cell for [date] in the month the picker shows. Material 3 gives each day cell the full date
+     * as its text for accessibility ("Tuesday, September 15, 2026" in the US, "Tuesday 15 September
+     * 2026" in the UK), not the bare number drawn in it, so the cell is matched on the day number,
+     * full month name and year. (Disabled days have no click action, so it is not required here.)
+     */
+    fun dayInDatePicker(date: LocalDate): SemanticsMatcher {
+        val month = date.month.getDisplayName(java.time.format.TextStyle.FULL, Locale.getDefault())
+        val year = date.year.toString()
+        val day = Regex("(?<![0-9])${date.dayOfMonth}(?![0-9])")
+        return SemanticsMatcher("the date-picker cell for $date") { node ->
+            node.config.getOrNull(SemanticsProperties.Text)?.any {
+                val text = it.text
+                text.contains(month, ignoreCase = true) && text.contains(year) && day.containsMatchIn(text.replace(year, ""))
+            } == true
+        } and inDatePicker
+    }
 
     /**
      * Drives an open Material 3 date-picker dialog: [shown] is the date it opens on (its month is
@@ -707,7 +741,7 @@ abstract class UiTest {
                 "the date picker's '$direction' button",
             )
         }
-        tap(dayInDatePicker(target.dayOfMonth), "day ${target.dayOfMonth} in the date picker")
+        tap(dayInDatePicker(target), "day ${target.dayOfMonth} in the date picker")
         tap(datePickerButton("OK"), "the date picker's OK button")
         waitUntilGone(datePickerButton("OK"), "the date picker")
     }

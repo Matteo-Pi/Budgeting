@@ -129,6 +129,12 @@ fun BudgetNavHost(
                     accountId = args.accountId,
                     onBack = { navController.popBackStack() },
                     onSaved = { navController.popBackStack() },
+                    onRemoved = {
+                        // The account is gone from every list, so don't return to its detail screen.
+                        if (!navController.popBackStack<Route.AccountDetail>(inclusive = true)) {
+                            navController.popBackStack()
+                        }
+                    },
                 )
             }
             composable<Route.Predictions> {

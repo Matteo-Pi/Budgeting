@@ -359,10 +359,15 @@ class PlanTest : UiTest() {
         }
         shot("plan-27-estimate-zero")
 
-        // The filter keeps only categories that still need input, so Groceries drops out.
+        // The filter keeps only estimates that still need input: Groceries' term estimate (now zero)
+        // drops out, while its holiday one, never set, stays. Categories are listed Groceries first,
+        // so the first term row left on screen must belong to a later category.
         tap(isToggleable(), "the 'Needs input only' switch")
-        waitForNoText("Groceries")
         waitForText("Eating out")
+        waitFor("Groceries' term row to drop out") {
+            topOf(hasText("Term") and hasClickAction()) > topOf(txt("Eating out"))
+        }
+        waitForExists(hasText("Holiday") and hasText("Needs input") and hasClickAction(), "a holiday estimate still needing input")
         shot("plan-28-estimates-needs-input-only")
     }
 }
