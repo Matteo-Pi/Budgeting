@@ -555,7 +555,10 @@ Repositories expose core models, never entities. Every write calls
 - `PlanRepository`: CRUD + observe for recurring rules, scheduled items, term periods,
   predictions (upsert by category+regime; delete = back to automatic), sinking funds.
 - `ScenarioRepository`, `PresetRepository`, `ImportRepository` (merchant rules, batches,
-  `importRows(...)` atomically incl. opening-balance adjustment, `undoBatch(id)`),
+  `importRows(...)` atomically incl. opening-balance adjustment, `undoBatch(id)`; the adjustment
+  is one pair of batch-tagged OPENING_BALANCE entries, re-derived from the original opening
+  balance and the imported rows that remain after every import and undo, so batches can be
+  undone in any order),
   `SnapshotRepository`.
 - `BackupRepository`: `readAll(): BackupData` and `replaceAll(data)` (delete every table in
   FK-safe order then insert with original ids, one transaction).
@@ -610,8 +613,10 @@ lastExportDate: LocalDate?, theme: AppTheme = PAPER, darkMode: DarkMode = SYSTEM
 - **Default account**: the first account created becomes the default (changeable in Settings);
   archiving/deleting it moves the default to the earliest remaining account. One resolver
   (`data/repo/DefaultAccount.kt`) is used everywhere.
-- **Recurring rules** inserted with a start date in the past get `postedThrough = today`: past
-  occurrences are already in the opening balance, so they are never posted retroactively.
+- **Recurring rules** inserted with a start date in the past get `postedThrough = today − 1`:
+  earlier occurrences are already in the opening balance, so they are never posted
+  retroactively, while one due today still posts ("Payments before today are treated as
+  already paid").
 - **Student loan helper / onboarding**: instalment dates without a term start are left blank
   ("Pick a date") and required, instead of defaulting to today.
 

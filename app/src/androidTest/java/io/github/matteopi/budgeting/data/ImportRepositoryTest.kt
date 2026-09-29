@@ -54,7 +54,7 @@ class ImportRepositoryTest {
         return rows.mapIndexed { i, row -> SelectedImportRow(row, keys[i], categoryId) }
     }
 
-    /** What the import wizard does: the earliest OPENING_BALANCE entry is the effective opening balance. */
+    /** What the import wizard does. */
     private suspend fun importInto(
         accountId: Long,
         rows: List<ParsedRow>,
@@ -67,7 +67,6 @@ class ImportRepositoryTest {
         fileName = fileName,
         rows = selected(accountId, rows, categoryId),
         rulesToRemember = rules,
-        openingBalanceTransaction = openingBalanceOf(accountId),
         nowMillis = nowMillis,
     )
 
@@ -123,24 +122,19 @@ class ImportRepositoryTest {
     }
 
     @Test
-    fun importingWithoutAnOpeningBalanceJustAddsTheRows() = runBlocking<Unit> {
+    fun importingIntoAnAccountWithNoOpeningBalanceJustAddsTheRows() = runBlocking<Unit> {
         val account = createAccount("Current", opening = Money(50_000), date = today.minusDays(10))
+        // The user deleted the opening balance (the edit sheet allows it, with a warning).
+        container.transactionRepository.delete(assertNotNull(openingBalanceOf(account.id)).id)
         val rows = listOf(
             ParsedRow(today.minusDays(40), Money(-2_000), "CARD PAYMENT TO TESCO", null, 0),
             ParsedRow(today.minusDays(3), Money(-1_000), "CARD PAYMENT TO ALDI", null, 1),
         )
 
-        container.importRepository.importRows(
-            accountId = account.id,
-            fileName = "no-opening.csv",
-            rows = selected(account.id, rows, null),
-            rulesToRemember = emptyList(),
-            openingBalanceTransaction = null,
-            nowMillis = container.clock.nowMillis(),
-        )
+        importInto(account.id, rows, fileName = "no-opening.csv")
 
-        assertTrue(transactions().none { it.kind == TxKind.OPENING_BALANCE && it.importBatchId != null })
-        assertEquals(Money(50_000 - 3_000L), DataTestSupport.balance(account.id))
+        assertTrue(transactions().none { it.kind == TxKind.OPENING_BALANCE })
+        assertEquals(Money(-3_000), DataTestSupport.balance(account.id))
     }
 
     // ---- opening balance ----------------------------------------------------------------------
@@ -259,10 +253,8 @@ class ImportRepositoryTest {
     }
 
     /**
-     * The import screen lists every past batch with an Undo button, in any order. The second import's
-     * opening-balance move is built on top of the first import's move (it reverses it), so removing the
-     * first import leaves a reversal with nothing to reverse: today's balance stays right but the history
-     * before the account's opening date reads wrong. Expected to fail until undo handles this.
+     * The import screen lists every past batch with an Undo button, in any order, so undoing an older
+     * import while a newer one stays must leave the history as if only the newer one had been imported.
      */
     @Test
     fun undoingTheOlderImportFirstKeepsTheBalanceHistoryConsistent() = runBlocking<Unit> {
@@ -286,6 +278,42 @@ class ImportRepositoryTest {
         assertEquals(Money(50_000), DataTestSupport.balanceAsOf(account.id, today.minusDays(41)), "the day before the first file started")
         assertEquals(Money(50_000), DataTestSupport.balanceAsOf(account.id, today.minusDays(30)), "in the middle of the undone file's range")
         assertEquals(Money(48_500), assertNotNull(openingBalanceOf(account.id)).amount, "the effective opening balance is 500.00 less the second file's net 15.00")
+        assertEquals(today.minusDays(91), assertNotNull(openingBalanceOf(account.id)).date)
+        assertEquals(Money(48_500), DataTestSupport.balanceAsOf(account.id, today.minusDays(91)))
+        assertEquals(Money(47_500), DataTestSupport.balanceAsOf(account.id, today.minusDays(90)))
+        assertEquals(2, transactions().count { it.kind == TxKind.OPENING_BALANCE && it.importBatchId != null }, "one move, not a chain")
+    }
+
+    @Test
+    fun undoingEveryImportInAnyOrderRestoresTheOriginalLedger() = runBlocking<Unit> {
+        val account = createAccount("Current", opening = Money(50_000), date = today.minusDays(10))
+        val openingBefore = openingBalanceOf(account.id)
+        val first = importInto(account.id, statement(), fileName = "one.csv")
+        val second = importInto(
+            account.id,
+            listOf(ParsedRow(today.minusDays(90), Money(-1_000), "CARD PAYMENT TO ASDA", null, 0)),
+            fileName = "two.csv",
+        )
+        val third = importInto(
+            account.id,
+            listOf(ParsedRow(today.minusDays(5), Money(-400), "CARD PAYMENT TO GREGGS", null, 0)),
+            fileName = "three.csv",
+        )
+        assertEquals(Money(49_600), DataTestSupport.balance(account.id))
+
+        container.importRepository.undoBatch(second.id)
+        assertEquals(Money(49_600), DataTestSupport.balance(account.id))
+        assertEquals(Money(43_225), assertNotNull(openingBalanceOf(account.id)).amount, "back to the first file's opening balance")
+        assertEquals(today.minusDays(41), assertNotNull(openingBalanceOf(account.id)).date)
+
+        container.importRepository.undoBatch(first.id)
+        assertEquals(Money(49_600), DataTestSupport.balance(account.id))
+        assertEquals(openingBefore, openingBalanceOf(account.id), "only the third file is left and it is after the opening date")
+        assertTrue(transactions().none { it.kind == TxKind.OPENING_BALANCE && it.importBatchId != null })
+
+        container.importRepository.undoBatch(third.id)
+        assertEquals(listOf(openingBefore), transactions())
+        assertEquals(Money(50_000), DataTestSupport.balance(account.id))
     }
 
     @Test

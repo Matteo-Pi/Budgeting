@@ -27,14 +27,22 @@ class RuleStartTest {
     )
 
     @Test
-    fun `a rule starting in the past is posted through today so past payments are not re-posted`() {
+    fun `a rule starting in the past is posted through yesterday so past payments are not re-posted`() {
         val stored = RuleStart.withInitialPostedThrough(rule(start = LocalDate.of(2026, 9, 1)), today)
-        assertEquals(today, stored.postedThrough)
+        assertEquals(today.minusDays(1), stored.postedThrough)
     }
 
     @Test
-    fun `a rule starting today is also posted through today`() {
-        assertEquals(today, RuleStart.withInitialPostedThrough(rule(start = today), today).postedThrough)
+    fun `a rule starting today is left untouched so today's payment is posted`() {
+        assertNull(RuleStart.withInitialPostedThrough(rule(start = today), today).postedThrough)
+    }
+
+    @Test
+    fun `a past-start rule whose payment falls today still posts today's payment`() {
+        // Monthly on the same day of the month as today, started months ago.
+        val stored = RuleStart.withInitialPostedThrough(rule(start = today.minusMonths(2)), today)
+        val from = stored.postedThrough!!.plusDays(1)
+        assertEquals(listOf(today), Recurrence.occurrences(stored, from, today))
     }
 
     @Test

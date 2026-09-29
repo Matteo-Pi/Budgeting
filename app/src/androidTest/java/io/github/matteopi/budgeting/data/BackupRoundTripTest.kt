@@ -91,15 +91,11 @@ class BackupRoundTripTest {
     ): Long {
         val keys = ImportDedupe.importKeys(accountId, rows)
         val selected = rows.mapIndexed { i, row -> SelectedImportRow(row, keys[i], categoryIds[i]) }
-        val opening = transactions()
-            .filter { it.accountId == accountId && it.kind == TxKind.OPENING_BALANCE }
-            .minByOrNull { it.date }
         return container.importRepository.importRows(
             accountId = accountId,
             fileName = "santander.csv",
             rows = selected,
             rulesToRemember = rules,
-            openingBalanceTransaction = opening,
             nowMillis = container.clock.nowMillis(),
         ).id
     }

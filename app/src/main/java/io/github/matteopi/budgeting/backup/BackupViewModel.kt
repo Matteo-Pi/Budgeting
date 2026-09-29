@@ -76,6 +76,8 @@ class BackupViewModel(private val container: AppContainer) : ViewModel() {
         container.settingsStore.setOnboardingDone(restored.onboardingDone)
         container.settingsStore.setTheme(restored.theme)
         container.settingsStore.setDarkMode(restored.darkMode)
+        container.settingsStore.setChartAccountView(restored.chartAccountView)
+        container.settingsStore.setBalanceView(restored.balanceView)
         container.widgetUpdater.requestUpdate()
         _restoreState.value = null
     }

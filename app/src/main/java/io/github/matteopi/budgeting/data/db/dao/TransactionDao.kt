@@ -18,6 +18,9 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE id = :id")
     suspend fun get(id: Long): TransactionEntity?
 
+    @Query("SELECT * FROM transactions WHERE account_id = :accountId")
+    suspend fun getForAccount(accountId: Long): List<TransactionEntity>
+
     @Insert
     suspend fun insert(transaction: TransactionEntity): Long
 

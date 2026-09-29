@@ -20,10 +20,12 @@ object RuleStart {
     fun startsInPast(startDate: LocalDate, today: LocalDate): Boolean = startDate.isBefore(today)
 
     /**
-     * [rule] as it should be first stored: a rule with no `postedThrough` that starts on or before
-     * [today] is marked as posted through [today]; a rule that already carries a `postedThrough`
-     * (a backup restore, say) or starts in the future is left exactly as it is.
+     * [rule] as it should be first stored: a rule with no `postedThrough` that starts before [today]
+     * is marked as posted through yesterday — its earlier payments are already in the opening
+     * balance, so they must not be posted again — while a payment due today is still posted,
+     * matching [PAST_START_NOTE]. A rule that already carries a `postedThrough` (a backup restore,
+     * say) or starts today or later is left exactly as it is.
      */
     fun withInitialPostedThrough(rule: RecurringRule, today: LocalDate): RecurringRule =
-        if (rule.postedThrough == null && !rule.startDate.isAfter(today)) rule.copy(postedThrough = today) else rule
+        if (rule.postedThrough == null && rule.startDate.isBefore(today)) rule.copy(postedThrough = today.minusDays(1)) else rule
 }

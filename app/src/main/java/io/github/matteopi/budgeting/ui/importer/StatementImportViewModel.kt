@@ -18,7 +18,6 @@ import io.github.matteopi.budgeting.core.model.Category
 import io.github.matteopi.budgeting.core.model.ImportBatch
 import io.github.matteopi.budgeting.core.model.MerchantRule
 import io.github.matteopi.budgeting.core.model.Money
-import io.github.matteopi.budgeting.core.model.TxKind
 import io.github.matteopi.budgeting.data.repo.DefaultAccount
 import io.github.matteopi.budgeting.data.repo.SelectedImportRow
 import io.github.matteopi.budgeting.ui.settings.budgetViewModelFactory
@@ -211,18 +210,11 @@ class StatementImportViewModel(private val container: AppContainer) : ViewModel(
                 .filter { it.remember && it.categoryId != null }
                 .map { MerchantRule(merchantKey = it.merchantKey, categoryId = it.categoryId!!) }
 
-            val existing = container.transactionRepository.observeAll().first()
-            val openingBalance = existing
-                .filter { it.accountId == accountId && it.kind == TxKind.OPENING_BALANCE }
-                // The earliest entry is the effective opening balance (later imports move it back).
-                .minByOrNull { it.date }
-
             val batch = container.importRepository.importRows(
                 accountId = accountId,
                 fileName = current.fileName,
                 rows = selectedRows,
                 rulesToRemember = rulesToRemember,
-                openingBalanceTransaction = openingBalance,
                 nowMillis = container.clock.nowMillis(),
             )
 

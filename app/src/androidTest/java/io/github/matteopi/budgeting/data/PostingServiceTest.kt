@@ -136,30 +136,45 @@ class PostingServiceTest {
     // ---- AUTO recurring rules -----------------------------------------------------------------
 
     @Test
-    fun aMonthlyRuleStartingInThePastPostsNothingRetroactively() = runBlocking<Unit> {
+    fun aRuleStartingInThePastPostsNothingRetroactively() = runBlocking<Unit> {
         val account = createAccount("Current", opening = Money(100_000))
-        val rent = DataTestSupport.category("Rent & bills")
+        val gym = DataTestSupport.category("Subscriptions")
 
-        val rule = addRule("Rent", account, rent, Money(-45_000), start = today.minusMonths(3))
+        // Weekly from 22 days ago: occurrences 22, 15, 8 and 1 days ago — all already in the opening balance.
+        val rule = addRule("Gym", account, gym, Money(-1_000), start = today.minusDays(22), frequency = Frequency.WEEKLY)
 
-        assertEquals(today, rule.postedThrough, "past occurrences are already in the opening balance")
+        assertEquals(today.minusDays(1), rule.postedThrough, "past occurrences are already in the opening balance")
         posting.postDue(today)
         assertTrue(postedFromRule(rule.id).isEmpty(), "no past occurrence is posted")
         assertEquals(Money(100_000), DataTestSupport.balance(account.id))
-        assertEquals(today, ruleNow(rule.id).postedThrough)
         assertTrue(posting.pendingConfirmations(today).isEmpty())
     }
 
     @Test
-    fun aRuleStartingTodayIsTreatedAsAlreadyPaid() = runBlocking<Unit> {
+    fun aPastStartRuleStillPostsThePaymentDueToday() = runBlocking<Unit> {
+        val account = createAccount("Current", opening = Money(100_000))
+        val gym = DataTestSupport.category("Subscriptions")
+
+        // Weekly from exactly three weeks ago: one occurrence falls today.
+        val rule = addRule("Gym", account, gym, Money(-1_000), start = today.minusDays(21), frequency = Frequency.WEEKLY)
+        posting.postDue(today)
+        posting.postDue(today)
+
+        assertEquals(listOf(today), postedFromRule(rule.id).map { it.date }, "only today's payment, once")
+        assertEquals(Money(99_000), DataTestSupport.balance(account.id))
+    }
+
+    @Test
+    fun aRuleStartingTodayPostsTodaysPayment() = runBlocking<Unit> {
         val account = createAccount("Current", opening = Money(100_000))
         val rent = DataTestSupport.category("Rent & bills")
 
         val rule = addRule("Rent", account, rent, Money(-45_000), start = today)
 
-        assertEquals(today, rule.postedThrough)
+        assertNull(rule.postedThrough, "nothing before today to treat as paid")
         posting.postDue(today)
-        assertTrue(postedFromRule(rule.id).isEmpty())
+        assertEquals(listOf(today), postedFromRule(rule.id).map { it.date })
+        assertEquals(Money(55_000), DataTestSupport.balance(account.id))
     }
 
     @Test
@@ -210,19 +225,20 @@ class PostingServiceTest {
     fun aRuleFromThePastNextPostsItsNextOccurrenceOnly() = runBlocking<Unit> {
         val account = createAccount("Current", opening = Money(100_000))
         val gym = DataTestSupport.category("Subscriptions")
-        val rule = addRule("Gym", account, gym, Money(-1_000), start = today.minusDays(70), frequency = Frequency.WEEKLY)
-        assertEquals(today, rule.postedThrough)
+        // Weekly from 71 days ago: the last past occurrence was yesterday, the next is in 6 days.
+        val rule = addRule("Gym", account, gym, Money(-1_000), start = today.minusDays(71), frequency = Frequency.WEEKLY)
+        assertEquals(today.minusDays(1), rule.postedThrough)
 
         posting.postDue(today)
         assertTrue(postedFromRule(rule.id).isEmpty())
 
-        posting.postDue(today.plusDays(7))
-        posting.postDue(today.plusDays(7))
-        assertEquals(listOf(today.plusDays(7)), postedFromRule(rule.id).map { it.date })
+        posting.postDue(today.plusDays(6))
+        posting.postDue(today.plusDays(6))
+        assertEquals(listOf(today.plusDays(6)), postedFromRule(rule.id).map { it.date })
 
-        posting.postDue(today.plusDays(21))
+        posting.postDue(today.plusDays(20))
         assertEquals(
-            listOf(today.plusDays(7), today.plusDays(14), today.plusDays(21)),
+            listOf(today.plusDays(6), today.plusDays(13), today.plusDays(20)),
             postedFromRule(rule.id).map { it.date }.sorted(),
         )
     }

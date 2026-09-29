@@ -36,6 +36,9 @@ interface ImportDao {
     @Query("SELECT * FROM import_batches ORDER BY imported_at DESC")
     fun observeBatches(): Flow<List<ImportBatchEntity>>
 
+    @Query("SELECT * FROM import_batches WHERE id = :id")
+    suspend fun getBatch(id: Long): ImportBatchEntity?
+
     @Insert
     suspend fun insertBatch(batch: ImportBatchEntity): Long
 
