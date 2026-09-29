@@ -793,12 +793,18 @@ abstract class UiTest {
 
     fun shot(name: String) {
         compose.waitForIdle()
+        // The semantics tree can be up to date before the frame reaches the screen (the capture is of
+        // the real display), so give a heavy screen like the forecast chart a moment to be drawn.
+        Thread.sleep(SHOT_SETTLE_MS)
+        compose.waitForIdle()
         Screenshots.take(name)
     }
 
     fun isSelectedChip(text: String): Boolean = exists(hasText(text) and isSelected())
 
     companion object {
+        private const val SHOT_SETTLE_MS = 300L
+
         /** Test tag on Home's "Your money" figure (HomeScreen.kt). */
         const val YOUR_MONEY_TAG = "your-money"
 
