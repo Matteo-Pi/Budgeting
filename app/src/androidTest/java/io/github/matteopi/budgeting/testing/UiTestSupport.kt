@@ -17,6 +17,8 @@ import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isPopup
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.isSelected
+import androidx.compose.ui.test.isToggleable
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -620,6 +622,48 @@ abstract class UiTest {
     fun openSettings() {
         tapIcon("Settings")
         waitForText("Money display")
+    }
+
+    /** Index, among all switches on screen, of the one drawn on the same line as the text [label]. */
+    private fun switchIndexNextTo(label: String): Int {
+        val labelY = compose.onAllNodes(hasText(label)).fetchSemanticsNodes().first().boundsInRoot.center.y
+        val switches = compose.onAllNodes(isToggleable()).fetchSemanticsNodes()
+        return switches.indices.minByOrNull { abs(switches[it].boundsInRoot.center.y - labelY) }
+            ?: throw AssertionError("No switch on screen next to '$label'.\nOn screen:\n${screenDump()}")
+    }
+
+    /** Taps the switch that sits on the same line as the text [label] (switch rows are not merged nodes). */
+    fun tapSwitchNextTo(label: String) {
+        waitForExists(hasText(label), "the text '$label'")
+        scrollIntoView(hasText(label))
+        compose.onAllNodes(isToggleable())[switchIndexNextTo(label)].performClick()
+        compose.waitForIdle()
+    }
+
+    /** True if the switch next to [label] is currently on. */
+    fun isSwitchOnNextTo(label: String): Boolean {
+        val node = compose.onAllNodes(isToggleable()).fetchSemanticsNodes()[switchIndexNextTo(label)]
+        return node.config.getOrNull(SemanticsProperties.ToggleableState) == ToggleableState.On
+    }
+
+    fun waitForSwitch(label: String, on: Boolean) =
+        waitFor("the switch next to '$label' to be ${if (on) "on" else "off"}") { isSwitchOnNextTo(label) == on }
+
+    /**
+     * Taps the [target] node that is drawn closest (vertically) to the [anchor] node, for list rows
+     * whose pieces are separate nodes, e.g. a preset row's title and its Delete icon. Rows are far
+     * enough apart that the nearest match is the one in the anchor's own row.
+     */
+    fun tapNearestTo(anchor: SemanticsMatcher, target: SemanticsMatcher, what: String) {
+        waitForExists(anchor, "the row anchor for $what")
+        waitForExists(target, what)
+        scrollIntoView(anchor)
+        val anchorY = compose.onAllNodes(anchor).fetchSemanticsNodes().first().boundsInRoot.center.y
+        val candidates = compose.onAllNodes(target).fetchSemanticsNodes()
+        val index = candidates.indices.minByOrNull { abs(candidates[it].boundsInRoot.center.y - anchorY) }
+            ?: throw AssertionError("No $what near the anchor.\nOn screen:\n${screenDump()}")
+        compose.onAllNodes(target)[index].performClick()
+        compose.waitForIdle()
     }
 
     fun assertEnabled(matcher: SemanticsMatcher, what: String) {
