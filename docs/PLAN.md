@@ -896,6 +896,25 @@ opening balance (the move is now two batch-tagged OPENING_BALANCE entries); back
 transactions before their import batches (FK failure); app lock rebuilding navigation (lock screen is
 now an overlay); daily worker snapshots before any account exists and its widget refresh.
 
+### Testing (2026-09-29)
+- **Core** (`./gradlew -p core test`): 287 JVM tests, including stress/metamorphic suites and a
+  20,000-budget soak (`core/src/test/.../stress/`); forecast invariants include "expected spending
+  + expected income = expected learned flow".
+- **Device tests** (`app/src/androidTest`, run by CI's `device-tests` job on an API 34 emulator,
+  report and screenshots on `refs/ci/device-report`): data layer against the real Room database
+  (`data/`), end-to-end UI with screenshots (`ui/`, helpers in `testing/UiTestSupport.kt`), and the
+  widget (`widget/`: Glance layouts at the three sizes, one-tap preset logging).
+- UI test conventions: tap through `UiTest.tap` (waits for the target to stop moving: screens
+  resize for the keyboard), pick dates with `chooseInDatePicker` (Material 3 day cells carry the
+  full date as text), reach cards far down a list with `swipeListUp`, and never address a field by
+  index in a lazy list (only the rows on screen exist).
+- Bugs found and fixed by these tests: out-of-order import undo corrupting the balance history;
+  restore not bringing back the account views; what-if save navigating off the main thread (crash);
+  a deleted/archived account's page staying open; tabs reopening a stale sub-screen; account-page
+  transfers without a direction; Timeline "expected spending" being net of income; "Quiet week"
+  firing straight after onboarding; the other-income form defaulting to Student loan; Save hidden
+  by the keyboard (quick add, forms); a doubled bottom inset; overlapping chart month labels.
+
 ---
 
 ## 9. Open items and future work
