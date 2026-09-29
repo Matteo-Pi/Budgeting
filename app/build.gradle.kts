@@ -109,6 +109,7 @@ dependencies {
     androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.kotlin.test.junit)
     androidTestImplementation(libs.androidx.test.storage)
+    androidTestImplementation(libs.androidx.work.testing)
     androidTestUtil(libs.androidx.test.orchestrator)
     androidTestUtil(libs.androidx.test.services)
     debugImplementation(libs.compose.ui.test.manifest)
