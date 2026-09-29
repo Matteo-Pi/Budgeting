@@ -613,10 +613,10 @@ lastExportDate: LocalDate?, theme: AppTheme = PAPER, darkMode: DarkMode = SYSTEM
 - **Default account**: the first account created becomes the default (changeable in Settings);
   archiving/deleting it moves the default to the earliest remaining account. One resolver
   (`data/repo/DefaultAccount.kt`) is used everywhere.
-- **Recurring rules** inserted with a start date in the past get `postedThrough = today − 1`:
-  earlier occurrences are already in the opening balance, so they are never posted
-  retroactively, while one due today still posts ("Payments before today are treated as
-  already paid").
+- **Recurring rules** inserted with a start date on or before today get `postedThrough = today`:
+  those occurrences are already in the balance the user entered from their bank app, so they
+  are never posted retroactively; that includes one due today, the default start date (the
+  editor says "Payments up to and including today are treated as already paid").
 - **Student loan helper / onboarding**: instalment dates without a term start are left blank
   ("Pick a date") and required, instead of defaulting to today.
 

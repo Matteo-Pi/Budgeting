@@ -27,7 +27,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class PickersTest : UiTest() {
 
-    private val pastStartNote = "Payments before today are treated as already paid."
+    private val pastStartNote = "Payments up to and including today are treated as already paid."
 
     /** A day in the same month as [today] that is not [today] itself (so the field visibly changes). */
     private fun otherDayThisMonth(today: LocalDate): LocalDate =

@@ -14,6 +14,7 @@ import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.Reconciliation
 import io.github.matteopi.budgeting.core.model.Regime
 import io.github.matteopi.budgeting.core.model.Transaction
+import io.github.matteopi.budgeting.core.model.TxKind
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
@@ -45,6 +46,12 @@ class AnomaliesTest {
 
     private fun tx(categoryId: Long, date: LocalDate, pounds: Long) = Transaction(
         accountId = account.id, amount = Money.pounds(pounds), date = date, categoryId = categoryId,
+    )
+
+    /** The account's opening balance, a month before last week: the user has been tracking since then. */
+    private val opening = Transaction(
+        accountId = account.id, amount = Money.pounds(500), date = lastWeekStart.minusDays(30), categoryId = null,
+        kind = TxKind.OPENING_BALANCE,
     )
 
     private fun input(transactions: List<Transaction>, reconciliations: List<Reconciliation> = emptyList()) = ForecastInput(
@@ -112,7 +119,7 @@ class AnomaliesTest {
     @Test
     fun `quiet week with no reconciliation is flagged as low logging`() {
         // expected 35, actual well under 40% of that (14), no reconciliation in the last 7 days.
-        val transactions = listOf(tx(eatingOut.id, lastWeekStart.plusDays(2), -5))
+        val transactions = listOf(opening, tx(eatingOut.id, lastWeekStart.plusDays(2), -5))
         val result = testForecastResult(today, listOf(estimate(eatingOut, -35)))
         val anomalies = Anomalies.detect(input(transactions), result)
 
@@ -122,8 +129,24 @@ class AnomaliesTest {
     }
 
     @Test
+    fun `low logging is not flagged for a week before the user started tracking`() {
+        // Set up today: the opening balance is today's, so last week had nothing to log.
+        val transactions = listOf(opening.copy(date = today))
+        val result = testForecastResult(today, listOf(estimate(eatingOut, -35)))
+        val anomalies = Anomalies.detect(input(transactions), result)
+        assertTrue(anomalies.none { it.kind == AnomalyKind.LOW_LOGGING })
+    }
+
+    @Test
+    fun `low logging is not flagged when tracking started part-way through last week`() {
+        val transactions = listOf(opening.copy(date = lastWeekStart.plusDays(3)))
+        val result = testForecastResult(today, listOf(estimate(eatingOut, -35)))
+        assertTrue(Anomalies.detect(input(transactions), result).none { it.kind == AnomalyKind.LOW_LOGGING })
+    }
+
+    @Test
     fun `a recent reconciliation suppresses the low logging anomaly`() {
-        val transactions = listOf(tx(eatingOut.id, lastWeekStart.plusDays(2), -5))
+        val transactions = listOf(opening, tx(eatingOut.id, lastWeekStart.plusDays(2), -5))
         val reconciliations = listOf(
             Reconciliation(
                 accountId = account.id, date = today.minusDays(1), expected = Money.ZERO, actual = Money.ZERO,

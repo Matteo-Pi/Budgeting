@@ -138,6 +138,22 @@ class ScenarioEditViewModel(private val container: AppContainer, private val sce
         itemsFlow.value = itemsFlow.value.toMutableList().also { if (index in it.indices) it.removeAt(index) }
     }
 
+    private val closedFlow = MutableStateFlow(false)
+
+    /** True once the draft has been saved and the editor should close. */
+    val closed: StateFlow<Boolean> = closedFlow
+
+    /**
+     * Saves the draft, then signals [closed]. The screen navigates from composition when it sees
+     * that, rather than from the coroutine that did the database write.
+     */
+    fun saveAndClose() {
+        viewModelScope.launch {
+            save()
+            closedFlow.value = true
+        }
+    }
+
     /** Saves the current draft (create or update) and returns its id. */
     suspend fun save(): Long {
         val scenario = Scenario(id = scenarioId ?: 0, name = nameFlow.value, items = itemsFlow.value)

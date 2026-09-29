@@ -33,7 +33,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class PlanTest : UiTest() {
 
-    private val pastStartNote = "Payments before today are treated as already paid."
+    private val pastStartNote = "Payments up to and including today are treated as already paid."
 
     private fun saveButton() = hasText("Save") and hasClickAction()
 
@@ -81,10 +81,9 @@ class PlanTest : UiTest() {
         waitForExists(hasText("Rent") and hasText("-£550.00") and hasText("Next: ${start.plusMonths(1).asShortText()}"), "the Rent row")
         shot("plan-04-recurring-list")
 
-        // The stored rule counts as posted through yesterday (a payment due today would still post);
-        // none is due today, so even the start-of-app posting run adds nothing.
+        // The stored rule counts as posted through today; even the start-of-app posting run adds nothing.
         val rule = blocking { appContainer.planRepository.observeRecurringRules().first().first { it.label == "Rent" } }
-        assertEquals("postedThrough", today.minusDays(1), rule.postedThrough)
+        assertEquals("postedThrough", today, rule.postedThrough)
         blocking { appContainer.postingService.postDue(LocalDate.now()) }
         val posted = blocking { appContainer.transactionRepository.observeAll().first().filter { it.label == "Rent" } }
         assertTrue("No Rent transaction may appear for the past; found $posted", posted.isEmpty())

@@ -100,7 +100,12 @@ object Anomalies {
         val recentReconciliation = input.reconciliations.any {
             !it.date.isBefore(today.minusDays(6)) && !it.date.isAfter(today)
         }
-        if (lastWeekExpected >= LOW_LOGGING_MIN_EXPECTED &&
+        // Only for a week the user was tracking from start to finish: straight after setting the app
+        // up, last week has nothing logged simply because they weren't using it yet.
+        val trackingStart = input.transactions.filter { it.accountId in poolAccountIds }.minOfOrNull { it.date }
+        val trackedAllLastWeek = trackingStart != null && !trackingStart.isAfter(lastWeekStart)
+        if (trackedAllLastWeek &&
+            lastWeekExpected >= LOW_LOGGING_MIN_EXPECTED &&
             lastWeekActual < lastWeekExpected.scale(0.4) &&
             !recentReconciliation
         ) {

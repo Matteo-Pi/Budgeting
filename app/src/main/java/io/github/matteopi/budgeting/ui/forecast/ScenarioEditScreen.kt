@@ -33,6 +33,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -77,6 +78,10 @@ fun ScenarioEditScreen(
     viewModel: ScenarioEditViewModel = viewModel(factory = ScenarioEditViewModel.factory(scenarioId)),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val closed by viewModel.closed.collectAsStateWithLifecycle()
+    LaunchedEffect(closed) {
+        if (closed) onBack()
+    }
     val scope = rememberCoroutineScope()
     var editingIndex by remember { mutableStateOf<Int?>(null) }
     var showEditor by remember { mutableStateOf(false) }
@@ -93,7 +98,7 @@ fun ScenarioEditScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { scope.launch { viewModel.save(); onBack() } }) {
+                    IconButton(onClick = viewModel::saveAndClose) {
                         Icon(Icons.Default.Check, contentDescription = "Save scenario")
                     }
                 },

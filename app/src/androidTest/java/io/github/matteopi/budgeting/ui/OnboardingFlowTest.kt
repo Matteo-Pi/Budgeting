@@ -165,6 +165,8 @@ class OnboardingFlowTest : UiTest() {
         expectAccountRow("Lloyds current", "£6,579.30")
         expectAccountRow("Santander Savings", "£400.00")
         expectAccountRow("Santander current", "£500.00")
+        // Recent activity is below the fold: scroll Home's list down to it first.
+        waitForExists(txt("Opening balance"), "Recent activity")
         waitFor("the three opening balances in Recent activity") { count(txt("Opening balance")) >= 3 }
         shot("onboarding-19-home")
 
