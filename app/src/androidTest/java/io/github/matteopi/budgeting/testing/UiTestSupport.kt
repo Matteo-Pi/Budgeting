@@ -465,6 +465,10 @@ abstract class UiTest {
             ?.config?.getOrNull(SemanticsProperties.Text)?.firstOrNull()?.text
     }.getOrNull()
 
+    /** The top edge (in px, relative to the root) of the first node matching [matcher]; used to check ordering on screen. */
+    fun topOf(matcher: SemanticsMatcher): Float =
+        compose.onAllNodes(matcher).fetchSemanticsNodes().first().boundsInRoot.top
+
     /** The current value of the field with this label, or null. */
     fun fieldValue(label: String, index: Int = 0): String? = runCatching {
         compose.onAllNodes(field(label)).fetchSemanticsNodes().getOrNull(index)
