@@ -7,6 +7,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollToIndexAction
@@ -249,6 +250,34 @@ fun seedPreset(
 }
 
 fun seedScenario(scenario: Scenario): Long = blocking { appContainer.scenarioRepository.addScenario(scenario) }
+
+/** What [seedSmallLedger] created; every date is relative to [today]. */
+class SmallLedger(
+    val today: LocalDate,
+    val lloydsId: Long,
+    val santanderId: Long,
+    val lloydsPence: Long,
+    val santanderPence: Long,
+)
+
+/**
+ * A tiny ledger for Activity tests: Lloyds current GBP 1,000 (overdraft 500) and Santander current
+ * GBP 250, both opened 30 days ago, then Coffee -3.20 (today), Tesco -24.60 (yesterday), a GBP 50
+ * transfer "Top up" Lloyds to Santander (2 days ago), Bus pass -18.00 (3 days ago) and Cafe shifts
+ * +100.00 (5 days ago). Balances today: Lloyds GBP 922.20, Santander GBP 382.00.
+ */
+fun seedSmallLedger(): SmallLedger {
+    val today = LocalDate.now()
+    seedOnboardingDone()
+    val lloyds = seedAccount("Lloyds current", AccountType.CURRENT, 100_000, overdraftPence = 50_000)
+    val santander = seedAccount("Santander current", AccountType.CURRENT, 25_000)
+    seedTransaction(santander, 10_000, today.minusDays(5), "Wages", "Cafe shifts")
+    seedTransaction(santander, -1_800, today.minusDays(3), "Transport", "Bus pass")
+    seedTransfer(lloyds, santander, 5_000, today.minusDays(2), "Top up")
+    seedTransaction(lloyds, -2_460, today.minusDays(1), "Groceries", "Tesco")
+    seedTransaction(lloyds, -320, today, "Eating out", "Coffee")
+    return SmallLedger(today, lloyds, santander, 100_000 - 5_000 - 2_460 - 320, 25_000 + 10_000 - 1_800 + 5_000)
+}
 
 /** What [seedStandardBudget] created, so tests can assert against exact figures. */
 class SeededBudget(
@@ -607,14 +636,21 @@ abstract class UiTest {
 
     // ----- date picker -----
 
+    /** Anything inside the open date-picker dialog (recognised by its OK button, so a dialog behind it is ignored). */
+    val inDatePicker: SemanticsMatcher = hasAnyAncestor(hasAnyDescendant(hasText("OK") and hasClickAction()))
+
+    fun datePickerButton(text: String): SemanticsMatcher = hasText(text) and hasClickAction() and inDatePicker
+
+    /** A day cell of the month the picker shows (disabled days have no click action, so it is not required here). */
+    fun dayInDatePicker(day: Int): SemanticsMatcher = hasText(day.toString()) and inDatePicker
+
     /**
      * Drives an open Material 3 date-picker dialog: [shown] is the date it opens on (its month is
      * what is displayed), [target] the day to choose. Navigates months, taps the day, presses OK and
      * waits for the dialog to close.
      */
     fun chooseInDatePicker(shown: LocalDate, target: LocalDate) {
-        val inDialog = hasAnyAncestor(isDialog())
-        waitForExists(hasText("OK") and hasClickAction() and inDialog, "the date picker's OK button")
+        waitForExists(datePickerButton("OK"), "the date picker's OK button")
         val months = ChronoUnit.MONTHS.between(YearMonth.from(shown), YearMonth.from(target)).toInt()
         val direction = if (months > 0) "next month" else "previous month"
         repeat(abs(months)) {
@@ -623,9 +659,9 @@ abstract class UiTest {
                 "the date picker's '$direction' button",
             )
         }
-        tap(hasText(target.dayOfMonth.toString()) and hasClickAction() and inDialog, "day ${target.dayOfMonth} in the date picker")
-        tap(hasText("OK") and hasClickAction() and inDialog, "the date picker's OK button")
-        waitUntilGone(hasText("OK") and hasClickAction() and inDialog, "the date picker")
+        tap(dayInDatePicker(target.dayOfMonth), "day ${target.dayOfMonth} in the date picker")
+        tap(datePickerButton("OK"), "the date picker's OK button")
+        waitUntilGone(datePickerButton("OK"), "the date picker")
     }
 
     /**
