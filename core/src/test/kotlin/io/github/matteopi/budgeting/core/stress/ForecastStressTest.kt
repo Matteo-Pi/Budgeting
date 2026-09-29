@@ -216,7 +216,7 @@ class ForecastStressTest {
     private fun describe(day: AccountDayForecast) = day.expectedBalance.toString()
 
     private companion object {
-        const val DEFAULT_COUNT = 2000
+        const val DEFAULT_COUNT = 2500
         const val SLOWEST_ALLOWED_NANOS = 3_000_000_000L
     }
 }

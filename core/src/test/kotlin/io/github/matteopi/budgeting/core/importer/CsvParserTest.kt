@@ -72,6 +72,25 @@ class CsvParserTest {
     }
 
     @Test
+    fun `a blank line among the first rows does not change the detected delimiter`() {
+        val rows = listOf(listOf("Date", "Description", "Amount"), listOf("01/01/2026", "Tesco", "-12.50"), listOf("02/01/2026", "Shell", "-30.00"))
+        for (delimiter in listOf(',', ';', '\t')) {
+            val line = { cells: List<String> -> cells.joinToString(delimiter.toString()) }
+            val text = line(rows[0]) + "\n\n" + line(rows[1]) + "\n   \n" + line(rows[2]) + "\n"
+            val table = CsvParser.parse(text)
+            assertEquals(delimiter, table.delimiter, "delimiter '$delimiter'")
+            assertEquals(listOf(rows[0], listOf(""), rows[1], listOf(""), rows[2]), table.rows)
+        }
+    }
+
+    @Test
+    fun `a line of only delimiters still counts towards detecting the delimiter`() {
+        val table = CsvParser.parse("Date;Description;Amount\n;;\n01/01/2026;Tesco;-12.50\n")
+        assertEquals(';', table.delimiter)
+        assertEquals(listOf("", "", ""), table.rows[1])
+    }
+
+    @Test
     fun `no trailing blank row when text ends with a newline`() {
         val table = CsvParser.parse("A,B\n1,2\n")
         assertEquals(2, table.rows.size)

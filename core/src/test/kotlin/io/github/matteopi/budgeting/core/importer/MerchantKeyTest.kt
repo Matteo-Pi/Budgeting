@@ -64,6 +64,41 @@ class MerchantKeyTest {
     }
 
     @Test
+    fun `a prefix padded with extra spaces is still stripped`() {
+        assertEquals("UBER", MerchantKey.normalise("BILL PAYMENT VIA FASTER PAYMENT  TO UBER"))
+        assertEquals("TESCO STORES", MerchantKey.normalise("CARD  PAYMENT TO TESCO STORES"))
+    }
+
+    @Test
+    fun `stacked prefixes are all stripped`() {
+        assertEquals("TESCO", MerchantKey.normalise("PURCHASE CARD PAYMENT TO TESCO"))
+        assertEquals("TESCO", MerchantKey.normalise("PURCHASE PURCHASE PURCHASE TESCO"))
+    }
+
+    @Test
+    fun `a number cut to four digits by the length cap does not survive a second pass`() {
+        // 35 letters, a space, then "12345X": the cap keeps "1234", which is a number of its own.
+        val description = "A".repeat(35) + " 12345X"
+        assertEquals("A".repeat(35), MerchantKey.normalise(description))
+    }
+
+    @Test
+    fun `normalising a key again never changes it`() {
+        val descriptions = listOf(
+            "BILL PAYMENT VIA FASTER PAYMENT  TO UBER *EATS 12345X REF: RENT ON **** 15-09-2026",
+            "PURCHASE CARD PAYMENT TO SLC STUDENT LOANS 12.50 1234567890 AMZN MKTP UK",
+            "CARD PAYMENT TO TESCO STORES 3012 ON 15-09-2026",
+            "A".repeat(35) + " 12345X",
+            "",
+            "   ",
+        )
+        for (description in descriptions) {
+            val once = MerchantKey.normalise(description)
+            assertEquals(once, MerchantKey.normalise(once), "'$description'")
+        }
+    }
+
+    @Test
     fun `collapses repeated whitespace`() {
         assertEquals("TESCO STORES", MerchantKey.normalise("TESCO    STORES"))
     }

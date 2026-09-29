@@ -26,13 +26,38 @@ object MerchantKey {
 
     private const val MAX_LENGTH = 40
 
+    /** More passes than any real description needs; only a pathological input could hit it. */
+    private const val MAX_PASSES = 8
+
+    /**
+     * Normalises until nothing changes any more, so the result is a fixed point and a stored key
+     * normalises to itself. One pass can expose something the next removes: a prefix that only
+     * matches once the spaces inside it collapse ("CARD  PAYMENT TO ..."), a date tail that only
+     * matches once a card mask is gone, a number cut down to four digits by the length cap.
+     */
     fun normalise(description: String): String {
+        var current = normalisePass(description)
+        repeat(MAX_PASSES) {
+            val next = normalisePass(current)
+            if (next == current) return current
+            current = next
+        }
+        return current
+    }
+
+    private fun normalisePass(description: String): String {
         var s = description.trim().uppercase(Locale.UK)
 
-        for (prefix in PREFIXES) {
-            if (s.startsWith(prefix)) {
-                s = s.removePrefix(prefix).trim()
-                break
+        // Strip prefixes repeatedly ("PURCHASE CARD PAYMENT TO ..." carries two).
+        var stripped = true
+        while (stripped) {
+            stripped = false
+            for (prefix in PREFIXES) {
+                if (s.startsWith(prefix)) {
+                    s = s.removePrefix(prefix).trim()
+                    stripped = true
+                    break
+                }
             }
         }
 

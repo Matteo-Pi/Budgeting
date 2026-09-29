@@ -230,7 +230,12 @@ object InputGenerator {
                 startDate = start,
                 endDate = end,
                 postingMode = pick(PostingMode.entries),
-                postedThrough = if (chance(0.5)) null else today.plusDays(betweenL(-120, 15)),
+                // A rule left unposted since 1970 floods tomorrow with thousands of overdue flows; keep that rare.
+                postedThrough = when {
+                    start.isBefore(today.minusDays(400)) && chance(0.85) -> today.plusDays(betweenL(-120, 15))
+                    chance(0.5) -> null
+                    else -> today.plusDays(betweenL(-120, 15))
+                },
                 toAccountId = toAccountId,
                 isMajorIncome = (positive && !transfer && chance(0.4)) || chance(0.03),
                 active = !chance(0.08),
