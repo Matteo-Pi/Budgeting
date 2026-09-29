@@ -69,7 +69,15 @@ object ForecastInvariants {
                 break
             }
         }
-        // Tier 1 adds the same flat learned amount every day on top of the committed flows.
+        // The learned flow splits exactly into spending (out) and income (in).
+        val badSplit = result.days.firstOrNull { day ->
+            day.expectedSpending.pence > 0 || day.expectedIncome.pence < 0 ||
+                day.expectedSpending.pence + day.expectedIncome.pence != day.expectedLearned.pence
+        }
+        f.expect("days.expectedLearned.split", badSplit == null) {
+            "day ${badSplit?.date}: ${badSplit?.expectedSpending} + ${badSplit?.expectedIncome} vs ${badSplit?.expectedLearned}"
+        }
+                // Tier 1 adds the same flat learned amount every day on top of the committed flows.
         if (result.days.size > 2) {
             val steps = (1 until result.days.size).map {
                 result.days[it].tier1Balance.pence - result.days[it - 1].tier1Balance.pence - result.days[it].committedNet.pence

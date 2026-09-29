@@ -118,6 +118,10 @@ data class DayForecast(
     val p90: Money?,
     /** Total sinking-fund money earmarked at the end of this day. */
     val reserved: Money,
+    /** The spending part of [expectedLearned]: learned amounts going out (≤ 0). */
+    val expectedSpending: Money = Money.ZERO,
+    /** The income part of [expectedLearned]: learned amounts coming in, e.g. wages (≥ 0). */
+    val expectedIncome: Money = Money.ZERO,
 )
 
 enum class EstimateSource {

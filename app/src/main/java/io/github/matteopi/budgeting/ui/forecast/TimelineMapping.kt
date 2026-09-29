@@ -32,7 +32,7 @@ data class TimelineWeek(
     val termName: String?,
     /** Committed flows dated within this week, date-sorted (only the chosen account's for a single-account view). */
     val flows: List<CommittedFlow>,
-    /** Sum of expected learned spending over the days of this week (signed; negative = spending). Pool-level. */
+    /** Sum of expected learned flows over the days of this week: spending plus income (signed). Pool-level. */
     val expectedLearned: Money,
     /**
      * End-of-week balance, display terms: the pool's, or the chosen account's for a single-account
@@ -49,6 +49,10 @@ data class TimelineWeek(
     val accountBalances: List<TimelineAccountBalance> = emptyList(),
     /** False for a single-account view, where the pool-level "expected spending" and "reserved" rows would mislead. */
     val showPoolFigures: Boolean = true,
+    /** The spending part of [expectedLearned] (≤ 0). Pool-level. */
+    val expectedSpending: Money = Money.ZERO,
+    /** The income part of [expectedLearned], e.g. wages (≥ 0). Pool-level. */
+    val expectedIncome: Money = Money.ZERO,
 )
 
 /**
@@ -92,6 +96,8 @@ object TimelineMapping {
                 .filter { !it.date.isBefore(weekStart) && !it.date.isAfter(weekEnd) }
                 .sortedBy { it.date }
             val expectedLearned = Money(weekDays.sumOf { it.expectedLearned.pence })
+            val expectedSpending = Money(weekDays.sumOf { it.expectedSpending.pence })
+            val expectedIncome = Money(weekDays.sumOf { it.expectedIncome.pence })
             val regime = Regimes.regimeOfWeek(weekStart, terms)
             val termName = if (regime == Regime.TERM) dominantTermName(weekStart, terms) else null
 
@@ -106,6 +112,8 @@ object TimelineMapping {
                     termName = termName,
                     flows = poolFlows.filter { it.accountId == single.accountId },
                     expectedLearned = expectedLearned,
+                    expectedSpending = expectedSpending,
+                    expectedIncome = expectedIncome,
                     endBalanceP10 = p10,
                     endBalanceP50 = p50,
                     endBalanceP90 = p90,
@@ -138,6 +146,8 @@ object TimelineMapping {
                 termName = termName,
                 flows = poolFlows,
                 expectedLearned = expectedLearned,
+                expectedSpending = expectedSpending,
+                expectedIncome = expectedIncome,
                 endBalanceP10 = p10,
                 endBalanceP50 = p50,
                 endBalanceP90 = p90,

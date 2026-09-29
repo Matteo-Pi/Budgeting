@@ -33,6 +33,7 @@ class TimelineMappingTest {
                 date = date,
                 regime = regimeOf(date),
                 committedNet = Money.ZERO,
+                // £6 a day of spending and £1 of income (e.g. wages): net -£5.
                 expectedLearned = Money(-500),
                 tier1Balance = Money.ZERO,
                 expectedBalance = Money.ZERO,
@@ -40,6 +41,8 @@ class TimelineMappingTest {
                 p50 = Money.ZERO,
                 p90 = Money(1_000),
                 reserved = Money.ZERO,
+                expectedSpending = Money(-600),
+                expectedIncome = Money(100),
             )
         }
         return ForecastResult(
@@ -107,6 +110,8 @@ class TimelineMappingTest {
         }
         assertNotNull(fullWeek)
         assertEquals(Money(-3_500), fullWeek.expectedLearned)
+        assertEquals(Money(-4_200), fullWeek.expectedSpending, "spending is shown apart from income")
+        assertEquals(Money(700), fullWeek.expectedIncome)
     }
 
     @Test

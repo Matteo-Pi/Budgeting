@@ -51,6 +51,8 @@ object ForecastEngine {
 
         val committedNetByDay = ArrayList<Money>(forecastDays.size)
         val expectedLearnedByDay = ArrayList<Money>(forecastDays.size)
+        val expectedSpendingByDay = ArrayList<Money>(forecastDays.size)
+        val expectedIncomeByDay = ArrayList<Money>(forecastDays.size)
         val tier1BalanceByDay = ArrayList<Money>(forecastDays.size)
         val expectedBalanceByDay = ArrayList<Money>(forecastDays.size)
         val reservedByDay = ArrayList<Money>(forecastDays.size)
@@ -61,10 +63,13 @@ object ForecastEngine {
         for ((dayIndex, d) in forecastDays.withIndex()) {
             val committedNet = Money(committedByDate[d].orEmpty().sumOf { it.amount.pence })
             var expectedLearnedPence = 0L
+            var expectedSpendingPence = 0L
+            var expectedIncomePence = 0L
             for ((categoryIndex, c) in learnedCategories.withIndex()) {
                 val pence = categoryDayAmount(c, d, terms, tier2.estimateByKey, tier2.dayOfWeekShares).pence
                 learnedDayPence[categoryIndex][dayIndex] = pence
                 expectedLearnedPence += pence
+                if (pence < 0) expectedSpendingPence += pence else expectedIncomePence += pence
             }
             cumCommitted += committedNet.pence
             cumExpectedLearned += expectedLearnedPence
@@ -72,6 +77,8 @@ object ForecastEngine {
 
             committedNetByDay.add(committedNet)
             expectedLearnedByDay.add(Money(expectedLearnedPence))
+            expectedSpendingByDay.add(Money(expectedSpendingPence))
+            expectedIncomeByDay.add(Money(expectedIncomePence))
             tier1BalanceByDay.add(Money(poolBalanceNow.pence + cumCommitted + cumTier1))
             expectedBalanceByDay.add(Money(poolBalanceNow.pence + cumCommitted + cumExpectedLearned))
             reservedByDay.add(SinkingFunds.totalReserved(input.sinkingFunds, d))
@@ -127,6 +134,8 @@ object ForecastEngine {
                     p50 = tier3?.p50ByDay?.get(i),
                     p90 = tier3?.p90ByDay?.get(i),
                     reserved = reservedByDay[i],
+                    expectedSpending = expectedSpendingByDay[i],
+                    expectedIncome = expectedIncomeByDay[i],
                 ),
             )
         }

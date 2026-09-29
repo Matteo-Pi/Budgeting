@@ -166,12 +166,23 @@ private fun WeekCard(week: TimelineWeek) {
             }
 
             if (week.showPoolFigures) {
+                // Spending and income (e.g. wages) are shown apart: their sum read as "spending"
+                // looked like a small positive amount whenever income outweighed spending.
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text("Expected spending", style = MaterialTheme.typography.bodyMedium)
-                    MoneyText(week.expectedLearned)
+                    MoneyText(week.expectedSpending)
+                }
+                if (!week.expectedIncome.isZero) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text("Expected income", style = MaterialTheme.typography.bodyMedium)
+                        MoneyText(week.expectedIncome)
+                    }
                 }
             }
 
