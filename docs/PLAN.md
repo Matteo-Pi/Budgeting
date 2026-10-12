@@ -1037,3 +1037,48 @@ Formats are unknown until the user provides files (personal details can be remov
 3. App: photo/gallery/share input, ML Kit OCR, review screen, saving with category split.
 4. Store parsers and data-export importers, tuned on the user's samples.
 5. Receipts list and Insights → Items.
+
+### 10.7 Built: capture → review → save (step 3 of §10.6)
+Code is in `app/.../ui/receipts/` (the list/detail screens live in `ui/receipts/list/`).
+- **OCR**: `ReceiptOcr` runs ML Kit's bundled Latin model (`com.google.mlkit:text-recognition:16.0.1`,
+  offline) on an image `Uri` (`InputImage.fromFilePath`, which applies EXIF rotation) or a `Bitmap`;
+  each ML Kit text line becomes a `ReceiptLine` with its box. PDFs are rendered page by page with
+  `PdfRenderer` at 2× on white and stacked (each page's `top` offset by the pages before it); shared
+  text goes straight to `ReceiptParsers.parseText`. `ReceiptReader` picks the path per
+  `ReceiptInputKind` (IMAGE / PDF / TEXT) and throws `NoTextException` when nothing was read.
+- **Inputs**: every input is first copied into `cache/receipts` (`ReceiptFiles`), so the review
+  route is just `Route.ReceiptReview(path, kind)`. *Scan receipt* is a camera icon on Activity's top
+  bar and a chip in quick add; both open `Route.ReceiptScan` (a screen with "Take a photo", the
+  `TakePicture` contract into a `FileProvider` uri, no camera permission, and "Choose from gallery",
+  `PickVisualMedia` images only), which is replaced by the review. Quick add (a separate activity)
+  starts `MainActivity` with `ReceiptFiles.ACTION_SCAN_RECEIPT`. `MainActivity` is a share target for
+  `ACTION_SEND` image/*, application/pdf and text/plain; the stream or text is copied to the cache,
+  then the review route is opened once the NavHost exists (behind the app lock overlay as usual).
+- **Review** (`ReceiptReviewScreen` / `ReceiptReviewViewModel`): thumbnail (tap for full size,
+  pinch to zoom), store, date, total, account, the `ReceiptChecks` result ("Items add up to the total ✓"
+  / "Items are £0.23 more than the total — check the highlighted lines"; low-confidence lines are
+  highlighted while the items do not add up), the match ("Replaces Tesco -£23.45 on Mon 12 Oct" with a
+  switch, default on, else "A new transaction will be added"), and the items with name, qty, price,
+  discount, category, delete and add. Names and categories come from a learned alias
+  (`Aliases.suggest`), else the store's most used category from earlier receipts, else Groceries; a
+  guessed category is marked "Category guessed" until the user picks one. "Set category for all
+  unset" applies to guesses only. Save is disabled while there are no items, an amount is invalid, a
+  name is empty or the total is missing; a mismatch only warns. The raw fields are in a plain
+  `MutableStateFlow` (`edit`) so typing is never delayed; everything derived is in `derived`
+  (`ReceiptReviewRules`, pure).
+- **Save**: `ReceiptSplit.byCategory` → one NORMAL transaction per category ("Tesco" for one part,
+  "Tesco · Groceries" per part; store names Tesco / Sainsbury's / Morrisons / Shop) → `saveReceipt`,
+  replacing the matched transaction when the switch is on. `learnProduct` runs for every item whose
+  name was edited, whose category the user chose, or that came from an alias; a merely guessed
+  category is not stored on the product. The cache file is deleted after saving.
+- **Deviations / decisions**: when a match exists and the switch is on, the new transactions go in the
+  *match's* account (balances stay exactly as they were); picking an account by hand restricts the
+  match to that account. Transactions that already belong to a receipt are never matched again.
+  A future receipt date is replaced by today with a warning. The error state offers *Try again* and
+  *Enter it by hand*. Item fields carry test tags `receipt-item-<key>-<field>` (keys count from 1 in
+  reading order; `ReceiptReviewTags`) so UI tests never address fields by position.
+- **Tests** (device): `ReceiptOcrTest` (synthetic Tesco receipt as a bitmap, an image file and a PDF,
+  ≥ 80% of prices read), `ReceiptReviewViewModelTest` (split, replace, balance, aliases learned and
+  applied to a second receipt, edits and validation), `ui/ReceiptReviewTest` (share a text receipt →
+  fix → categorise → save → Activity; replace switch; typing a receipt in; scan entry points). The
+  camera and gallery pickers themselves are system UI and are not driven by tests.
