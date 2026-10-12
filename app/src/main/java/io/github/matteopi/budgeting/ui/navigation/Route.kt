@@ -34,4 +34,10 @@ sealed interface Route {
     @Serializable data object Backup : Route
     @Serializable data object StatementImport : Route
     @Serializable data object Onboarding : Route
+
+    /** Receipt capture (docs/PLAN.md §10): choose camera or gallery, then continue to [ReceiptReview]. */
+    @Serializable data object ReceiptScan : Route
+
+    /** Review a read receipt before saving: [path] is a file in the app's cache, [kind] a `ReceiptInputKind` name. */
+    @Serializable data class ReceiptReview(val path: String, val kind: String) : Route
 }

@@ -83,6 +83,8 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.work.runtime.ktx)
+    // Receipt OCR: the bundled Latin model, so it works offline and nothing leaves the phone (docs/PLAN.md §10.1).
+    implementation(libs.mlkit.text.recognition)
 
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.graphics)
