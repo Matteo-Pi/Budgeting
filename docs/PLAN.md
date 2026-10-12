@@ -464,6 +464,11 @@ accountStartDate + 1, else today − 6; never after today.
   accounts, categories, transactions, recurringRules, scheduledItems, termPeriods, predictions,
   sinkingFunds, scenarios (with items), presets, merchantRules, reconciliations, importBatches,
   balanceSnapshots, categoryWeekSnapshots, settings: SettingsDto, appSettings: Map<String,String>)`.
+- **Version 2** (current) adds `receipts`, `receiptItems`, `products`, `productAliases` and
+  `TransactionDto.receiptId`; the class keeps the name `BackupV1` and holds versions 1 and 2. All new
+  fields default to empty/null, so a version-1 file still decodes (no receipts); a version above the
+  current one is refused. `decode` also checks the new references (items → receipt/product/category,
+  aliases → product, products → category, transaction → receipt).
 - DTOs use primitives only: ISO date strings, pence as Long, enum names as String. Ids preserved.
 - `BackupMapper.toBackup(data: BackupData, exportedAt: String, appSettings): BackupV1` and
   `fromBackup(b): BackupData` where `BackupData` holds the core model lists + `BudgetSettings`.
@@ -502,7 +507,8 @@ DataStore 1.2.1, Biometric 1.1.0). AGP 9 has **built-in Kotlin**: never apply
 `org.jetbrains.kotlin.android`, never use `kotlinOptions {}` or kapt (Room uses KSP).
 
 ### 6.1 Database (`data/db/`)
-`BudgetDatabase` (Room, `version = 1`, `exportSchema = true`). **Entities use only primitive
+`BudgetDatabase` (Room, `version = 2`, `exportSchema = true`, `@AutoMigration(from = 1, to = 2)`;
+the version-1 schema is committed in `app/schemas/`, and `data/MigrationTest` checks 1 → 2). **Entities use only primitive
 column types** (Long, Int, String, Boolean, nullable variants): dates as `Long` epoch-day,
 money as `Long` pence, enums as `String` names, instants as `Long` epoch millis. No
 TypeConverters needed. Table and column names are snake_case.
@@ -525,6 +531,15 @@ TypeConverters needed. Table and column names are snake_case.
 | import_batches | account_id → CASCADE, imported_at, file_name, row_count, first_date?, last_date? | |
 | balance_snapshots | created_on, target_date, tier, p10?, p50, p90? | unique (created_on, target_date, tier) |
 | category_week_snapshots | created_on, week_start, category_id → CASCADE, tier, predicted | unique (created_on, week_start, category_id, tier) |
+| receipts *(v2)* | store, date, total, source, transaction_id? (informational, no FK), created_at | |
+| receipt_items *(v2)* | receipt_id → receipts CASCADE, product_id? → products SET NULL, raw_name, quantity, weight_grams?, unit_price?, price, discount, category_id? → categories (NO ACTION) | indices on the three FK columns |
+| products *(v2)* | name, category_id? → categories (NO ACTION) | |
+| product_aliases *(v2)* | store, raw_name_key, product_id → products CASCADE | unique (store, raw_name_key) |
+
+Version 2 also adds `transactions.receipt_id INTEGER` (nullable, indexed, **no foreign key**: adding
+one to an existing table would need a table rebuild, so `ReceiptRepository` keeps it consistent).
+The version-1 → 2 change only adds tables and a nullable column, so Room's `@AutoMigration` needs
+no spec; never replace it with a destructive migration. Commit the generated `2.json` next to `1.json`.
 
 Categories are never deleted, only archived (they're referenced by transactions).
 One DAO per table group, e.g. `AccountDao`, `TransactionDao`, `CategoryDao`, `PlanDao`
@@ -560,8 +575,16 @@ Repositories expose core models, never entities. Every write calls
   balance and the imported rows that remain after every import and undo, so batches can be
   undone in any order),
   `SnapshotRepository`.
+- `ReceiptRepository` (§10.3): `observeReceipts/Items/AllItems/Products/Aliases`,
+  `saveReceipt(receipt, items, splitTransactions, replaceTransactionId)` (receipt + deleting the
+  matched transaction + inserting the split transactions with `receiptId` + items, one DB
+  transaction; the amounts are computed by the caller), `deleteReceipt(id, mergeBack)` (merge the
+  splits back into one NORMAL transaction, or keep them and clear `receipt_id`; items cascade) and
+  `learnProduct(store, rawNameKey, name, categoryId)` (upsert product by case-insensitive name and
+  the alias; returns the product id).
 - `BackupRepository`: `readAll(): BackupData` and `replaceAll(data)` (delete every table in
-  FK-safe order then insert with original ids, one transaction).
+  FK-safe order then insert with original ids, one transaction; receipt items/aliases/receipts/
+  products go before categories, and `transactions.receipt_id` is a plain id).
 
 ### 6.3 Settings (`data/settings/SettingsStore.kt`)
 Preferences DataStore named `settings`. Exposes `budgetSettings: Flow<BudgetSettings>`,
@@ -980,7 +1003,7 @@ loyalty data export (JSON/CSV) ──► export parser ────────�
 - `ItemPrices`: per product, price history (unit price per date and store), latest vs previous,
   monthly spend; feeds an Insights card.
 
-### 10.3 Data (`app`, Room version 2 with a hand-written non-destructive `Migration(1, 2)`)
+### 10.3 Data (`app`, Room version 2 with a non-destructive `@AutoMigration(1, 2)`; done)
 - `receipts(id, store, date, total, source, transaction_id?, created_at)`
 - `receipt_items(id, receipt_id, product_id?, raw_name, quantity, unit_price, price, discount, category_id?)`
 - `products(id, name, category_id?)` and `product_aliases(id, store, raw_name_key, product_id)`.

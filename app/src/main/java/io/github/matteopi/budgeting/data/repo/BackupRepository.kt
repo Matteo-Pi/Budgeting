@@ -8,6 +8,7 @@ import io.github.matteopi.budgeting.data.db.dao.CategoryDao
 import io.github.matteopi.budgeting.data.db.dao.ImportDao
 import io.github.matteopi.budgeting.data.db.dao.PlanDao
 import io.github.matteopi.budgeting.data.db.dao.PresetDao
+import io.github.matteopi.budgeting.data.db.dao.ReceiptDao
 import io.github.matteopi.budgeting.data.db.dao.ReconciliationDao
 import io.github.matteopi.budgeting.data.db.dao.ScenarioDao
 import io.github.matteopi.budgeting.data.db.dao.SnapshotDao
@@ -32,6 +33,7 @@ class BackupRepository(
     private val importDao: ImportDao,
     private val reconciliationDao: ReconciliationDao,
     private val snapshotDao: SnapshotDao,
+    private val receiptDao: ReceiptDao,
     private val settingsStore: SettingsStore,
     private val widgetUpdater: WidgetUpdater,
 ) {
@@ -55,12 +57,23 @@ class BackupRepository(
             balanceSnapshots = snapshotDao.allBalanceSnapshots().map { it.toModel() },
             categoryWeekSnapshots = snapshotDao.allCategorySnapshots().map { it.toModel() },
             settings = settingsStore.budgetSettings.first(),
+            receipts = receiptDao.observeReceipts().first().map { it.toModel() },
+            receiptItems = receiptDao.observeAllItems().first().map { it.toModel() },
+            products = receiptDao.observeProducts().first().map { it.toModel() },
+            productAliases = receiptDao.observeAliases().first().map { it.toModel() },
         )
     }
 
     /** Deletes every table (children first) then inserts [data] back with its original ids, atomically. */
     suspend fun replaceAll(data: BackupData) {
         database.withTransaction {
+            // Receipt tables first: items and aliases point at receipts/products, and items and
+            // products point at categories (NO ACTION), so they must go before the categories.
+            // transactions.receipt_id has no foreign key, so transactions can go in any order.
+            receiptDao.deleteAllItems()
+            receiptDao.deleteAllAliases()
+            receiptDao.deleteAllReceipts()
+            receiptDao.deleteAllProducts()
             snapshotDao.deleteAllCategorySnapshots()
             snapshotDao.deleteAllBalanceSnapshots()
             scenarioDao.deleteAllItems()
@@ -96,6 +109,11 @@ class BackupRepository(
                 scenarioDao.insertScenario(scenario.toEntity(createdAt = System.currentTimeMillis()))
                 scenarioDao.insertItems(scenario.items.map { it.toEntity() })
             }
+            // Parents before children: products -> aliases, receipts -> items.
+            receiptDao.insertProducts(data.products.map { it.toEntity() })
+            receiptDao.insertAliases(data.productAliases.map { it.toEntity() })
+            receiptDao.insertReceipts(data.receipts.map { it.toEntity() })
+            receiptDao.insertItems(data.receiptItems.map { it.toEntity() })
             snapshotDao.insertBalanceSnapshots(data.balanceSnapshots.map { it.toEntity() })
             snapshotDao.insertCategorySnapshots(data.categoryWeekSnapshots.map { it.toEntity() })
         }

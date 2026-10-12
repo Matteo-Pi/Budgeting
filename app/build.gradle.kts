@@ -110,6 +110,9 @@ dependencies {
     androidTestImplementation(libs.kotlin.test.junit)
     androidTestImplementation(libs.androidx.test.storage)
     androidTestImplementation(libs.androidx.work.testing)
+    // Migration tests (data/MigrationTest.kt). The Room Gradle plugin adds the schemas folder to the
+    // androidTest assets itself, so no sourceSets entry is needed (a second one would duplicate it).
+    androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.androidx.glance.appwidget.testing)
     androidTestUtil(libs.androidx.test.orchestrator)
     androidTestUtil(libs.androidx.test.services)

@@ -15,6 +15,10 @@ import io.github.matteopi.budgeting.core.model.PostingMode
 import io.github.matteopi.budgeting.core.model.Prediction
 import io.github.matteopi.budgeting.core.model.PredictionMode
 import io.github.matteopi.budgeting.core.model.Preset
+import io.github.matteopi.budgeting.core.model.Product
+import io.github.matteopi.budgeting.core.model.ProductAliasRecord
+import io.github.matteopi.budgeting.core.model.Receipt
+import io.github.matteopi.budgeting.core.model.ReceiptItem
 import io.github.matteopi.budgeting.core.model.Reconciliation
 import io.github.matteopi.budgeting.core.model.RecurringRule
 import io.github.matteopi.budgeting.core.model.Regime
@@ -35,6 +39,10 @@ import io.github.matteopi.budgeting.data.db.entities.ImportBatchEntity
 import io.github.matteopi.budgeting.data.db.entities.MerchantRuleEntity
 import io.github.matteopi.budgeting.data.db.entities.PredictionEntity
 import io.github.matteopi.budgeting.data.db.entities.PresetEntity
+import io.github.matteopi.budgeting.data.db.entities.ProductAliasEntity
+import io.github.matteopi.budgeting.data.db.entities.ProductEntity
+import io.github.matteopi.budgeting.data.db.entities.ReceiptEntity
+import io.github.matteopi.budgeting.data.db.entities.ReceiptItemEntity
 import io.github.matteopi.budgeting.data.db.entities.ReconciliationEntity
 import io.github.matteopi.budgeting.data.db.entities.RecurringRuleEntity
 import io.github.matteopi.budgeting.data.db.entities.ScenarioEntity
@@ -118,6 +126,7 @@ fun TransactionEntity.toModel(): Transaction = Transaction(
     scheduledItemId = scheduledItemId,
     importBatchId = importBatchId,
     importKey = importKey,
+    receiptId = receiptId,
 )
 
 fun Transaction.toEntity(): TransactionEntity = TransactionEntity(
@@ -135,6 +144,7 @@ fun Transaction.toEntity(): TransactionEntity = TransactionEntity(
     scheduledItemId = scheduledItemId,
     importBatchId = importBatchId,
     importKey = importKey,
+    receiptId = receiptId,
 )
 
 // RecurringRule
@@ -415,4 +425,76 @@ fun CategoryWeekSnapshot.toEntity(): CategoryWeekSnapshotEntity = CategoryWeekSn
     categoryId = categoryId,
     tier = tier,
     predicted = predicted.pence,
+)
+
+// Receipt
+
+fun ReceiptEntity.toModel(): Receipt = Receipt(
+    id = id,
+    store = store,
+    date = LocalDate.ofEpochDay(date),
+    total = Money(total),
+    source = source,
+    transactionId = transactionId,
+    createdAtEpochMillis = createdAt,
+)
+
+fun Receipt.toEntity(): ReceiptEntity = ReceiptEntity(
+    id = id,
+    store = store,
+    date = date.toEpochDay(),
+    total = total.pence,
+    source = source,
+    transactionId = transactionId,
+    createdAt = createdAtEpochMillis,
+)
+
+// ReceiptItem
+
+fun ReceiptItemEntity.toModel(): ReceiptItem = ReceiptItem(
+    id = id,
+    receiptId = receiptId,
+    productId = productId,
+    rawName = rawName,
+    quantity = quantity,
+    weightGrams = weightGrams,
+    unitPrice = unitPrice?.let { Money(it) },
+    price = Money(price),
+    discount = Money(discount),
+    categoryId = categoryId,
+)
+
+fun ReceiptItem.toEntity(): ReceiptItemEntity = ReceiptItemEntity(
+    id = id,
+    receiptId = receiptId,
+    productId = productId,
+    rawName = rawName,
+    quantity = quantity,
+    weightGrams = weightGrams,
+    unitPrice = unitPrice?.pence,
+    price = price.pence,
+    discount = discount.pence,
+    categoryId = categoryId,
+)
+
+// Product
+
+fun ProductEntity.toModel(): Product = Product(id = id, name = name, categoryId = categoryId)
+
+fun Product.toEntity(): ProductEntity = ProductEntity(id = id, name = name, categoryId = categoryId)
+
+// ProductAliasRecord
+
+fun ProductAliasEntity.toModel(): ProductAliasRecord = ProductAliasRecord(
+    id = id,
+    store = store,
+    rawNameKey = rawNameKey,
+    productId = productId,
+)
+
+fun ProductAliasRecord.toEntity(): ProductAliasEntity = ProductAliasEntity(
+    id = id,
+    store = store,
+    rawNameKey = rawNameKey,
+    productId = productId,
 )

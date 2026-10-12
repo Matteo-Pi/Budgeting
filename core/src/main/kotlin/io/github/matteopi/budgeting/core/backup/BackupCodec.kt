@@ -16,7 +16,7 @@ sealed class BackupDecodeResult {
     data class Failure(val errors: List<String>) : BackupDecodeResult()
 }
 
-/** JSON encode/decode for [BackupV1], with validation. See docs/PLAN.md §5.17. */
+/** JSON encode/decode for [BackupV1] (versions 1 and 2), with validation. See docs/PLAN.md §5.17. */
 object BackupCodec {
 
     private val json = Json {
@@ -73,6 +73,8 @@ object BackupCodec {
         val scheduledItemIds = b.scheduledItems.map { it.id }.toSet()
         val importBatchIds = b.importBatches.map { it.id }.toSet()
         val transactionIds = b.transactions.map { it.id }.toSet()
+        val receiptIds = b.receipts.map { it.id }.toSet()
+        val productIds = b.products.map { it.id }.toSet()
 
         val errors = mutableListOf<String>()
         fun check(ok: Boolean, message: String) {
@@ -91,6 +93,7 @@ object BackupCodec {
             tx.importBatchId?.let {
                 check(it in importBatchIds, "Transaction ${tx.id} refers to a missing import batch $it.")
             }
+            tx.receiptId?.let { check(it in receiptIds, "Transaction ${tx.id} refers to a missing receipt $it.") }
         }
 
         for (r in b.recurringRules) {
@@ -149,6 +152,22 @@ object BackupCodec {
                 snap.categoryId in categoryIds,
                 "Category week snapshot ${snap.id} refers to a missing category ${snap.categoryId}.",
             )
+        }
+
+        for (product in b.products) {
+            product.categoryId?.let {
+                check(it in categoryIds, "Product ${product.id} refers to a missing category $it.")
+            }
+        }
+
+        for (alias in b.productAliases) {
+            check(alias.productId in productIds, "Product alias ${alias.id} refers to a missing product ${alias.productId}.")
+        }
+
+        for (item in b.receiptItems) {
+            check(item.receiptId in receiptIds, "Receipt item ${item.id} refers to a missing receipt ${item.receiptId}.")
+            item.productId?.let { check(it in productIds, "Receipt item ${item.id} refers to a missing product $it.") }
+            item.categoryId?.let { check(it in categoryIds, "Receipt item ${item.id} refers to a missing category $it.") }
         }
 
         b.settings.defaultAccountId?.let {

@@ -61,6 +61,8 @@ data class Transaction(
     val importBatchId: Long? = null,
     /** Dedupe key for imported statement rows. */
     val importKey: String? = null,
+    /** Set on the per-category transactions a saved receipt was split into (§10.3). */
+    val receiptId: Long? = null,
 )
 
 data class RecurringRule(

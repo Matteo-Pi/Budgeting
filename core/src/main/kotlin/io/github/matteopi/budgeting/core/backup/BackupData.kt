@@ -9,6 +9,10 @@ import io.github.matteopi.budgeting.core.model.ImportBatch
 import io.github.matteopi.budgeting.core.model.MerchantRule
 import io.github.matteopi.budgeting.core.model.Prediction
 import io.github.matteopi.budgeting.core.model.Preset
+import io.github.matteopi.budgeting.core.model.Product
+import io.github.matteopi.budgeting.core.model.ProductAliasRecord
+import io.github.matteopi.budgeting.core.model.Receipt
+import io.github.matteopi.budgeting.core.model.ReceiptItem
 import io.github.matteopi.budgeting.core.model.Reconciliation
 import io.github.matteopi.budgeting.core.model.RecurringRule
 import io.github.matteopi.budgeting.core.model.Scenario
@@ -35,4 +39,9 @@ data class BackupData(
     val balanceSnapshots: List<BalanceSnapshot> = emptyList(),
     val categoryWeekSnapshots: List<CategoryWeekSnapshot> = emptyList(),
     val settings: BudgetSettings = BudgetSettings(),
+    // Backup version 2. Declared last so positional construction of version-1 data keeps working.
+    val receipts: List<Receipt> = emptyList(),
+    val receiptItems: List<ReceiptItem> = emptyList(),
+    val products: List<Product> = emptyList(),
+    val productAliases: List<ProductAliasRecord> = emptyList(),
 )

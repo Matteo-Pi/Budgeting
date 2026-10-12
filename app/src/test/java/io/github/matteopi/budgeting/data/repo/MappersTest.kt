@@ -15,6 +15,10 @@ import io.github.matteopi.budgeting.core.model.PostingMode
 import io.github.matteopi.budgeting.core.model.Prediction
 import io.github.matteopi.budgeting.core.model.PredictionMode
 import io.github.matteopi.budgeting.core.model.Preset
+import io.github.matteopi.budgeting.core.model.Product
+import io.github.matteopi.budgeting.core.model.ProductAliasRecord
+import io.github.matteopi.budgeting.core.model.Receipt
+import io.github.matteopi.budgeting.core.model.ReceiptItem
 import io.github.matteopi.budgeting.core.model.Reconciliation
 import io.github.matteopi.budgeting.core.model.RecurringRule
 import io.github.matteopi.budgeting.core.model.Regime
@@ -299,5 +303,71 @@ class MappersTest {
             predicted = Money(-3500),
         )
         assertEquals(model, model.toEntity().toModel())
+    }
+
+    @Test
+    fun transactionKeepsItsReceiptId() {
+        val model = Transaction(
+            id = 5,
+            accountId = 1,
+            amount = Money(-1250),
+            date = LocalDate.of(2026, 10, 12),
+            categoryId = 2,
+            label = "Tesco · Groceries",
+            receiptId = 7,
+        )
+        assertEquals(model, model.toEntity().toModel())
+        assertEquals(7L, model.toEntity().receiptId)
+    }
+
+    @Test
+    fun receipt() {
+        val model = Receipt(
+            id = 1,
+            store = "TESCO",
+            date = LocalDate.of(2026, 10, 12),
+            total = Money(1250),
+            source = "PHOTO",
+            transactionId = 4,
+            createdAtEpochMillis = 123L,
+        )
+        assertEquals(model, model.toEntity().toModel())
+        val noTransaction = model.copy(id = 2, transactionId = null)
+        assertEquals(noTransaction, noTransaction.toEntity().toModel())
+    }
+
+    @Test
+    fun receiptItem() {
+        val model = ReceiptItem(
+            id = 1,
+            receiptId = 2,
+            productId = 3,
+            rawName = "TS SEMI SKMD MLK 2PT",
+            quantity = 2,
+            weightGrams = null,
+            unitPrice = Money(150),
+            price = Money(300),
+            discount = Money(-50),
+            categoryId = 4,
+        )
+        assertEquals(model, model.toEntity().toModel())
+        val weighed = ReceiptItem(
+            id = 2,
+            receiptId = 2,
+            rawName = "BANANAS LOOSE",
+            weightGrams = 452,
+            price = Money(100),
+        )
+        assertEquals(weighed, weighed.toEntity().toModel())
+    }
+
+    @Test
+    fun productAndAlias() {
+        val product = Product(id = 1, name = "Semi-skimmed milk 2 pints", categoryId = 3)
+        assertEquals(product, product.toEntity().toModel())
+        val uncategorised = Product(id = 2, name = "Mystery item", categoryId = null)
+        assertEquals(uncategorised, uncategorised.toEntity().toModel())
+        val alias = ProductAliasRecord(id = 1, store = "TESCO", rawNameKey = "ts semi skmd mlk 2pt", productId = 1)
+        assertEquals(alias, alias.toEntity().toModel())
     }
 }

@@ -16,6 +16,10 @@ import io.github.matteopi.budgeting.core.model.PostingMode
 import io.github.matteopi.budgeting.core.model.Prediction
 import io.github.matteopi.budgeting.core.model.PredictionMode
 import io.github.matteopi.budgeting.core.model.Preset
+import io.github.matteopi.budgeting.core.model.Product
+import io.github.matteopi.budgeting.core.model.ProductAliasRecord
+import io.github.matteopi.budgeting.core.model.Receipt
+import io.github.matteopi.budgeting.core.model.ReceiptItem
 import io.github.matteopi.budgeting.core.model.Reconciliation
 import io.github.matteopi.budgeting.core.model.RecurringRule
 import io.github.matteopi.budgeting.core.model.Regime
@@ -52,6 +56,10 @@ object BackupMapper {
             importBatches = data.importBatches.map { it.toDto() },
             balanceSnapshots = data.balanceSnapshots.map { it.toDto() },
             categoryWeekSnapshots = data.categoryWeekSnapshots.map { it.toDto() },
+            receipts = data.receipts.map { it.toDto() },
+            receiptItems = data.receiptItems.map { it.toDto() },
+            products = data.products.map { it.toDto() },
+            productAliases = data.productAliases.map { it.toDto() },
             settings = data.settings.toDto(),
             appSettings = appSettings,
         )
@@ -72,6 +80,10 @@ object BackupMapper {
         importBatches = backup.importBatches.map { it.toModel() },
         balanceSnapshots = backup.balanceSnapshots.map { it.toModel() },
         categoryWeekSnapshots = backup.categoryWeekSnapshots.map { it.toModel() },
+        receipts = backup.receipts.map { it.toModel() },
+        receiptItems = backup.receiptItems.map { it.toModel() },
+        products = backup.products.map { it.toModel() },
+        productAliases = backup.productAliases.map { it.toModel() },
         settings = backup.settings.toModel(),
     )
 }
@@ -105,7 +117,7 @@ private fun CategoryDto.toModel() = Category(
 
 private fun Transaction.toDto() = TransactionDto(
     id, accountId, amount.pence, date.toString(), createdAtEpochMillis, categoryId, label, note, kind.name,
-    transferGroupId, recurringRuleId, scheduledItemId, importBatchId, importKey,
+    transferGroupId, recurringRuleId, scheduledItemId, importBatchId, importKey, receiptId,
 )
 private fun TransactionDto.toModel() = Transaction(
     id = id,
@@ -122,6 +134,7 @@ private fun TransactionDto.toModel() = Transaction(
     scheduledItemId = scheduledItemId,
     importBatchId = importBatchId,
     importKey = importKey,
+    receiptId = receiptId,
 )
 
 private fun RecurringRule.toDto() = RecurringRuleDto(
@@ -277,6 +290,41 @@ private fun CategoryWeekSnapshotDto.toModel() = CategoryWeekSnapshot(
     tier = tier,
     predicted = Money(predictedPence),
 )
+
+private fun Receipt.toDto() = ReceiptDto(
+    id, store, date.toString(), total.pence, source, transactionId, createdAtEpochMillis,
+)
+private fun ReceiptDto.toModel() = Receipt(
+    id = id,
+    store = store,
+    date = LocalDate.parse(date),
+    total = Money(totalPence),
+    source = source,
+    transactionId = transactionId,
+    createdAtEpochMillis = createdAtEpochMillis,
+)
+
+private fun ReceiptItem.toDto() = ReceiptItemDto(
+    id, receiptId, productId, rawName, quantity, weightGrams, unitPrice?.pence, price.pence, discount.pence, categoryId,
+)
+private fun ReceiptItemDto.toModel() = ReceiptItem(
+    id = id,
+    receiptId = receiptId,
+    productId = productId,
+    rawName = rawName,
+    quantity = quantity,
+    weightGrams = weightGrams,
+    unitPrice = unitPricePence?.let { Money(it) },
+    price = Money(pricePence),
+    discount = Money(discountPence),
+    categoryId = categoryId,
+)
+
+private fun Product.toDto() = ProductDto(id, name, categoryId)
+private fun ProductDto.toModel() = Product(id, name, categoryId)
+
+private fun ProductAliasRecord.toDto() = ProductAliasDto(id, store, rawNameKey, productId)
+private fun ProductAliasDto.toModel() = ProductAliasRecord(id, store, rawNameKey, productId)
 
 private fun BudgetSettings.toDto() = SettingsDto(
     zeroPoint.name, buffer.pence, defaultAccountId, historyStartDate?.toString(), simulations, forecastHorizonDays,

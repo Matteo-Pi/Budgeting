@@ -26,6 +26,8 @@ import io.github.matteopi.budgeting.core.model.PostingMode
 import io.github.matteopi.budgeting.core.model.Prediction
 import io.github.matteopi.budgeting.core.model.PredictionMode
 import io.github.matteopi.budgeting.core.model.Preset
+import io.github.matteopi.budgeting.core.model.Receipt
+import io.github.matteopi.budgeting.core.model.ReceiptItem
 import io.github.matteopi.budgeting.core.model.RecurringRule
 import io.github.matteopi.budgeting.core.model.Regime
 import io.github.matteopi.budgeting.core.model.Scenario
@@ -250,7 +252,7 @@ class BackupRoundTripTest {
         )
 
         // The ledger: spending, income, a transfer, transactions posted from a rule and from an item, a note.
-        DataTestSupport.addNormal(current.id, groceries.id, Money(-4_235), today.minusDays(5), "Tesco", "weekly shop")
+        val shop = DataTestSupport.addNormal(current.id, groceries.id, Money(-4_235), today.minusDays(5), "Tesco", "weekly shop")
         DataTestSupport.addNormal(current.id, wages.id, Money(15_000), today.minusDays(4), "Cafe shift")
         DataTestSupport.addNormal(cash.id, eatingOut.id, Money(-850), today.minusDays(1), "Lunch")
         c.transactionRepository.addTransfer(current.id, savings.id, Money.pounds(100), today.minusDays(3), "Save")
@@ -267,6 +269,29 @@ class BackupRoundTripTest {
                 createdAtEpochMillis = c.clock.nowMillis(), categoryId = null, label = "Deposit refund",
                 kind = TxKind.NORMAL, scheduledItemId = postedItemId,
             ),
+        )
+
+        // A receipt for the shop above, split over two categories, with a learned product and alias.
+        val milkId = c.receiptRepository.learnProduct("TESCO", "ts semi skmd mlk 2pt", "Semi-skimmed milk 2 pints", groceries.id)
+        c.receiptRepository.learnProduct("TESCO", "ts bananas loose", "Bananas", null)
+        c.receiptRepository.saveReceipt(
+            receipt = Receipt(
+                store = "TESCO", date = shop.date, total = Money(4_235), source = "PHOTO",
+                createdAtEpochMillis = c.clock.nowMillis(),
+            ),
+            items = listOf(
+                ReceiptItem(
+                    receiptId = 0, productId = milkId, rawName = "TS SEMI SKMD MLK 2PT", quantity = 2,
+                    unitPrice = Money(150), price = Money(300), discount = Money(-50), categoryId = groceries.id,
+                ),
+                ReceiptItem(receiptId = 0, productId = null, rawName = "BANANAS LOOSE", weightGrams = 452, price = Money(100)),
+                ReceiptItem(receiptId = 0, productId = null, rawName = "USB CABLE", price = Money(1_235), categoryId = shopping.id),
+            ),
+            splitTransactions = listOf(
+                shop.copy(id = 0, amount = Money(-3_000), label = "Tesco · Groceries", categoryId = groceries.id),
+                shop.copy(id = 0, amount = Money(-1_235), label = "Tesco · Shopping", categoryId = shopping.id),
+            ),
+            replaceTransactionId = shop.id,
         )
 
         // A statement import: a batch, imported transactions with keys, a moved opening balance, merchant rules.
@@ -354,6 +379,16 @@ class BackupRoundTripTest {
         assertEquals(1, data.importBatches.size, "an import batch")
         assertEquals(2, data.balanceSnapshots.size, "balance snapshots")
         assertEquals(2, data.categoryWeekSnapshots.size, "category snapshots")
+        assertEquals(1, data.receipts.size, "a receipt")
+        assertEquals(3, data.receiptItems.size, "receipt items")
+        assertTrue(data.receiptItems.any { it.productId != null && it.weightGrams == null }, "an item linked to a product")
+        assertTrue(data.receiptItems.any { it.weightGrams != null && it.productId == null }, "a weighed item without a product")
+        assertEquals(2, data.products.size, "products")
+        assertEquals(2, data.productAliases.size, "product aliases")
+        assertEquals(
+            2, data.transactions.count { it.receiptId == data.receipts.single().id },
+            "the receipt's two split transactions",
+        )
         assertNotEquals(BudgetSettings(), data.settings, "settings away from their defaults")
     }
 
@@ -373,6 +408,10 @@ class BackupRoundTripTest {
         importBatches = importBatches.sortedBy { it.id },
         balanceSnapshots = balanceSnapshots.sortedBy { it.id },
         categoryWeekSnapshots = categoryWeekSnapshots.sortedBy { it.id },
+        receipts = receipts.sortedBy { it.id },
+        receiptItems = receiptItems.sortedBy { it.id },
+        products = products.sortedBy { it.id },
+        productAliases = productAliases.sortedBy { it.id },
     )
 
     /** Table by table (so a failure names the table), ignoring row order but not ids. */
@@ -394,6 +433,10 @@ class BackupRoundTripTest {
         assertEquals(e.importBatches, a.importBatches, "import batches")
         assertEquals(e.balanceSnapshots, a.balanceSnapshots, "balance snapshots")
         assertEquals(e.categoryWeekSnapshots, a.categoryWeekSnapshots, "category week snapshots")
+        assertEquals(e.receipts, a.receipts, "receipts")
+        assertEquals(e.receiptItems, a.receiptItems, "receipt items")
+        assertEquals(e.products, a.products, "products")
+        assertEquals(e.productAliases, a.productAliases, "product aliases")
         assertEquals(e.settings, a.settings, "budget settings")
     }
 
@@ -558,6 +601,8 @@ class BackupRoundTripTest {
         assertTrue(restored.scenarios.isEmpty())
         assertTrue(restored.presets.isEmpty())
         assertTrue(restored.merchantRules.isEmpty())
+        assertTrue(restored.receipts.isEmpty() && restored.receiptItems.isEmpty())
+        assertTrue(restored.products.isEmpty() && restored.productAliases.isEmpty())
         assertTrue(restored.reconciliations.isEmpty())
         assertTrue(restored.importBatches.isEmpty())
         assertTrue(restored.balanceSnapshots.isEmpty())
