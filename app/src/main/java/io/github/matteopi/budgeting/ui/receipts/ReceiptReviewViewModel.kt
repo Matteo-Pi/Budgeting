@@ -123,6 +123,7 @@ class ReceiptReviewViewModel(
             prepareSuggestions()
             val accounts = accountRepository.observeAccounts().first()
             val defaultId = DefaultAccount.resolveId(accounts, settingsStore.budgetSettings.first().defaultAccountId)
+            nextKey = 1L
             mutableEdit.value = ReviewEdit(date = clock.today(), selectedAccountId = defaultId, source = ReceiptSource.PHOTO)
             mutablePhase.value = ReviewPhase.Ready
         }
