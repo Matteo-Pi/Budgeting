@@ -1022,6 +1022,24 @@ loyalty data export (JSON/CSV) ──► export parser ────────�
 - **Receipts** list (from Activity / an account): past receipts, open to view or edit.
 - **Insights → Items**: most bought items, price changes, search an item for its history.
 
+**Built (step 5): Receipts list and Insights → Items.**
+- `ui/receipts/list/`: `ReceiptsScreen` (`Route.Receipts`, opened from Settings → Data → Receipts; newest first,
+  store display name, date, total, item count; empty state explains Scan receipt) and `ReceiptDetailScreen`
+  (`Route.ReceiptDetail(receiptId)`: header with account, items with product name else printed line,
+  quantity/weight, price, discount and category, the split transactions, and Delete with the choice "Merge
+  back into one transaction" (default) / "Keep the split transactions" → `deleteReceipt(id, mergeBack)`).
+  `ReceiptMapping` is the pure part: store key → display name, item naming, quantity text and the join of
+  items with their receipts into `PurchasedItem`s (items without a product are left out).
+- A split transaction's Activity edit sheet has a "View receipt" button (next to Save/Delete) that opens its receipt.
+- `ui/insights/`: `ItemsCard` is the last Insights card (hidden while there are no receipts) and follows the
+  period chips: top 5 products by spend with quantity, top 5 unit-price changes (latest vs previous purchase
+  in the period, ranked by size, ↑ red / ↓ green with %), a search field and an "All items" list.
+  `ItemDetailScreen` (`Route.ItemDetail(productId)`) has its own period chips, the spend and quantity in the
+  period, and every unit price (date, store, price, newest first, change since the previous). The pure part is
+  `ItemInsights` (on `core/receipts/ItemPrices`); the data comes from `ReceiptRepository.observeSnapshot()`.
+- Tests: `ReceiptMappingTest`, `ItemInsightsTest` (JVM), `ui/ReceiptsTest` (device; seeds through
+  `seedReceipt` in `testing/UiTestSupport.kt`).
+
 ### 10.5 Imports — need real samples first
 Formats are unknown until the user provides files (personal details can be removed):
 - Tesco: Clubcard / account "download my data" export; Tesco online order receipt (email/PDF).
@@ -1036,4 +1054,4 @@ Formats are unknown until the user provides files (personal details can be remov
 2. App: Room 2 + migration (+ schema JSON in CI), repositories, backup v2.
 3. App: photo/gallery/share input, ML Kit OCR, review screen, saving with category split.
 4. Store parsers and data-export importers, tuned on the user's samples.
-5. Receipts list and Insights → Items.
+5. Receipts list and Insights → Items (done; see §10.4).

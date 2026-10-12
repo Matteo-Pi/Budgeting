@@ -162,10 +162,10 @@ private fun SingleTransactionEditor(
                 },
             ) { Text("Save") }
             OutlinedButton(onClick = { showDeleteConfirm = true }) { Text("Delete") }
-        }
-        tx.receiptId?.let { receiptId ->
-            VerticalSpace()
-            OutlinedButton(onClick = { onViewReceipt(receiptId) }) { Text("View receipt") }
+            // Beside Save and Delete rather than under them: the sheet is already close to full height.
+            tx.receiptId?.let { receiptId ->
+                OutlinedButton(onClick = { onViewReceipt(receiptId) }) { Text("View receipt") }
+            }
         }
     }
 
