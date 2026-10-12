@@ -27,6 +27,7 @@ import io.github.matteopi.budgeting.BudgetApp
 import io.github.matteopi.budgeting.MainActivity
 import io.github.matteopi.budgeting.core.model.Flow as CategoryFlow
 import io.github.matteopi.budgeting.data.settings.AppSettings
+import io.github.matteopi.budgeting.ui.receipts.ReceiptFiles
 import io.github.matteopi.budgeting.ui.theme.BudgetingTheme
 
 /**
@@ -84,6 +85,7 @@ class QuickAddActivity : ComponentActivity() {
                         onDateChange = viewModel::setDate,
                         onSave = { viewModel.save(onSaved = ::finish) },
                         onOpenApp = { openApp() },
+                        onScanReceipt = { scanReceipt() },
                         modifier = Modifier
                             .padding(16.dp)
                             // Absorb taps on the card itself so they don't fall through to the
@@ -93,6 +95,16 @@ class QuickAddActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    /** Opens the main app on the receipt scan screen (it is behind the app lock, which QuickAdd skips). */
+    private fun scanReceipt() {
+        startActivity(
+            Intent(this, MainActivity::class.java)
+                .setAction(ReceiptFiles.ACTION_SCAN_RECEIPT)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+        )
+        finish()
     }
 
     private fun openApp() {

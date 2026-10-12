@@ -1,7 +1,9 @@
 package io.github.matteopi.budgeting
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
@@ -25,15 +27,24 @@ import io.github.matteopi.budgeting.ui.lock.AppLockState
 import io.github.matteopi.budgeting.ui.lock.LockScreen
 import io.github.matteopi.budgeting.ui.navigation.BudgetNavHost
 import io.github.matteopi.budgeting.ui.navigation.Route
+import io.github.matteopi.budgeting.ui.receipts.ReceiptFiles
 import io.github.matteopi.budgeting.ui.theme.BudgetingTheme
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 
 // FragmentActivity (not ComponentActivity) because BiometricPrompt requires it (docs/PLAN.md §6.9).
 class MainActivity : FragmentActivity() {
+
+    /** A receipt screen to open once the navigation graph is up: from a shared receipt or quick add's "Scan receipt". */
+    private val receiptRequest = MutableStateFlow<Route?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         AppLockState.ensureObserving()
         val container = (application as BudgetApp).container
+        // Only for a fresh launch: after a rotation the same intent would be handled a second time.
+        if (savedInstanceState == null) handleReceiptIntent(intent)
         setContent {
             // Collected outside the theme so the chosen theme/dark mode applies live, without a restart.
             val appSettings by container.settingsStore.appSettings.collectAsStateWithLifecycle(initialValue = null)
@@ -72,6 +83,15 @@ class MainActivity : FragmentActivity() {
                         // start destination captured at launch (which may be Onboarding).
                         // LockScreen is an opaque full-size Surface, which also blocks touches.
                         val navController = rememberNavController()
+                        val receiptRoute by receiptRequest.collectAsStateWithLifecycle()
+                        LaunchedEffect(receiptRoute) {
+                            val route = receiptRoute
+                            if (route != null) {
+                                // Before onboarding there are no accounts to save a receipt into.
+                                if (startDestination != Route.Onboarding) navController.navigate(route)
+                                receiptRequest.value = null
+                            }
+                        }
                         Box(modifier = Modifier.fillMaxSize()) {
                             BudgetNavHost(
                                 navController = navController,
@@ -81,6 +101,37 @@ class MainActivity : FragmentActivity() {
                             if (settings.appLockEnabled && locked) {
                                 LockScreen(onUnlock = { AppLockState.unlock() })
                             }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleReceiptIntent(intent)
+    }
+
+    /**
+     * Receipt entry points: `ACTION_SEND` (a photo, PDF or text shared into the app) is copied to
+     * the cache folder, then opens the review screen; quick add's scan action opens the scan screen.
+     * The app lock overlay already covers this activity, so nothing is shown before unlocking.
+     */
+    private fun handleReceiptIntent(intent: Intent?) {
+        if (intent == null) return
+        when (intent.action) {
+            ReceiptFiles.ACTION_SCAN_RECEIPT -> receiptRequest.value = Route.ReceiptScan
+            Intent.ACTION_SEND -> {
+                val shared = Intent(intent)
+                val app = application as BudgetApp
+                app.container.appScope.launch {
+                    val route = ReceiptFiles.importShared(app, shared)
+                    if (route != null) {
+                        receiptRequest.value = route
+                    } else {
+                        runOnUiThread {
+                            Toast.makeText(app, "Couldn't open that receipt", Toast.LENGTH_SHORT).show()
                         }
                     }
                 }

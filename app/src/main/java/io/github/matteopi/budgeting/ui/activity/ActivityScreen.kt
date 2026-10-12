@@ -42,6 +42,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.matteopi.budgeting.core.model.Account
 import io.github.matteopi.budgeting.core.model.Category
 import io.github.matteopi.budgeting.ui.components.EmptyState
+import io.github.matteopi.budgeting.ui.receipts.ReceiptIcons
 
 /** The Activity tab: all transactions grouped by day, with filters and an edit sheet (WP-U2). */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -49,6 +50,7 @@ import io.github.matteopi.budgeting.ui.components.EmptyState
 fun ActivityScreen(
     onAddTransaction: () -> Unit,
     modifier: Modifier = Modifier,
+    onScanReceipt: () -> Unit = {},
     viewModel: ActivityViewModel = viewModel(factory = ActivityViewModel.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -61,6 +63,9 @@ fun ActivityScreen(
             TopAppBar(
                 title = { Text("Activity") },
                 actions = {
+                    IconButton(onClick = onScanReceipt) {
+                        Icon(ReceiptIcons.Camera, contentDescription = "Scan receipt")
+                    }
                     IconButton(onClick = { searchOpen = !searchOpen }) {
                         Icon(
                             if (searchOpen) Icons.Default.Close else Icons.Default.Search,

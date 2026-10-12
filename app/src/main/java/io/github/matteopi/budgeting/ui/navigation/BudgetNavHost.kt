@@ -39,6 +39,8 @@ import io.github.matteopi.budgeting.ui.plan.SinkingFundsScreen
 import io.github.matteopi.budgeting.ui.plan.StudentLoanHelperScreen
 import io.github.matteopi.budgeting.ui.plan.TermDatesScreen
 import io.github.matteopi.budgeting.ui.quickadd.QuickAddActivity
+import io.github.matteopi.budgeting.ui.receipts.ReceiptReviewScreen
+import io.github.matteopi.budgeting.ui.receipts.ReceiptScanScreen
 import io.github.matteopi.budgeting.ui.settings.CategoriesScreen
 import io.github.matteopi.budgeting.ui.settings.PresetsScreen
 import io.github.matteopi.budgeting.ui.settings.SettingsScreen
@@ -91,7 +93,10 @@ fun BudgetNavHost(
                 )
             }
             composable<Route.Activity> {
-                ActivityScreen(onAddTransaction = onAddTransaction)
+                ActivityScreen(
+                    onAddTransaction = onAddTransaction,
+                    onScanReceipt = { navController.navigate(Route.ReceiptScan) },
+                )
             }
             composable<Route.Forecast> {
                 ForecastScreen(
@@ -221,6 +226,21 @@ fun BudgetNavHost(
                     },
                     onOpenStatementImport = { navController.navigate(Route.StatementImport) },
                 )
+            }
+            composable<Route.ReceiptScan> {
+                ReceiptScanScreen(
+                    onBack = { navController.popBackStack() },
+                    // The scan screen is replaced by the review, so Back from the review returns to where scanning started.
+                    onCaptured = { review ->
+                        navController.navigate(review) {
+                            popUpTo<Route.ReceiptScan> { inclusive = true }
+                        }
+                    },
+                )
+            }
+            composable<Route.ReceiptReview> { backStackEntry ->
+                val args = backStackEntry.toRoute<Route.ReceiptReview>()
+                ReceiptReviewScreen(path = args.path, kind = args.kind, onBack = { navController.popBackStack() })
             }
         }
     }
