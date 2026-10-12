@@ -32,6 +32,20 @@ jobs:
         shell: bash  # explicit bash enables pipefail, so a failed build still fails through tee
         run: ./gradlew :app:assembleDebug :app:testDebugUnitTest --console=plain --continue 2>&1 | tee build.log
 
+      # Room writes the database schema JSON to app/schemas during the build. It can't be generated in
+      # the cloud dev environment, so publish it to refs/ci/room-schemas for committing (migration
+      # tests need every past version's schema).
+      - name: Publish Room schemas to refs/ci/room-schemas
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -R app/schemas || { echo "no schemas generated"; exit 0; }
+          mkdir -p /tmp/schemas && cp -r app/schemas /tmp/schemas/ && cd /tmp/schemas
+          git init -q && git add -A
+          git -c user.name="CI" -c user.email="ci@users.noreply.github.com" commit -qm "Room schemas at ${GITHUB_SHA::7}"
+          git push -q --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:refs/ci/room-schemas
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
