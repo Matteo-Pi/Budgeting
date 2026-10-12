@@ -9,6 +9,7 @@ import io.github.matteopi.budgeting.data.repo.CategoryRepository
 import io.github.matteopi.budgeting.data.repo.ImportRepository
 import io.github.matteopi.budgeting.data.repo.PlanRepository
 import io.github.matteopi.budgeting.data.repo.PresetRepository
+import io.github.matteopi.budgeting.data.repo.ReceiptRepository
 import io.github.matteopi.budgeting.data.repo.ScenarioRepository
 import io.github.matteopi.budgeting.data.repo.SnapshotRepository
 import io.github.matteopi.budgeting.data.repo.TransactionRepository
@@ -87,6 +88,13 @@ class AppContainer(context: Context) {
         widgetUpdater = widgetUpdater,
     )
 
+    val receiptRepository = ReceiptRepository(
+        database = database,
+        receiptDao = database.receiptDao(),
+        transactionDao = database.transactionDao(),
+        widgetUpdater = widgetUpdater,
+    )
+
     val snapshotRepository = SnapshotRepository(
         database = database,
         snapshotDao = database.snapshotDao(),
@@ -104,6 +112,7 @@ class AppContainer(context: Context) {
         importDao = database.importDao(),
         reconciliationDao = database.reconciliationDao(),
         snapshotDao = database.snapshotDao(),
+        receiptDao = database.receiptDao(),
         settingsStore = settingsStore,
         widgetUpdater = widgetUpdater,
     )

@@ -16,6 +16,10 @@ import io.github.matteopi.budgeting.core.model.PostingMode
 import io.github.matteopi.budgeting.core.model.Prediction
 import io.github.matteopi.budgeting.core.model.PredictionMode
 import io.github.matteopi.budgeting.core.model.Preset
+import io.github.matteopi.budgeting.core.model.Product
+import io.github.matteopi.budgeting.core.model.ProductAliasRecord
+import io.github.matteopi.budgeting.core.model.Receipt
+import io.github.matteopi.budgeting.core.model.ReceiptItem
 import io.github.matteopi.budgeting.core.model.Reconciliation
 import io.github.matteopi.budgeting.core.model.RecurringRule
 import io.github.matteopi.budgeting.core.model.Regime
@@ -52,7 +56,7 @@ class BackupCodecTest {
             Transaction(
                 id = 1, accountId = 1, amount = Money(-1250), date = LocalDate.of(2026, 9, 1),
                 createdAtEpochMillis = 111L, categoryId = groceries.id, label = "Tesco", note = "weekly shop",
-                kind = TxKind.NORMAL, importKey = "abc123",
+                kind = TxKind.NORMAL, importKey = "abc123", receiptId = 1,
             ),
             Transaction(
                 id = 2, accountId = 1, amount = Money(-500), date = LocalDate.of(2026, 9, 2),
@@ -134,6 +138,30 @@ class BackupCodecTest {
             CategoryWeekSnapshot(id = 1, createdOn = LocalDate.of(2026, 9, 20), weekStart = LocalDate.of(2026, 9, 21), categoryId = groceries.id, tier = 1, predicted = Money.pounds(-40)),
         )
 
+        val products = listOf(
+            Product(id = 1, name = "Semi-skimmed milk 2 pints", categoryId = groceries.id),
+            Product(id = 2, name = "Mystery item", categoryId = null),
+        )
+        val productAliases = listOf(
+            ProductAliasRecord(id = 1, store = "TESCO", rawNameKey = "ts semi skmd mlk 2pt", productId = 1),
+        )
+        val receipts = listOf(
+            Receipt(
+                id = 1, store = "TESCO", date = LocalDate.of(2026, 9, 1), total = Money(1250), source = "PHOTO",
+                transactionId = 1, createdAtEpochMillis = 333L,
+            ),
+        )
+        val receiptItems = listOf(
+            ReceiptItem(
+                id = 1, receiptId = 1, productId = 1, rawName = "TS SEMI SKMD MLK 2PT", quantity = 2,
+                unitPrice = Money(150), price = Money(300), discount = Money(-50), categoryId = groceries.id,
+            ),
+            ReceiptItem(
+                id = 2, receiptId = 1, productId = null, rawName = "BANANAS LOOSE", weightGrams = 452,
+                unitPrice = null, price = Money(100), categoryId = null,
+            ),
+        )
+
         val settings = BudgetSettings(
             zeroPoint = ZeroPoint.OVERDRAFT_LIMIT, buffer = Money.pounds(50), defaultAccountId = 1,
             historyStartDate = LocalDate.of(2026, 1, 1), simulations = 500, forecastHorizonDays = 90,
@@ -155,6 +183,10 @@ class BackupCodecTest {
             importBatches = importBatches,
             balanceSnapshots = balanceSnapshots,
             categoryWeekSnapshots = categoryWeekSnapshots,
+            receipts = receipts,
+            receiptItems = receiptItems,
+            products = products,
+            productAliases = productAliases,
             settings = settings,
         )
     }
@@ -189,6 +221,64 @@ class BackupCodecTest {
     }
 
     @Test
+    fun `current version is 2`() {
+        assertEquals(2, BackupV1.CURRENT_VERSION)
+        assertEquals(2, BackupMapper.toBackup(BackupData(), exportedAt = "now").version)
+    }
+
+    @Test
+    fun `a version 1 file still decodes with no receipts`() {
+        val json = """
+            {
+              "format": "budgeting-backup",
+              "version": 1,
+              "exportedAt": "2026-09-28T12:00:00Z",
+              "accounts": [
+                {"id": 1, "name": "Current", "type": "CURRENT", "overdraftLimitPence": 0,
+                 "includeInSafeToSpend": true, "archived": false, "sortOrder": 0}
+              ],
+              "transactions": [
+                {"id": 1, "accountId": 1, "amountPence": -250, "date": "2026-09-01", "createdAtEpochMillis": 5,
+                 "categoryId": null, "label": "Coffee", "note": "", "kind": "NORMAL", "transferGroupId": null,
+                 "recurringRuleId": null, "scheduledItemId": null, "importBatchId": null, "importKey": null}
+              ],
+              "settings": {"zeroPoint": "ACCOUNT_BALANCE", "bufferPence": 0, "defaultAccountId": null,
+                           "historyStartDate": null, "simulations": 500, "forecastHorizonDays": 90}
+            }
+        """.trimIndent()
+        val success = assertIs<BackupDecodeResult.Success>(BackupCodec.decode(json))
+        val tx = success.data.transactions.single()
+        assertEquals(null, tx.receiptId)
+        assertEquals(Money(-250), tx.amount)
+        assertTrue(success.data.receipts.isEmpty())
+        assertTrue(success.data.receiptItems.isEmpty())
+        assertTrue(success.data.products.isEmpty())
+        assertTrue(success.data.productAliases.isEmpty())
+    }
+
+    @Test
+    fun `decode rejects a receipt item pointing at a missing receipt`() {
+        val data = BackupData(
+            receiptItems = listOf(ReceiptItem(id = 1, receiptId = 9, rawName = "MILK", price = Money(100))),
+        )
+        val failure = assertIs<BackupDecodeResult.Failure>(
+            BackupCodec.decode(BackupCodec.encode(BackupMapper.toBackup(data, exportedAt = "now"))),
+        )
+        assertTrue(failure.errors.any { it.contains("receipt") })
+    }
+
+    @Test
+    fun `decode rejects a product alias pointing at a missing product`() {
+        val data = BackupData(
+            productAliases = listOf(ProductAliasRecord(id = 1, store = "TESCO", rawNameKey = "milk", productId = 9)),
+        )
+        val failure = assertIs<BackupDecodeResult.Failure>(
+            BackupCodec.decode(BackupCodec.encode(BackupMapper.toBackup(data, exportedAt = "now"))),
+        )
+        assertTrue(failure.errors.any { it.contains("product") })
+    }
+
+    @Test
     fun `decode rejects invalid JSON`() {
         val result = BackupCodec.decode("not json at all {{{")
         val failure = assertIs<BackupDecodeResult.Failure>(result)
@@ -206,7 +296,7 @@ class BackupCodecTest {
     @Test
     fun `decode rejects a newer version`() {
         val data = BackupData()
-        val backup = BackupMapper.toBackup(data, exportedAt = "now").copy(version = 2)
+        val backup = BackupMapper.toBackup(data, exportedAt = "now").copy(version = 3)
         val result = BackupCodec.decode(BackupCodec.encode(backup))
         val failure = assertIs<BackupDecodeResult.Failure>(result)
         assertTrue(failure.errors.single().contains("newer version", ignoreCase = true))

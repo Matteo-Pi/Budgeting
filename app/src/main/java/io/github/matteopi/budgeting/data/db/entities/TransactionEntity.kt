@@ -49,6 +49,7 @@ import androidx.room.PrimaryKey
         Index("scheduled_item_id"),
         Index("import_batch_id"),
         Index(value = ["import_key"], unique = true),
+        Index("receipt_id"),
     ],
 )
 data class TransactionEntity(
@@ -66,4 +67,7 @@ data class TransactionEntity(
     @ColumnInfo(name = "scheduled_item_id") val scheduledItemId: Long?,
     @ColumnInfo(name = "import_batch_id") val importBatchId: Long?,
     @ColumnInfo(name = "import_key") val importKey: String?,
+    // Added in database version 2. Deliberately not a foreign key: adding one to an existing
+    // table would force a table rebuild. ReceiptRepository keeps it consistent.
+    @ColumnInfo(name = "receipt_id") val receiptId: Long?,
 )

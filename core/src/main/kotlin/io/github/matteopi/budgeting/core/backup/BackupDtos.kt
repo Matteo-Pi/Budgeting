@@ -48,6 +48,8 @@ data class TransactionDto(
     val scheduledItemId: Long?,
     val importBatchId: Long?,
     val importKey: String?,
+    /** Added in backup version 2; absent in version-1 files. */
+    val receiptId: Long? = null,
 )
 
 @Serializable
@@ -207,4 +209,44 @@ data class SettingsDto(
     val historyStartDate: String?,
     val simulations: Int,
     val forecastHorizonDays: Int,
+)
+
+@Serializable
+data class ReceiptDto(
+    val id: Long,
+    val store: String,
+    val date: String,
+    val totalPence: Long,
+    val source: String,
+    val transactionId: Long?,
+    val createdAtEpochMillis: Long,
+)
+
+@Serializable
+data class ReceiptItemDto(
+    val id: Long,
+    val receiptId: Long,
+    val productId: Long?,
+    val rawName: String,
+    val quantity: Int,
+    val weightGrams: Int?,
+    val unitPricePence: Long?,
+    val pricePence: Long,
+    val discountPence: Long,
+    val categoryId: Long?,
+)
+
+@Serializable
+data class ProductDto(
+    val id: Long,
+    val name: String,
+    val categoryId: Long?,
+)
+
+@Serializable
+data class ProductAliasDto(
+    val id: Long,
+    val store: String,
+    val rawNameKey: String,
+    val productId: Long,
 )

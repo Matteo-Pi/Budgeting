@@ -4,6 +4,7 @@ import io.github.matteopi.budgeting.core.backup.BackupCodec
 import io.github.matteopi.budgeting.core.backup.BackupData
 import io.github.matteopi.budgeting.core.backup.BackupDecodeResult
 import io.github.matteopi.budgeting.core.backup.BackupMapper
+import io.github.matteopi.budgeting.core.backup.BackupV1
 import io.github.matteopi.budgeting.core.model.Account
 import io.github.matteopi.budgeting.core.model.AccountType
 import io.github.matteopi.budgeting.core.model.BalanceSnapshot
@@ -447,7 +448,7 @@ internal object Mutations {
     }
 
     private fun header(r: Random, root: JsonElement): Mutation = when (r.nextInt(4)) {
-        0 -> mutation("newerVersion", true, replaceAt(root, listOf("version"), JsonPrimitive(2 + r.nextInt(50))), "version raised")
+        0 -> mutation("newerVersion", true, replaceAt(root, listOf("version"), JsonPrimitive(BackupV1.CURRENT_VERSION + 1 + r.nextInt(50))), "version raised")
         1 -> mutation("zeroVersion", true, replaceAt(root, listOf("version"), JsonPrimitive(-r.nextInt(5))), "version lowered")
         2 -> mutation("wrongFormat", true, replaceAt(root, listOf("format"), JsonPrimitive("other")), "format changed")
         else -> mutation("missingSettings", true, replaceAt(root, listOf("settings"), null), "settings removed")
