@@ -930,3 +930,88 @@ now an overlay); daily worker snapshots before any account exists and its widget
   settings, the app can be compiled locally instead of only in CI.
 - Later ideas (not v1): notification capture of card payments, subscription detector,
   shared expenses, laptop/web view reusing `core`.
+
+---
+
+## 10. Receipts and item prices (planned 2026-10-12)
+
+Goal: record what was bought, item by item, at Tesco, Sainsbury's and Morrisons, from (a) a photo
+of a paper receipt, corrected on a review screen, and (b) imported online receipts / loyalty-card
+data (e.g. a Nectar or Clubcard data export, an online-order receipt email or PDF). Uses: split one
+shop across categories, item price history, "what do I spend on X". The forecast is unchanged: it
+still learns from category totals, which the split transactions keep correct.
+
+### 10.1 Pipeline
+Every source ends in the same `ReceiptDraft`, so the review screen and saving are shared:
+
+```
+photo / gallery image ──► ML Kit text recognition (on device) ─┐
+shared PDF ──► render pages (PdfRenderer) ──► ML Kit ──────────┤
+shared text / email / HTML ──► plain text ─────────────────────┼──► lines ──► store parser ──► ReceiptDraft
+loyalty data export (JSON/CSV) ──► export parser ──────────────┘                                    │
+                                                         review screen (fix, categorise) ◄──────────┘
+                                                                     │
+                                         save: Receipt + ReceiptItems + split transactions
+```
+
+- OCR: ML Kit Text Recognition with the **bundled** Latin model (works offline, nothing leaves
+  the phone). Optional later: an opt-in "read with AI" setting using the user's own API key.
+- Input: a camera/gallery button in quick add and on Activity, plus an Android share target
+  (`ACTION_SEND` for image/*, application/pdf, text/*) so a receipt email or PDF can be shared
+  into the app.
+
+### 10.2 Core (pure Kotlin, `core/.../receipts/`, fully unit-tested)
+- `ReceiptLine(text, top, left, right)` (OCR gives positions; text sources give one per line) →
+  `LineGrouping.rows(lines)`: merge fragments on the same baseline into rows (price column right).
+- `ReceiptDraft(store, date?, items: List<DraftItem>, discounts, total?, paymentTotal?, source)`,
+  `DraftItem(rawName, quantity, unitPrice?, weightKg?, price, discount, confidence)`.
+- Store parsers behind one interface `ReceiptParser { fun detect(rows): Boolean; fun parse(rows): ReceiptDraft }`:
+  `TescoParser`, `SainsburysParser`, `MorrisonsParser`, `GenericParser` (fallback). Each handles:
+  item lines "NAME  £1.25"; quantity lines ("2 @ £1.10"); weighed items ("0.452 kg @ £1.20/kg");
+  discounts on following lines (Clubcard Price, Nectar Price, multibuy "3 for £5", reduced to
+  clear, coupons) attached to the item above or spread over the multibuy's items; the total; the
+  date/time. Pure functions over text, so they are tested against real receipt texts.
+- `ReceiptChecks.check(draft)`: Σ items − Σ discounts vs total → OK / mismatch amount (the review
+  screen highlights a mismatch so OCR mistakes are found).
+- `ProductNames.normalise(rawName)` (case, spacing, store prefixes like "TS "/"SAINSBURYS ") and a
+  learned **alias** table: the first time the user renames "TS SEMI SKMD MLK 2PT" to
+  "Semi-skimmed milk 2 pints" and picks Groceries, later receipts fill both in automatically.
+- `ReceiptMatching.findTransaction(draft, transactions)`: an existing NORMAL transaction with the
+  receipt total (±1p) within ±2 days, else none (a new one is created).
+- `ItemPrices`: per product, price history (unit price per date and store), latest vs previous,
+  monthly spend; feeds an Insights card.
+
+### 10.3 Data (`app`, Room version 2 with a hand-written non-destructive `Migration(1, 2)`)
+- `receipts(id, store, date, total, source, transaction_id?, created_at)`
+- `receipt_items(id, receipt_id, product_id?, raw_name, quantity, unit_price, price, discount, category_id?)`
+- `products(id, name, category_id?)` and `product_aliases(id, store, raw_name_key, product_id)`.
+- **Splitting**: when a receipt's items span several categories, the matched transaction is
+  replaced by one NORMAL transaction per category (same date/account, label "Tesco · Groceries",
+  sharing a `receipt_id` column added to `transactions`); amounts add up to the receipt total, so
+  balances don't change. Deleting the receipt merges them back into one.
+- Backup format version 2 adds the four tables; version 1 files still restore.
+- Before this migration: commit the version-1 schema JSON (have CI publish `app/schemas` the way
+  it publishes the device report) and add a `MigrationTestHelper` device test 1 → 2.
+
+### 10.4 Screens
+- **Review receipt**: store, date, total (with the check result), a list of items (name, qty,
+  price, discount, category) — each editable, deletable, addable; "Apply to all like this" for
+  categories; Save. Shows the photo above for reference.
+- **Receipts** list (from Activity / an account): past receipts, open to view or edit.
+- **Insights → Items**: most bought items, price changes, search an item for its history.
+
+### 10.5 Imports — need real samples first
+Formats are unknown until the user provides files (personal details can be removed):
+- Tesco: Clubcard / account "download my data" export; Tesco online order receipt (email/PDF).
+- Sainsbury's / Nectar: whatever the data download or app receipt gives; online order receipt.
+- Morrisons: online order receipt (email/PDF); More Card data if it has items.
+- Photos of one paper receipt from each store, including a multibuy, a Clubcard/Nectar price and a
+  weighed item.
+
+### 10.6 Order of work
+1. Core: pipeline types, row grouping, generic parser, checks, product names/aliases, matching,
+   price history — with tests (no samples needed).
+2. App: Room 2 + migration (+ schema JSON in CI), repositories, backup v2.
+3. App: photo/gallery/share input, ML Kit OCR, review screen, saving with category split.
+4. Store parsers and data-export importers, tuned on the user's samples.
+5. Receipts list and Insights → Items.
