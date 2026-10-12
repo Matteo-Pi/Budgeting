@@ -47,6 +47,7 @@ fun TransactionEditSheet(
     onSaveSingle: (amount: Money, categoryId: Long?, accountId: Long, date: LocalDate, label: String, note: String) -> Unit,
     onSaveTransfer: (amount: Money, date: LocalDate, label: String) -> Unit,
     onDelete: () -> Unit,
+    onViewReceipt: (receiptId: Long) -> Unit = {},
 ) {
     // Open fully: a form half off the screen hides its later fields and its Save button.
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -59,6 +60,7 @@ fun TransactionEditSheet(
                 today = today,
                 onSave = onSaveSingle,
                 onDelete = onDelete,
+                onViewReceipt = onViewReceipt,
             )
             is ActivityRow.Transfer -> TransferEditor(
                 row = row,
@@ -79,6 +81,7 @@ private fun SingleTransactionEditor(
     today: LocalDate,
     onSave: (amount: Money, categoryId: Long?, accountId: Long, date: LocalDate, label: String, note: String) -> Unit,
     onDelete: () -> Unit,
+    onViewReceipt: (receiptId: Long) -> Unit,
 ) {
     val tx = row.tx
     var isOut by remember(tx.id) { mutableStateOf(!tx.amount.isPositive) }
@@ -159,6 +162,10 @@ private fun SingleTransactionEditor(
                 },
             ) { Text("Save") }
             OutlinedButton(onClick = { showDeleteConfirm = true }) { Text("Delete") }
+            // Beside Save and Delete rather than under them: the sheet is already close to full height.
+            tx.receiptId?.let { receiptId ->
+                OutlinedButton(onClick = { onViewReceipt(receiptId) }) { Text("View receipt") }
+            }
         }
     }
 

@@ -78,6 +78,7 @@ fun SettingsScreen(
     onOpenPresets: () -> Unit,
     onOpenBackup: () -> Unit,
     onOpenStatementImport: () -> Unit,
+    onOpenReceipts: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory),
 ) {
@@ -172,6 +173,7 @@ fun SettingsScreen(
                 SectionCard(title = "Data") {
                     DataSection(
                         onOpenStatementImport = onOpenStatementImport,
+                        onOpenReceipts = onOpenReceipts,
                         onOpenBackup = onOpenBackup,
                         onExportCsv = { csvLauncher.launch("budgeting-transactions-${viewModel.today()}.csv") },
                     )
@@ -437,8 +439,14 @@ private fun RemindersSection(
 }
 
 @Composable
-private fun DataSection(onOpenStatementImport: () -> Unit, onOpenBackup: () -> Unit, onExportCsv: () -> Unit) {
+private fun DataSection(
+    onOpenStatementImport: () -> Unit,
+    onOpenReceipts: () -> Unit,
+    onOpenBackup: () -> Unit,
+    onExportCsv: () -> Unit,
+) {
     NavRow(label = "Import statement", onClick = onOpenStatementImport)
+    NavRow(label = "Receipts", onClick = onOpenReceipts)
     NavRow(label = "Backup & restore", onClick = onOpenBackup)
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),

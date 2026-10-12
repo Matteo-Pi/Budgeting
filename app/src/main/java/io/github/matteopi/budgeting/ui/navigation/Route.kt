@@ -34,4 +34,8 @@ sealed interface Route {
     @Serializable data object Backup : Route
     @Serializable data object StatementImport : Route
     @Serializable data object Onboarding : Route
+
+    @Serializable data object Receipts : Route
+    @Serializable data class ReceiptDetail(val receiptId: Long) : Route
+    @Serializable data class ItemDetail(val productId: Long) : Route
 }

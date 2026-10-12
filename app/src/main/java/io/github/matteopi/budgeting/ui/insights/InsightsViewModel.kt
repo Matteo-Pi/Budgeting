@@ -19,6 +19,7 @@ import io.github.matteopi.budgeting.core.model.TermPeriod
 import io.github.matteopi.budgeting.core.model.Transaction
 import io.github.matteopi.budgeting.data.settings.AccountView
 import io.github.matteopi.budgeting.data.settings.resolveForChart
+import io.github.matteopi.budgeting.ui.receipts.list.ReceiptMapping
 import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -48,6 +49,8 @@ data class InsightsUiState(
     val chartView: AccountView = AccountView.Total,
     val monthlyInOut: List<MonthInOut> = emptyList(),
     val selectedCategoryId: Long? = null,
+    /** The Items card (docs/PLAN.md §10.4); hidden while there are no receipts. */
+    val items: ItemsCardState = ItemsCardState(),
 )
 
 class InsightsViewModel(private val container: AppContainer) : ViewModel() {
@@ -73,7 +76,7 @@ class InsightsViewModel(private val container: AppContainer) : ViewModel() {
             CoreData(accounts, categories, transactions, terms, today)
         }
 
-        combine(
+        val baseFlow = combine(
             coreFlow,
             container.settingsStore.budgetSettings,
             container.settingsStore.appSettings,
@@ -82,6 +85,18 @@ class InsightsViewModel(private val container: AppContainer) : ViewModel() {
         ) { core, settings, appSettings, period, selectedCategory ->
             buildState(core, settings, appSettings.chartAccountView, period, selectedCategory)
         }
+
+        val itemsFlow = combine(container.receiptRepository.observeSnapshot(), periodFlow, container.clock.todayFlow) { data, period, today ->
+            ItemInsights.card(
+                purchased = ReceiptMapping.purchasedItems(data.receipts, data.items),
+                products = data.products,
+                hasReceipts = data.receipts.isNotEmpty(),
+                from = ItemInsights.periodStart(period, today),
+                to = today,
+            )
+        }
+
+        combine(baseFlow, itemsFlow) { state, items -> state.copy(items = items) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), InsightsUiState())
 
     fun selectPeriod(period: InsightsPeriod) {

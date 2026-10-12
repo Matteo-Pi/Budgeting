@@ -60,6 +60,7 @@ private const val CATEGORY_DETAIL_ITEM_INDEX = 3
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InsightsScreen(
+    onOpenItem: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: InsightsViewModel = viewModel(factory = InsightsViewModel.Factory),
 ) {
@@ -147,6 +148,12 @@ fun InsightsScreen(
             item {
                 SectionCard(title = "Income vs. spending") {
                     IncomeVsSpendingChart(state.monthlyInOut)
+                }
+            }
+
+            if (state.items.hasReceipts) {
+                item {
+                    ItemsCard(state = state.items, onOpenItem = onOpenItem)
                 }
             }
         }

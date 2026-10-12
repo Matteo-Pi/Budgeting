@@ -42,6 +42,8 @@ import io.github.matteopi.budgeting.core.model.Frequency
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.PostingMode
 import io.github.matteopi.budgeting.core.model.Preset
+import io.github.matteopi.budgeting.core.model.Receipt
+import io.github.matteopi.budgeting.core.model.ReceiptItem
 import io.github.matteopi.budgeting.core.model.RecurringRule
 import io.github.matteopi.budgeting.core.model.Scenario
 import io.github.matteopi.budgeting.core.model.ScheduledItem
@@ -49,6 +51,7 @@ import io.github.matteopi.budgeting.core.model.SinkingFund
 import io.github.matteopi.budgeting.core.model.TermPeriod
 import io.github.matteopi.budgeting.core.model.Transaction
 import io.github.matteopi.budgeting.core.model.TxKind
+import io.github.matteopi.budgeting.core.receipts.ProductNames
 import io.github.matteopi.budgeting.ui.quickadd.QuickAddActivity
 import java.time.LocalDate
 import java.time.YearMonth
@@ -256,6 +259,92 @@ fun seedPreset(
 }
 
 fun seedScenario(scenario: Scenario): Long = blocking { appContainer.scenarioRepository.addScenario(scenario) }
+
+/**
+ * One line of a seeded receipt. [productName] links it to a (learned) product, so it counts in the
+ * item insights; null leaves it unlinked. [pence] is the whole line before [discountPence] (zero or
+ * negative); [unitPence] is the shelf price of one unit when the receipt says so. [category] is a
+ * default category name; null means Groceries.
+ */
+class SeedReceiptItem(
+    val rawName: String,
+    val productName: String?,
+    val pence: Long,
+    val category: String? = null,
+    val quantity: Int = 1,
+    val unitPence: Long? = null,
+    val discountPence: Long = 0,
+)
+
+/**
+ * Saves a receipt through the real repository the way the review screen will: the items are
+ * stored, products are learned for the linked lines, and one NORMAL transaction per category (label
+ * "Tesco · Groceries", the sum of that category's lines, money out) is created on [accountId]
+ * sharing the receipt id, so the transactions add up to the receipt total. [store] is the stored
+ * key ("TESCO", "SAINSBURYS", "MORRISONS"). Returns the receipt id.
+ */
+fun seedReceipt(
+    accountId: Long,
+    store: String,
+    date: LocalDate,
+    items: List<SeedReceiptItem>,
+): Long {
+    val categories = awaitCategories()
+    val groceries = requireNotNull(categories["Groceries"]) { "No default category called 'Groceries'" }
+    fun categoryIdOf(item: SeedReceiptItem): Long = item.category
+        ?.let { requireNotNull(categories[it]) { "No default category called '$it'" } }
+        ?: groceries
+    val storeLabel = when (store) {
+        "TESCO" -> "Tesco"
+        "SAINSBURYS" -> "Sainsbury's"
+        "MORRISONS" -> "Morrisons"
+        else -> "Shop"
+    }
+    val repository = appContainer.receiptRepository
+    return blocking {
+        val receiptItems = items.map { item ->
+            val categoryId = categoryIdOf(item)
+            val productId = item.productName?.let { name ->
+                repository.learnProduct(store, ProductNames.normalise(item.rawName), name, categoryId)
+            }
+            ReceiptItem(
+                receiptId = 0,
+                productId = productId,
+                rawName = item.rawName,
+                quantity = item.quantity,
+                unitPrice = item.unitPence?.let { Money(it) },
+                price = Money(item.pence),
+                discount = Money(item.discountPence),
+                categoryId = categoryId,
+            )
+        }
+        val total = Money(items.sumOf { it.pence + it.discountPence })
+        val categoryNames = categories.entries.associate { it.value to it.key }
+        val splits = receiptItems.groupBy { it.categoryId }.map { (categoryId, group) ->
+            Transaction(
+                accountId = accountId,
+                amount = Money(-group.sumOf { it.price.pence + it.discount.pence }),
+                date = date,
+                createdAtEpochMillis = nextStamp(),
+                categoryId = categoryId,
+                label = "$storeLabel · ${categoryId?.let { categoryNames[it] } ?: "Other"}",
+                kind = TxKind.NORMAL,
+            )
+        }
+        repository.saveReceipt(
+            receipt = Receipt(
+                store = store,
+                date = date,
+                total = total,
+                source = "PHOTO",
+                createdAtEpochMillis = nextStamp(),
+            ),
+            items = receiptItems,
+            splitTransactions = splits,
+            replaceTransactionId = null,
+        )
+    }
+}
 
 /** What [seedSmallLedger] created; every date is relative to [today]. */
 class SmallLedger(
