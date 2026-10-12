@@ -1,5 +1,6 @@
 package io.github.matteopi.budgeting.testing
 
+import android.content.Intent
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -508,6 +509,13 @@ abstract class UiTest {
 
     fun launchMain(): ActivityScenario<MainActivity> {
         val scenario = ActivityScenario.launch(MainActivity::class.java)
+        scenarios += scenario
+        return scenario
+    }
+
+    /** Launches [MainActivity] with [intent] (for example an `ACTION_SEND` of a receipt). */
+    fun launchMain(intent: Intent): ActivityScenario<MainActivity> {
+        val scenario = ActivityScenario.launch<MainActivity>(intent)
         scenarios += scenario
         return scenario
     }

@@ -17,6 +17,7 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import io.github.matteopi.budgeting.core.model.Flow as CategoryFlow
 import io.github.matteopi.budgeting.core.model.Preset
 import io.github.matteopi.budgeting.ui.components.AmountKeypad
+import io.github.matteopi.budgeting.ui.receipts.ReceiptIcons
 import java.time.LocalDate
 
 /**
@@ -46,6 +48,7 @@ fun QuickAddScreen(
     onSave: () -> Unit,
     onOpenApp: () -> Unit,
     modifier: Modifier = Modifier,
+    onScanReceipt: () -> Unit = {},
 ) {
     Card(modifier = modifier.fillMaxWidth()) {
         if (state.noAccounts) {
@@ -61,6 +64,7 @@ fun QuickAddScreen(
                 onLabelChange = onLabelChange,
                 onDateChange = onDateChange,
                 onSave = onSave,
+                onScanReceipt = onScanReceipt,
             )
         }
     }
@@ -93,6 +97,7 @@ private fun QuickAddContent(
     onLabelChange: (String) -> Unit,
     onDateChange: (LocalDate) -> Unit,
     onSave: () -> Unit,
+    onScanReceipt: () -> Unit,
 ) {
     // Scrolls if the card is ever taller than the space above the keyboard (a small screen).
     Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp)) {
@@ -126,20 +131,23 @@ private fun QuickAddContent(
 
         Spacer(Modifier.height(12.dp))
 
-        if (state.presets.isNotEmpty()) {
-            Row(
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                state.presets.forEach { preset ->
-                    AssistChip(
-                        onClick = { onPresetSelect(preset) },
-                        label = { Text("${preset.label} ${preset.amount.format()}") },
-                    )
-                }
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            AssistChip(
+                onClick = onScanReceipt,
+                label = { Text("Scan receipt") },
+                leadingIcon = { Icon(ReceiptIcons.Camera, contentDescription = null) },
+            )
+            state.presets.forEach { preset ->
+                AssistChip(
+                    onClick = { onPresetSelect(preset) },
+                    label = { Text("${preset.label} ${preset.amount.format()}") },
+                )
             }
-            Spacer(Modifier.height(8.dp))
         }
+        Spacer(Modifier.height(8.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),

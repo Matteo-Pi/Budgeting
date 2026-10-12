@@ -38,4 +38,9 @@ sealed interface Route {
     @Serializable data object Receipts : Route
     @Serializable data class ReceiptDetail(val receiptId: Long) : Route
     @Serializable data class ItemDetail(val productId: Long) : Route
+    /** Receipt capture (docs/PLAN.md §10): choose camera or gallery, then continue to [ReceiptReview]. */
+    @Serializable data object ReceiptScan : Route
+
+    /** Review a read receipt before saving: [path] is a file in the app's cache, [kind] a `ReceiptInputKind` name. */
+    @Serializable data class ReceiptReview(val path: String, val kind: String) : Route
 }

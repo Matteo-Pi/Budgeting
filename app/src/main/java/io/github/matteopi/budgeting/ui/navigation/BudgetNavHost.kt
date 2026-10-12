@@ -40,6 +40,8 @@ import io.github.matteopi.budgeting.ui.plan.SinkingFundsScreen
 import io.github.matteopi.budgeting.ui.plan.StudentLoanHelperScreen
 import io.github.matteopi.budgeting.ui.plan.TermDatesScreen
 import io.github.matteopi.budgeting.ui.quickadd.QuickAddActivity
+import io.github.matteopi.budgeting.ui.receipts.ReceiptReviewScreen
+import io.github.matteopi.budgeting.ui.receipts.ReceiptScanScreen
 import io.github.matteopi.budgeting.ui.receipts.list.ReceiptDetailScreen
 import io.github.matteopi.budgeting.ui.receipts.list.ReceiptsScreen
 import io.github.matteopi.budgeting.ui.settings.CategoriesScreen
@@ -97,6 +99,7 @@ fun BudgetNavHost(
                 ActivityScreen(
                     onAddTransaction = onAddTransaction,
                     onOpenReceipt = { id -> navController.navigate(Route.ReceiptDetail(id)) },
+                    onScanReceipt = { navController.navigate(Route.ReceiptScan) },
                 )
             }
             composable<Route.Forecast> {
@@ -242,6 +245,21 @@ fun BudgetNavHost(
             composable<Route.ItemDetail> { backStackEntry ->
                 val args = backStackEntry.toRoute<Route.ItemDetail>()
                 ItemDetailScreen(productId = args.productId, onBack = { navController.popBackStack() })
+            }
+            composable<Route.ReceiptScan> {
+                ReceiptScanScreen(
+                    onBack = { navController.popBackStack() },
+                    // The scan screen is replaced by the review, so Back from the review returns to where scanning started.
+                    onCaptured = { review ->
+                        navController.navigate(review) {
+                            popUpTo<Route.ReceiptScan> { inclusive = true }
+                        }
+                    },
+                )
+            }
+            composable<Route.ReceiptReview> { backStackEntry ->
+                val args = backStackEntry.toRoute<Route.ReceiptReview>()
+                ReceiptReviewScreen(path = args.path, kind = args.kind, onBack = { navController.popBackStack() })
             }
         }
     }
