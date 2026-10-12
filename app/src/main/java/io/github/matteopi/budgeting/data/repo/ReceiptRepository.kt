@@ -55,12 +55,16 @@ class ReceiptRepository(
     ): Long {
         val receiptId = database.withTransaction {
             val newId = receiptDao.insertReceipt(receipt.copy(id = 0, transactionId = null).toEntity())
+            // A replaced row from a statement import hands its import key to the first split, so
+            // importing the same statement again still recognises the payment as already imported.
+            val inheritedImportKey = replaceTransactionId?.let { transactionDao.get(it)?.importKey }
             if (replaceTransactionId != null) {
                 transactionDao.delete(replaceTransactionId)
             }
             var firstTransactionId: Long? = null
-            for (split in splitTransactions) {
-                val txId = transactionDao.insert(split.copy(id = 0, receiptId = newId).toEntity())
+            for ((index, split) in splitTransactions.withIndex()) {
+                val importKey = if (index == 0) inheritedImportKey ?: split.importKey else split.importKey
+                val txId = transactionDao.insert(split.copy(id = 0, receiptId = newId, importKey = importKey).toEntity())
                 if (firstTransactionId == null) firstTransactionId = txId
             }
             if (firstTransactionId != null) {
