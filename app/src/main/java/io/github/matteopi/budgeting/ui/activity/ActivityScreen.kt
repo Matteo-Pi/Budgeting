@@ -48,6 +48,7 @@ import io.github.matteopi.budgeting.ui.components.EmptyState
 @Composable
 fun ActivityScreen(
     onAddTransaction: () -> Unit,
+    onOpenReceipt: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ActivityViewModel = viewModel(factory = ActivityViewModel.Factory),
 ) {
@@ -136,6 +137,10 @@ fun ActivityScreen(
             categories = state.categories,
             today = state.today,
             onDismiss = { editingRow = null },
+            onViewReceipt = { receiptId ->
+                editingRow = null
+                onOpenReceipt(receiptId)
+            },
             onSaveSingle = { amount, categoryId, accountId, date, label, note ->
                 viewModel.saveSingle((rowToEdit as ActivityRow.Single).tx, amount, categoryId, accountId, date, label, note)
                 editingRow = null

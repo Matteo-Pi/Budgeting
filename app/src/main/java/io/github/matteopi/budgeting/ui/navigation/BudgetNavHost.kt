@@ -28,6 +28,7 @@ import io.github.matteopi.budgeting.ui.forecast.TimelineScreen
 import io.github.matteopi.budgeting.ui.home.HomeScreen
 import io.github.matteopi.budgeting.ui.importer.StatementImportScreen
 import io.github.matteopi.budgeting.ui.insights.InsightsScreen
+import io.github.matteopi.budgeting.ui.insights.ItemDetailScreen
 import io.github.matteopi.budgeting.ui.onboarding.OnboardingScreen
 import io.github.matteopi.budgeting.ui.plan.PlanScreen
 import io.github.matteopi.budgeting.ui.plan.RecurringEditScreen
@@ -39,6 +40,8 @@ import io.github.matteopi.budgeting.ui.plan.SinkingFundsScreen
 import io.github.matteopi.budgeting.ui.plan.StudentLoanHelperScreen
 import io.github.matteopi.budgeting.ui.plan.TermDatesScreen
 import io.github.matteopi.budgeting.ui.quickadd.QuickAddActivity
+import io.github.matteopi.budgeting.ui.receipts.list.ReceiptDetailScreen
+import io.github.matteopi.budgeting.ui.receipts.list.ReceiptsScreen
 import io.github.matteopi.budgeting.ui.settings.CategoriesScreen
 import io.github.matteopi.budgeting.ui.settings.PresetsScreen
 import io.github.matteopi.budgeting.ui.settings.SettingsScreen
@@ -91,7 +94,10 @@ fun BudgetNavHost(
                 )
             }
             composable<Route.Activity> {
-                ActivityScreen(onAddTransaction = onAddTransaction)
+                ActivityScreen(
+                    onAddTransaction = onAddTransaction,
+                    onOpenReceipt = { id -> navController.navigate(Route.ReceiptDetail(id)) },
+                )
             }
             composable<Route.Forecast> {
                 ForecastScreen(
@@ -112,7 +118,7 @@ fun BudgetNavHost(
                 )
             }
             composable<Route.Insights> {
-                InsightsScreen()
+                InsightsScreen(onOpenItem = { id -> navController.navigate(Route.ItemDetail(id)) })
             }
             composable<Route.Settings> {
                 SettingsScreen(
@@ -121,6 +127,7 @@ fun BudgetNavHost(
                     onOpenPresets = { navController.navigate(Route.Presets) },
                     onOpenBackup = { navController.navigate(Route.Backup) },
                     onOpenStatementImport = { navController.navigate(Route.StatementImport) },
+                    onOpenReceipts = { navController.navigate(Route.Receipts) },
                 )
             }
             composable<Route.AccountDetail> { backStackEntry ->
@@ -221,6 +228,20 @@ fun BudgetNavHost(
                     },
                     onOpenStatementImport = { navController.navigate(Route.StatementImport) },
                 )
+            }
+            composable<Route.Receipts> {
+                ReceiptsScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenReceipt = { id -> navController.navigate(Route.ReceiptDetail(id)) },
+                )
+            }
+            composable<Route.ReceiptDetail> { backStackEntry ->
+                val args = backStackEntry.toRoute<Route.ReceiptDetail>()
+                ReceiptDetailScreen(receiptId = args.receiptId, onBack = { navController.popBackStack() })
+            }
+            composable<Route.ItemDetail> { backStackEntry ->
+                val args = backStackEntry.toRoute<Route.ItemDetail>()
+                ItemDetailScreen(productId = args.productId, onBack = { navController.popBackStack() })
             }
         }
     }
