@@ -272,14 +272,15 @@ class ReceiptReviewViewModelTest {
 
         viewModel.setPrice(bread, "1.30")
         viewModel.deleteItem(bread)
-        derived = derived(viewModel) { it.mismatch }
+        // Wait for the state with the bread gone: the earlier "abc" state also showed a mismatch.
+        derived = derived(viewModel) { bread !in it.itemFlags && it.mismatch }
         assertEquals(ReceiptCheck.Mismatch(Money(-130)), derived.check)
         assertEquals("Items are £1.30 less than the total — check the highlighted lines", derived.checkMessage)
 
         viewModel.addItem()
         val added = viewModel.edit.value.items.last()
         assertEquals(11L, added.key)
-        derived = derived(viewModel) { !it.canSave }
+        derived = derived(viewModel) { added.key in it.itemFlags && !it.canSave }
         assertEquals("Every item needs a name", derived.problem)
         viewModel.setName(added.key, "Bread rolls")
         viewModel.setPrice(added.key, "1.30")
