@@ -65,6 +65,7 @@ class ReceiptReviewTest : UiTest() {
         scrollIntoView(matcher)
         compose.onAllNodes(matcher)[0].performTextReplacement(value)
         compose.waitForIdle()
+        hideKeyboard()
     }
 
     private fun valueOf(matcher: SemanticsMatcher): String? = runCatching {
@@ -73,6 +74,9 @@ class ReceiptReviewTest : UiTest() {
     }.getOrNull()
 
     private fun assertValue(matcher: SemanticsMatcher, what: String, expected: String) {
+        // Items far down the list are only laid out once scrolled to.
+        waitForExists(matcher, what)
+        scrollIntoView(matcher)
         waitFor("$what to read '$expected' (it reads '${valueOf(matcher)}')") { valueOf(matcher) == expected }
     }
 

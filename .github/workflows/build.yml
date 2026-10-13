@@ -142,7 +142,8 @@ jobs:
           target: default
           profile: pixel_6
           cores: 3
-          ram-size: 4096M
+          # The runner has about 8 GB and the guest uses about 1.5 GB; 4 GB left the host swapping.
+          ram-size: 3072M
           disk-size: 3G
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none

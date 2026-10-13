@@ -1,6 +1,9 @@
 package io.github.matteopi.budgeting.testing
 
 import android.content.Intent
+import android.os.Looper
+import android.util.Log
+import android.view.inputmethod.InputMethodManager
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -32,6 +35,8 @@ import androidx.compose.ui.test.swipeUp
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
+import androidx.test.runner.lifecycle.Stage
 import androidx.test.uiautomator.UiDevice
 import io.github.matteopi.budgeting.AppContainer
 import io.github.matteopi.budgeting.BudgetApp
@@ -59,13 +64,17 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.rules.RuleChain
 import org.junit.rules.TestRule
+import org.junit.rules.Timeout
+import org.junit.runners.model.MultipleFailureException
 import org.junit.runners.model.Statement
+import org.junit.runners.model.TestTimedOutException
 
 /*
  * Shared helpers for the end-to-end UI tests (the classes in the androidTest "ui" package).
@@ -502,8 +511,38 @@ abstract class UiTest {
         }
     }
 
+    /**
+     * A test that hangs (CI once lost a whole emulator job to one) fails after five minutes instead.
+     * The failure carries the test thread's stack and the main thread's (where the app would be
+     * stuck), and every thread's stack goes to logcat under "HangGuard".
+     */
+    private val hangGuard = TestRule { base, description ->
+        val timed = Timeout.builder().withTimeout(5, TimeUnit.MINUTES).withLookingForStuckThread(true).build()
+            .apply(base, description)
+        object : Statement() {
+            override fun evaluate() {
+                try {
+                    timed.evaluate()
+                } catch (e: Exception) {
+                    val timedOut = e is TestTimedOutException ||
+                        (e is MultipleFailureException && e.failures.any { it is TestTimedOutException })
+                    if (!timedOut) throw e
+                    Thread.getAllStackTraces().forEach { (thread, stack) ->
+                        Log.e("HangGuard", "${thread.name} (${thread.state}):\n" + stack.joinToString("\n") { "    at $it" })
+                    }
+                    val main = Looper.getMainLooper().thread
+                    throw AssertionError(
+                        "${description.methodName} hung for 5 minutes. Main thread (${main.state}):\n" +
+                            main.stackTrace.take(40).joinToString("\n") { "    at $it" },
+                        e,
+                    )
+                }
+            }
+        }
+    }
+
     @get:org.junit.Rule
-    val rules: RuleChain = RuleChain.outerRule(compose).around(lifecycleRule)
+    val rules: RuleChain = RuleChain.outerRule(hangGuard).around(compose).around(lifecycleRule)
 
     // ----- launching -----
 
@@ -706,18 +745,41 @@ abstract class UiTest {
         }
     }
 
-    /** Waits for [matcher], scrolls it into view and taps the [index]th match once it has stopped moving. */
+    /**
+     * Waits for [matcher], scrolls it into view and taps the [index]th match once it has stopped
+     * moving. A lazy list can drop the node while it settles (it scrolled out of the laid-out rows),
+     * so the whole sequence is retried a couple of times before giving up.
+     */
     fun tap(matcher: SemanticsMatcher, what: String, index: Int = 0) {
-        waitForExists(matcher, what)
-        // Settle first (the keyboard may still be sliding in and shrinking the screen), then scroll
-        // for the final layout, and settle again before tapping.
-        waitForStableBounds(matcher, index)
-        scrollIntoView(matcher, index)
-        waitForStableBounds(matcher, index)
-        try {
-            compose.onAllNodes(matcher)[index].performClick()
-        } catch (e: AssertionError) {
-            throw AssertionError("Could not tap $what (#$index): ${e.message}\nOn screen:\n${screenDump()}", e)
+        var lastError: AssertionError? = null
+        repeat(3) {
+            waitForExists(matcher, what)
+            // Settle first (the keyboard may still be sliding in and shrinking the screen), then scroll
+            // for the final layout, and settle again before tapping.
+            waitForStableBounds(matcher, index)
+            scrollIntoView(matcher, index)
+            waitForStableBounds(matcher, index)
+            try {
+                compose.onAllNodes(matcher)[index].performClick()
+                compose.waitForIdle()
+                return
+            } catch (e: AssertionError) {
+                lastError = e
+            }
+        }
+        throw AssertionError("Could not tap $what (#$index): ${lastError?.message}\nOn screen:\n${screenDump()}", lastError)
+    }
+
+    /**
+     * Hides the on-screen keyboard. Typing focuses a field, which raises the keyboard; the screen then
+     * shrinks to stay above it, and fields further down a list are no longer laid out.
+     */
+    fun hideKeyboard() {
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            ActivityLifecycleMonitorRegistry.getInstance().getActivitiesInStage(Stage.RESUMED).forEach { activity ->
+                activity.getSystemService(InputMethodManager::class.java)
+                    ?.hideSoftInputFromWindow(activity.window.decorView.windowToken, 0)
+            }
         }
         compose.waitForIdle()
     }
@@ -741,6 +803,7 @@ abstract class UiTest {
         scrollIntoView(field(label), index)
         compose.onAllNodes(field(label))[index].performTextReplacement(value)
         compose.waitForIdle()
+        hideKeyboard()
     }
 
     fun assertFieldValue(label: String, expected: String, index: Int = 0) {
