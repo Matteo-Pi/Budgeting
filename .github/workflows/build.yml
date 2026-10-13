@@ -118,6 +118,14 @@ jobs:
       - name: Build app and test APKs
         run: ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --console=plain
 
+      # The Gradle and Kotlin daemons left over from compiling hold several GB; with the emulator's
+      # 4 GB on top, the runner ran short of memory and the emulator froze part-way through the suite.
+      - name: Free build daemons' memory before starting the emulator
+        run: |
+          ./gradlew --stop || true
+          pkill -f KotlinCompileDaemon || true
+          free -m
+
       - name: Run device tests on an emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -135,6 +143,7 @@ jobs:
           script: |
             adb shell settings put global hide_error_dialogs 1 || true
             adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
+            nohup .github/scripts/device-monitor.sh > /dev/null 2>&1 &
             ./gradlew :app:connectedDebugAndroidTest --console=plain --continue > device-tests.log 2>&1; echo $? > device-tests.exit
 
       - name: Collect results
@@ -144,6 +153,10 @@ jobs:
           cp device-tests.log device-report/ 2>/dev/null || true
           find app/build/outputs/connected_android_test_additional_output -name '*.png' -exec cp {} device-report/screenshots/ \; 2>/dev/null || true
           find app/build/outputs/androidTest-results -name '*.xml' -exec cp {} device-report/results/ \; 2>/dev/null || true
+          mkdir -p device-report/diag
+          cp device-diag/resources.txt device-report/diag/ 2>/dev/null || true
+          tail -n 20000 device-diag/logcat.txt > device-report/diag/logcat-tail.txt 2>/dev/null || true
+          free -m > device-report/diag/host-at-end.txt 2>&1; df -h >> device-report/diag/host-at-end.txt 2>&1 || true
           python3 .github/scripts/summarise_tests.py device-report/results > device-report/SUMMARY.txt || true
           { echo; echo "Last lines of the Gradle log:"; tail -n 60 device-tests.log 2>/dev/null; } >> device-report/SUMMARY.txt
           cat device-report/SUMMARY.txt
