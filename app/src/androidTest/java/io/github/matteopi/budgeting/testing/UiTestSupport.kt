@@ -4,6 +4,8 @@ import android.content.Intent
 import android.os.Looper
 import android.util.Log
 import android.view.inputmethod.InputMethodManager
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -27,11 +29,11 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.unit.toSize
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
@@ -66,6 +68,7 @@ import java.time.temporal.ChronoUnit
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
+import kotlin.math.sign
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -715,14 +718,40 @@ abstract class UiTest {
     /** Scrolls so that the matching node is on screen (lazy lists are searched; failures to scroll are ignored). */
     fun scrollIntoView(matcher: SemanticsMatcher, index: Int = 0) {
         if (!exists(matcher)) scrollLazyListsTo(matcher)
-        // performScrollTo only scrolls the closest scrolling parent, so a chip in a sideways-scrolling
-        // row can stay below the fold of the screen's own scroll. Bring the row itself into view first.
-        runCatching {
-            compose.onAllNodes(hasScrollAction() and hasAnyDescendant(matcher) and hasAnyAncestor(hasScrollAction()))
-                .onFirst()
-                .performScrollTo()
+        // Scrolling only moves the closest scrolling parent, so a chip in a sideways-scrolling row can
+        // stay below the fold of the screen's own scroll. Bring the row itself into view first.
+        runCatching { scrollTo(hasScrollAction() and hasAnyDescendant(matcher) and hasAnyAncestor(hasScrollAction()), 0) }
+        runCatching { scrollTo(matcher, index) }
+    }
+
+    /**
+     * Scrolls the closest scrolling parent of the [index]th node matching [matcher] until the node
+     * is inside it, as `performScrollTo` does, but gives up once a scroll stops moving it.
+     * `performScrollTo` retries for ever: it hung the quick-add test on a preset chip cut off by the
+     * edge of its sideways-scrolling row.
+     */
+    private fun scrollTo(matcher: SemanticsMatcher, index: Int) {
+        fun delta(a: Float, b: Float): Float = if (sign(a) == sign(b)) (if (abs(a) < abs(b)) a else b) else 0f
+        repeat(8) {
+            val node = compose.onAllNodes(matcher).fetchSemanticsNodes().getOrNull(index) ?: return
+            val parent = generateSequence(node.parent) { it.parent }
+                .firstOrNull { it.config.getOrNull(SemanticsActions.ScrollBy) != null } ?: return
+            val viewport = parent.boundsInRoot
+            val target = Rect(node.positionInRoot, node.size.toSize())
+            val horizontal = parent.config.getOrNull(SemanticsProperties.HorizontalScrollAxisRange)
+            val vertical = parent.config.getOrNull(SemanticsProperties.VerticalScrollAxisRange)
+            var dx = if (horizontal == null) 0f else delta(target.left - viewport.left, target.right - viewport.right)
+            var dy = if (vertical == null) 0f else delta(target.top - viewport.top, target.bottom - viewport.bottom)
+            if (horizontal?.reverseScrolling == true) dx = -dx
+            if (vertical?.reverseScrolling == true) dy = -dy
+            if (abs(dx) < 1f && abs(dy) < 1f) return
+            InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                parent.config[SemanticsActions.ScrollBy].action?.invoke(dx, dy)
+            }
+            compose.waitForIdle()
+            val moved = compose.onAllNodes(matcher).fetchSemanticsNodes().getOrNull(index)?.positionInRoot
+            if (moved == null || moved == node.positionInRoot) return
         }
-        runCatching { compose.onAllNodes(matcher)[index].performScrollTo() }
     }
 
     // ----- tapping and typing -----

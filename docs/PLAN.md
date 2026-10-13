@@ -930,7 +930,11 @@ now an overlay); daily worker snapshots before any account exists and its widget
 - UI test conventions: tap through `UiTest.tap` (waits for the target to stop moving: screens
   resize for the keyboard), pick dates with `chooseInDatePicker` (Material 3 day cells carry the
   full date as text), reach cards far down a list with `swipeListUp`, and never address a field by
-  index in a lazy list (only the rows on screen exist).
+  index in a lazy list (only the rows on screen exist). `type` hides the keyboard afterwards (it
+  shrinks the screen, so lower fields stop being laid out). Scroll with `scrollIntoView`, never
+  `performScrollTo` directly: that retries for ever when a node can't come fully into view (a chip
+  cut off by the edge of a sideways row hung a whole shard). Every UI test fails after five minutes,
+  with the main thread's stack in the failure and every thread's in logcat under `HangGuard`.
 - Bugs found and fixed by these tests: out-of-order import undo corrupting the balance history;
   restore not bringing back the account views; what-if save navigating off the main thread (crash);
   a deleted/archived account's page staying open; tabs reopening a stale sub-screen; account-page
@@ -946,8 +950,8 @@ now an overlay); daily worker snapshots before any account exists and its widget
   dedicated parser and tune `MerchantKey`. The generic CSV importer works meanwhile.
 - **Room schema files**: committed under `app/schemas/` (version 1 taken from CI, which publishes
   every build's schemas to `refs/ci/room-schemas`). Commit each new version's JSON the same way.
-- **Device testing**: nothing has run on a real device or emulator yet (no emulator in this
-  environment); first-install feedback from the user is the next verification step.
+- **Device testing**: the suite runs on emulators in CI (see §8 Testing); nothing has run on a
+  real phone yet, so first-install feedback from the user is the next verification step.
 - **Faster development**: if `dl.google.com` is allowed in the cloud environment's network
   settings, the app can be compiled locally instead of only in CI.
 - Later ideas (not v1): notification capture of card payments, subscription detector,
