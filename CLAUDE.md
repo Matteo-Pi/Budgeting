@@ -11,7 +11,9 @@
 - Device tests (`app/src/androidTest`) run on an emulator in CI's `device-tests` job. Its report
   (SUMMARY.txt, screenshots/, results/, log) is pushed to `refs/ci/device-report`; read it with
   `git fetch origin refs/ci/device-report && git worktree add /tmp/report FETCH_HEAD` (or
-  `git show FETCH_HEAD:SUMMARY.txt`). The report commit's message names the commit it tested. A
+  `git show FETCH_HEAD:SUMMARY.txt`). CI force-pushes these refs, so when fetching into a named
+  ref use a forced refspec (`+refs/ci/device-report:refs/remotes/ci/device-report`); a plain one
+  silently keeps the old report. The report commit's message names the commit it tested. A
   push cancels the run in progress, which still publishes a partial (often empty) report, and a
   full run takes about 40 minutes, so batch changes before pushing.
 - UI test conventions (tapping, date pickers, lazy lists, the keyboard): see the "Testing" notes
