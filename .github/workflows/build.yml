@@ -84,12 +84,19 @@ jobs:
         run: |
           grep -E "^e: |What went wrong|FAILED|Could not resolve|error:" build.log | head -80 || true
 
-  # Runs the instrumented tests (app/src/androidTest) on an emulator and publishes a report —
-  # screenshots, a failure summary, raw results and the log — to refs/ci/device-report, so it can
-  # be fetched with git (`git fetch origin refs/ci/device-report`) without downloading artifacts.
+  # Runs the instrumented tests (app/src/androidTest) on emulators, split into two shards that run in
+  # parallel: one emulator running the whole suite grew its graphics memory test after test until
+  # the runner ran out and was shut down (35+ minutes in). Each shard uploads its results; the
+  # device-report job merges them and publishes one report — screenshots, a failure summary, raw
+  # results, logs and diagnostics — to refs/ci/device-report, so it can be fetched with git
+  # (`git fetch origin +refs/ci/device-report:refs/remotes/ci/device-report`).
   device-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1]
     steps:
       - uses: actions/checkout@v4
 
@@ -118,15 +125,14 @@ jobs:
       - name: Build app and test APKs
         run: ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --console=plain
 
-      # The Gradle and Kotlin daemons left over from compiling hold several GB; with the emulator's
-      # 4 GB on top, the runner ran short of memory and the emulator froze part-way through the suite.
+      # The Gradle and Kotlin daemons left over from compiling hold several GB of the runner's memory.
       - name: Free build daemons' memory before starting the emulator
         run: |
           ./gradlew --stop || true
           pkill -f KotlinCompileDaemon || true
           free -m
 
-      - name: Run device tests on an emulator
+      - name: Run device tests on an emulator (shard ${{ matrix.shard }} of 2)
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -144,25 +150,67 @@ jobs:
             adb shell settings put global hide_error_dialogs 1 || true
             adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
             nohup .github/scripts/device-monitor.sh > /dev/null 2>&1 &
-            ./gradlew :app:connectedDebugAndroidTest --console=plain --continue > device-tests.log 2>&1; echo $? > device-tests.exit
+            ./gradlew :app:connectedDebugAndroidTest --console=plain --continue -Pandroid.testInstrumentationRunnerArguments.numShards=2 -Pandroid.testInstrumentationRunnerArguments.shardIndex=${{ matrix.shard }} > device-tests.log 2>&1; echo $? > device-tests.exit
 
       - name: Collect results
         if: always()
         run: |
-          mkdir -p device-report/results device-report/screenshots
-          cp device-tests.log device-report/ 2>/dev/null || true
-          find app/build/outputs/connected_android_test_additional_output -name '*.png' -exec cp {} device-report/screenshots/ \; 2>/dev/null || true
-          find app/build/outputs/androidTest-results -name '*.xml' -exec cp {} device-report/results/ \; 2>/dev/null || true
-          mkdir -p device-report/diag
-          cp device-diag/resources.txt device-report/diag/ 2>/dev/null || true
-          tail -n 20000 device-diag/logcat.txt > device-report/diag/logcat-tail.txt 2>/dev/null || true
-          free -m > device-report/diag/host-at-end.txt 2>&1; df -h >> device-report/diag/host-at-end.txt 2>&1 || true
+          out=device-report-${{ matrix.shard }}
+          mkdir -p $out/results $out/screenshots $out/diag
+          cp device-tests.log device-tests.exit $out/ 2>/dev/null || true
+          find app/build/outputs/connected_android_test_additional_output -name '*.png' -exec cp {} $out/screenshots/ \; 2>/dev/null || true
+          find app/build/outputs/androidTest-results -name '*.xml' -exec cp {} $out/results/ \; 2>/dev/null || true
+          cp device-diag/resources.txt $out/diag/ 2>/dev/null || true
+          tail -n 20000 device-diag/logcat.txt > $out/diag/logcat-tail.txt 2>/dev/null || true
+          { free -m; df -h; } > $out/diag/host-at-end.txt 2>&1 || true
+          python3 .github/scripts/summarise_tests.py $out/results || true
+
+      - name: Upload shard results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: device-report-${{ matrix.shard }}
+          path: device-report-${{ matrix.shard }}
+          if-no-files-found: warn
+
+      - name: Fail if any device test failed
+        if: always()
+        run: exit "$(cat device-tests.exit 2>/dev/null || echo 1)"
+
+  # Merges the shards' results into one report and publishes it to refs/ci/device-report. A shard
+  # whose runner was lost uploads nothing; the summary then says which shard is missing.
+  device-report:
+    needs: device-tests
+    if: always() && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: device-report-*
+          path: shards
+
+      - name: Merge the shards
+        run: |
+          mkdir -p device-report/results device-report/screenshots device-report/diag
+          missing=""
+          for n in 0 1; do
+            d=shards/device-report-$n
+            if [ ! -d "$d" ]; then missing="$missing $n"; continue; fi
+            for f in "$d"/results/*.xml; do [ -e "$f" ] && cp "$f" "device-report/results/shard$n-$(basename "$f")"; done
+            cp "$d"/screenshots/*.png device-report/screenshots/ 2>/dev/null || true
+            cp "$d"/device-tests.log device-report/device-tests-$n.log 2>/dev/null || true
+            mkdir -p device-report/diag/shard-$n && cp -r "$d"/diag/. device-report/diag/shard-$n/ 2>/dev/null || true
+          done
           python3 .github/scripts/summarise_tests.py device-report/results > device-report/SUMMARY.txt || true
-          { echo; echo "Last lines of the Gradle log:"; tail -n 60 device-tests.log 2>/dev/null; } >> device-report/SUMMARY.txt
+          if [ -n "$missing" ]; then echo "MISSING SHARDS:$missing (runner lost or job cancelled)" >> device-report/SUMMARY.txt; fi
+          for n in 0 1; do
+            { echo; echo "Last lines of shard $n's Gradle log:"; tail -n 40 device-report/device-tests-$n.log 2>/dev/null; } >> device-report/SUMMARY.txt
+          done
           cat device-report/SUMMARY.txt
 
       - name: Publish report to refs/ci/device-report
-        if: always() && github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -171,8 +219,3 @@ jobs:
           git add -A
           git -c user.name="CI" -c user.email="ci@users.noreply.github.com" commit -qm "Device test report: run ${GITHUB_RUN_NUMBER} at ${GITHUB_SHA::7}"
           git push -q --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:refs/ci/device-report
-
-      - name: Fail if any device test failed
-        if: always()
-        run: exit "$(cat device-tests.exit 2>/dev/null || echo 1)"
-

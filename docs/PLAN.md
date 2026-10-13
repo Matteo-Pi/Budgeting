@@ -923,8 +923,8 @@ now an overlay); daily worker snapshots before any account exists and its widget
 - **Core** (`./gradlew -p core test`): 287 JVM tests, including stress/metamorphic suites and a
   20,000-budget soak (`core/src/test/.../stress/`); forecast invariants include "expected spending
   + expected income = expected learned flow".
-- **Device tests** (`app/src/androidTest`, run by CI's `device-tests` job on an API 34 emulator,
-  report and screenshots on `refs/ci/device-report`): data layer against the real Room database
+- **Device tests** (`app/src/androidTest`, run by CI's `device-tests` job on two API 34 emulators
+  in parallel shards, merged by `device-report`; report and screenshots on `refs/ci/device-report`): data layer against the real Room database
   (`data/`), end-to-end UI with screenshots (`ui/`, helpers in `testing/UiTestSupport.kt`), and the
   widget (`widget/`: Glance layouts at the three sizes, one-tap preset logging).
 - UI test conventions: tap through `UiTest.tap` (waits for the target to stop moving: screens
