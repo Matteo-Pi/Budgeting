@@ -1,5 +1,6 @@
 package io.github.matteopi.budgeting.ui.accounts
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -31,7 +32,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.matteopi.budgeting.core.model.ZeroPoint
+import io.github.matteopi.budgeting.ui.activity.ActivityRow
 import io.github.matteopi.budgeting.ui.activity.ActivityRowView
+import io.github.matteopi.budgeting.ui.activity.TransactionEditHost
 import io.github.matteopi.budgeting.ui.activity.toShortLabelWithYear
 import io.github.matteopi.budgeting.ui.components.EmptyState
 import io.github.matteopi.budgeting.ui.components.MoneyText
@@ -44,12 +47,15 @@ fun AccountDetailScreen(
     accountId: Long,
     onBack: () -> Unit,
     onEdit: (Long) -> Unit,
+    onOpenHistory: (Long) -> Unit = {},
+    onOpenReceipt: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: AccountDetailViewModel = viewModel(factory = remember(accountId) { AccountDetailViewModel.factory(accountId) }),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showUpdateBalance by remember { mutableStateOf(false) }
     var showTransfer by remember { mutableStateOf(false) }
+    var editingRow by remember { mutableStateOf<ActivityRow?>(null) }
 
     Scaffold(
         modifier = modifier,
@@ -77,10 +83,15 @@ fun AccountDetailScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                SectionCard {
+                // The whole card opens the history. The tag sits on the card, not on the figure: a clickable
+                // card merges its children, and a child's test tag is not visible in the merged tree.
+                SectionCard(
+                    modifier = Modifier
+                        .testTag("account-balance")
+                        .clickable(onClickLabel = "See full history") { onOpenHistory(accountId) },
+                ) {
                     MoneyText(
                         amount = state.displayBalance,
-                        modifier = Modifier.testTag("account-balance"),
                         style = MaterialTheme.typography.headlineLarge,
                         isBalance = true,
                     )
@@ -125,10 +136,14 @@ fun AccountDetailScreen(
                                 row = row,
                                 categoriesById = state.categoriesById,
                                 accountsById = state.accountsById,
-                                onClick = {},
+                                onClick = { editingRow = row },
                                 perspectiveAccountId = accountId,
                             )
                         }
+                        OutlinedButton(
+                            onClick = { onOpenHistory(accountId) },
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        ) { Text("See full history") }
                     }
                 }
             }
@@ -161,6 +176,17 @@ fun AccountDetailScreen(
             }
         }
     }
+
+    TransactionEditHost(
+        row = editingRow,
+        onDismiss = { editingRow = null },
+        controller = viewModel.editing,
+        accounts = state.accounts,
+        categories = state.categories,
+        today = state.today,
+        perspectiveAccountId = accountId,
+        onOpenReceipt = onOpenReceipt,
+    )
 
     val account = state.account
     if (showUpdateBalance && account != null) {

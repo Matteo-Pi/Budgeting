@@ -134,36 +134,15 @@ fun ActivityScreen(
         }
     }
 
-    val rowToEdit = editingRow
-    if (rowToEdit != null) {
-        TransactionEditSheet(
-            row = rowToEdit,
-            accounts = state.accounts,
-            categories = state.categories,
-            today = state.today,
-            onDismiss = { editingRow = null },
-            onViewReceipt = { receiptId ->
-                editingRow = null
-                onOpenReceipt(receiptId)
-            },
-            onSaveSingle = { amount, categoryId, accountId, date, label, note ->
-                viewModel.saveSingle((rowToEdit as ActivityRow.Single).tx, amount, categoryId, accountId, date, label, note)
-                editingRow = null
-            },
-            onSaveTransfer = { amount, date, label ->
-                viewModel.saveTransfer(rowToEdit as ActivityRow.Transfer, amount, date, label)
-                editingRow = null
-            },
-            onDelete = {
-                val id = when (rowToEdit) {
-                    is ActivityRow.Single -> rowToEdit.tx.id
-                    is ActivityRow.Transfer -> rowToEdit.from.id
-                }
-                viewModel.delete(id)
-                editingRow = null
-            },
-        )
-    }
+    TransactionEditHost(
+        row = editingRow,
+        onDismiss = { editingRow = null },
+        controller = viewModel.editing,
+        accounts = state.accounts,
+        categories = state.categories,
+        today = state.today,
+        onOpenReceipt = onOpenReceipt,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

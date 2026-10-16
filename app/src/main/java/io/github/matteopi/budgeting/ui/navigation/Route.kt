@@ -12,6 +12,9 @@ sealed interface Route {
     @Serializable data object Settings : Route
 
     @Serializable data class AccountDetail(val accountId: Long) : Route
+
+    /** One account's full history: balance chart, summary, filters and every transaction with its running balance. */
+    @Serializable data class AccountHistory(val accountId: Long) : Route
     @Serializable data class AccountEdit(val accountId: Long? = null) : Route
 
     @Serializable data object Predictions : Route

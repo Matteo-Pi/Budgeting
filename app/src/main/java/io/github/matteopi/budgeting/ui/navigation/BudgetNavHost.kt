@@ -18,6 +18,7 @@ import io.github.matteopi.budgeting.AppContainer
 import io.github.matteopi.budgeting.backup.BackupScreen
 import io.github.matteopi.budgeting.ui.accounts.AccountDetailScreen
 import io.github.matteopi.budgeting.ui.accounts.AccountEditScreen
+import io.github.matteopi.budgeting.ui.accounts.AccountHistoryScreen
 import io.github.matteopi.budgeting.ui.activity.ActivityScreen
 import io.github.matteopi.budgeting.ui.forecast.AccuracyScreen
 import io.github.matteopi.budgeting.ui.forecast.ForecastScreen
@@ -139,6 +140,16 @@ fun BudgetNavHost(
                     accountId = args.accountId,
                     onBack = { navController.popBackStack() },
                     onEdit = { id -> navController.navigate(Route.AccountEdit(id)) },
+                    onOpenHistory = { id -> navController.navigate(Route.AccountHistory(id)) },
+                    onOpenReceipt = { id -> navController.navigate(Route.ReceiptDetail(id)) },
+                )
+            }
+            composable<Route.AccountHistory> { backStackEntry ->
+                val args = backStackEntry.toRoute<Route.AccountHistory>()
+                AccountHistoryScreen(
+                    accountId = args.accountId,
+                    onBack = { navController.popBackStack() },
+                    onOpenReceipt = { id -> navController.navigate(Route.ReceiptDetail(id)) },
                 )
             }
             composable<Route.AccountEdit> { backStackEntry ->

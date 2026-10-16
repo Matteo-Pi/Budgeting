@@ -20,6 +20,8 @@ import io.github.matteopi.budgeting.data.settings.SettingsStore
 import io.github.matteopi.budgeting.domain.Clock
 import io.github.matteopi.budgeting.ui.activity.ActivityGrouping
 import io.github.matteopi.budgeting.ui.activity.ActivityRow
+import io.github.matteopi.budgeting.ui.activity.TransactionEditController
+import io.github.matteopi.budgeting.ui.activity.TransactionEditor
 import java.time.LocalDate
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -37,6 +39,9 @@ data class AccountDetailUiState(
     val recentRows: List<ActivityRow> = emptyList(),
     val categoriesById: Map<Long, Category> = emptyMap(),
     val accountsById: Map<Long, Account> = emptyMap(),
+    /** Every account and category, for the edit sheet that opens from a recent-activity row. */
+    val accounts: List<Account> = emptyList(),
+    val categories: List<Category> = emptyList(),
     val otherAccounts: List<Account> = emptyList(),
     val reconciliations: List<Reconciliation> = emptyList(),
 )
@@ -100,10 +105,15 @@ class AccountDetailViewModel(
             recentRows = ActivityGrouping.buildRows(accountTransactions + otherLegs),
             categoriesById = categories.associateBy { it.id },
             accountsById = core.accounts.associateBy { it.id },
+            accounts = core.accounts,
+            categories = categories,
             otherAccounts = core.accounts.filter { it.id != accountId && !it.archived },
             reconciliations = core.reconciliations,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AccountDetailUiState())
+
+    /** Hosts the edit sheet that a recent-activity row opens: runs its edits and holds the "change similar" question. */
+    val editing = TransactionEditController(TransactionEditor(transactionRepository), viewModelScope)
 
     /** Records the bank's balance as the new truth; the gap is logged as Untracked. */
     fun updateBalance(actualBalance: Money) = viewModelScope.launch {

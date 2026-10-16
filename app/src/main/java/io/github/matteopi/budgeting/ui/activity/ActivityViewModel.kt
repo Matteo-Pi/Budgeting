@@ -8,7 +8,6 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.matteopi.budgeting.BudgetApp
 import io.github.matteopi.budgeting.core.model.Account
 import io.github.matteopi.budgeting.core.model.Category
-import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.Transaction
 import io.github.matteopi.budgeting.data.repo.AccountRepository
 import io.github.matteopi.budgeting.data.repo.CategoryRepository
@@ -20,7 +19,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
 data class ActivityUiState(
     val loading: Boolean = true,
@@ -92,37 +90,8 @@ class ActivityViewModel(
         filters.value = ActivityFilters()
     }
 
-    fun saveSingle(
-        original: Transaction,
-        amount: Money,
-        categoryId: Long?,
-        accountId: Long,
-        date: LocalDate,
-        label: String,
-        note: String,
-    ) = viewModelScope.launch {
-        transactionRepository.update(
-            original.copy(
-                amount = amount,
-                categoryId = categoryId,
-                accountId = accountId,
-                date = date,
-                label = label,
-                note = note,
-            ),
-        )
-    }
-
-    /** Updates both legs of a transfer (amount/date via the repository's own mirroring, label on each leg directly). */
-    fun saveTransfer(row: ActivityRow.Transfer, amount: Money, date: LocalDate, label: String) = viewModelScope.launch {
-        val magnitude = amount.abs()
-        transactionRepository.update(row.from.copy(amount = -magnitude, date = date, label = label))
-        transactionRepository.update(row.to.copy(amount = magnitude, date = date, label = label))
-    }
-
-    fun delete(transactionId: Long) = viewModelScope.launch {
-        transactionRepository.delete(transactionId)
-    }
+    /** Hosts the edit sheet: runs the edits it asks for and holds the "change similar" question. */
+    val editing = TransactionEditController(TransactionEditor(transactionRepository), viewModelScope)
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {

@@ -21,6 +21,10 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE account_id = :accountId")
     suspend fun getForAccount(accountId: Long): List<TransactionEntity>
 
+    /** Every ordinary transaction (not transfers, opening balances or balance checks), for "change similar". */
+    @Query("SELECT * FROM transactions WHERE kind = 'NORMAL'")
+    suspend fun getNormal(): List<TransactionEntity>
+
     @Insert
     suspend fun insert(transaction: TransactionEntity): Long
 

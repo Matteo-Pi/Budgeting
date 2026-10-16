@@ -632,7 +632,12 @@ Repositories expose core models, never entities. Every write calls
 - `TransactionRepository`: `observeAll()`, `observeRecent(limit)`, `add(tx)`,
   `addTransfer(fromId, toId, amount, date, label)` (two legs, UUID group id), `update(tx)`
   (updating a transfer leg updates the other leg's amount/date), `delete(id)` (deletes both
-  transfer legs), `logPreset(preset, defaultAccountId, today)`.
+  transfer legs), `logPreset(preset, defaultAccountId, today)`. The edit sheet's operations (§6.5,
+  "Editing past transactions"), each one DB transaction: `convertToTransfer(edited, otherAccountId)`,
+  `updateTransfer(legId, fromAccountId, toAccountId, amount, date, label)`, `convertToNormal(keepId,
+  categoryId)`, `countRecategorisable` / `recategorise(merchantKey, categoryId, exceptId, rememberRule)` /
+  `rememberMerchantRule(merchantKey, categoryId)`. The rows each edit inserts, updates and deletes are
+  decided by the pure `data/repo/TransferEdits`.
 - `CategoryRepository`: `observeCategories()`, `ensureSeeded()`, `add`, `update`, `archive`,
   `untrackedCategoryId()`.
 - `PlanRepository`: CRUD + observe for recurring rules, scheduled items, term periods,
@@ -758,14 +763,83 @@ opens the quick-add sheet.
 **Activity** — all transactions, grouped by day with sticky headers ("Today", "Yesterday",
 "Mon 28 Sep"). Row: category colour dot, label (or category name), account (small), amount
 (income green). Transfers shown once ("Current → Savings"). Badges for Reconciliation /
-Opening balance. Filter chips (account, category, in/out) and label search. Tap → edit sheet
-(amount, in/out, category, account, date ≤ today, label, note, delete).
+Opening balance. Filter chips (account, category, in/out) and label search. Tap → the edit sheet
+(amount, in/out, category, account, date ≤ today, label, note, delete; the whole sheet is described under
+"Editing past transactions" below).
 
 **Accounts** — list with display balances and a pool total; add/edit (name, type, current
 balance for new accounts, overdraft limit, include in safe-to-spend, archive). Account detail:
-display + raw balance, overdraft, **Update balance** (enter what the bank app shows → preview
-"The app thought £X; difference £Y will be recorded as Untracked" → confirm), **Transfer**,
-recent transactions, reconciliation history.
+display + raw balance (the card is tappable: it opens the history), overdraft, **Update balance**
+(enter what the bank app shows → preview "The app thought £X; difference £Y will be recorded as
+Untracked" → confirm), **Transfer**, recent transactions (a tap opens the edit sheet, with the account as
+its perspective) and a **See full history** button under them, reconciliation history.
+
+**Account history** (`Route.AccountHistory(accountId)`; `ui/accounts/AccountHistoryScreen`,
+`AccountHistoryViewModel` and the pure, JVM-tested `AccountHistoryMapping`). One scrolling list, top to bottom:
+- Range chips **1M / 3M / 6M / 1Y / All** (default 3M; the range ends today and starts 1/3/6 months or a year
+  back, or at the account's first transaction for All) and a **Balance over time** line chart of the account's
+  actual end-of-day balances in display terms (same zero point and the account's own overdraft as the account
+  page). The chart is the existing `LineChart`, fed by `InsightsMapping.balanceHistory(AccountView.Single(id))`
+  (so by `Trends.balanceHistory`): nothing new is drawn.
+- A summary of the range: balance at the start → balance at the end, money in, money out. Money in/out count
+  every kind of row except opening balances (they are where the account started, not money moving); an
+  opening balance dated inside the range is part of the starting position, so start + in − out = end always.
+- Filters: a search field (label, category name or note, ignoring case), a category drop-down ("Filter by
+  category", offering the categories this account uses) and In / Out / All chips (money in = positive amount; a
+  transfer leg counts by its sign). **Filters only hide rows**: running balances and month totals always come
+  from all of the account's transactions, a month with no visible row is left out, and while a filter is on
+  the screen says "Showing 2 of 8 transactions. Balances and month totals still count them all." with a
+  Clear filters button.
+- Every transaction, all time, in a `LazyColumn` (never addressed by index in tests): a **month header** for
+  each month, newest first — "October 2026 · in £500.00 · out £485.21 · ends at £14.79" (in/out as above,
+  ends at = the balance after the month's last row) — then **day headers** as in Activity ("Today", "Yesterday",
+  "Mon 28 Sep"), then the rows, newest first. Month headers are deliberately not sticky: a pinned header covers
+  the row a list scrolls to the top, and the tests tap rows.
+- **Running balance**: all of the account's transactions, every kind, sorted by date, then
+  `createdAtEpochMillis`, then id; a row's "Balance £59.83" (small text, under its amount) is the sum up to and
+  including it, in display terms. A row also shows badges where relevant: **Imported** (has an import batch or
+  key, except an opening balance moved by an import), **Receipt**, **Transfer to / from <account>** (or
+  "Transfer · other account not in the app" for a lone leg), **Opening balance**, **Balance check** (a
+  reconciliation).
+- A tap opens the same edit sheet as Activity (both legs of a transfer when the other leg exists), with the
+  account as its perspective. The category drop-down is labelled "Filter by category" because the sheet that
+  opens over this screen has a "Category" field and tests find fields by label.
+
+**Editing past transactions** (`ui/activity/TransactionEditSheet`, `TransferEditor`, `TransactionEdit`,
+`TransactionEditor`, `TransactionEditHost`; shared by Activity, the account page and the history screen). The
+sheet never touches the database: it builds a `TransactionEdit` (Single, ToTransfer, Transfer, ToNormal,
+Delete), `TransactionEditor` turns it into repository calls, and each screen's view model owns a
+`TransactionEditController` (runs the edit, holds the "change similar" question) that the
+`TransactionEditHost` composable reads; a screen only keeps "which row is open". The form depends on the row
+(`EditRules.editorKind`):
+- **Ordinary transaction** (and a balance check, which says what it is): out/in, amount, category, account, date
+  (any past date, never the future), label, note, Delete. A NORMAL transaction that is not part of a receipt
+  also has a **Move between my accounts** switch: the category is replaced by **Other account** (each other
+  non-archived account, or "Not in the app", the default). Saving calls `convertToTransfer`: the row becomes
+  `TxKind.TRANSFER` (category cleared, new UUID `transferGroupId`, same id) and, for another account, the
+  opposite leg is created there (negated amount, same date and label, the original's import batch so undoing an
+  import takes both, no import key). A receipt part shows "Part of a receipt. Changing the amount makes it differ
+  from the receipt." and cannot be moved.
+- **Starting balance** (an `OPENING_BALANCE` row): "Edit starting balance" with a signed amount (minus = started
+  overdrawn) and a date; no category. An opening-balance entry that a statement import made (it has an import
+  batch) is only explained, because the next import or undo re-derives it.
+- **Transfer** (both legs, or a lone leg whose other account isn't in the app): amount, date, label and two
+  pickers, **From account** and **To account**, each an account or "Not in the app" (at least one side must be
+  an account, and the two must differ). `updateTransfer` moves a leg to its new account, creates a missing leg,
+  or deletes the leg of a side set to "Not in the app"; both legs carry the same amount, date and label.
+  **Not a transfer** opens a dialog: pick a category (income or spending categories, by the sign of the kept leg);
+  the side to keep is the account the sheet was opened from, and from Activity (no perspective) a "Keep it on"
+  picker asks; it says which side will be deleted. `convertToNormal` keeps that leg as a NORMAL transaction and
+  deletes the other.
+- **Change similar**: after saving a NORMAL, non-receipt transaction whose category changed, if other NORMAL
+  transactions share its merchant (`MerchantKey.normalise(label)`, non-blank) and would change (not already in the
+  category, direction allowed by the category's flow, not receipt parts), a dialog asks `Change the other 7
+  "TESCO STORES" transactions to Groceries too?` — **Change all** / **Just this one** — with a ticked-by-default
+  "Use Groceries for TESCO STORES in future imports" checkbox. The checkbox is honoured by either button
+  (`recategorise(..., rememberRule)` / `rememberMerchantRule` upsert the `MerchantRule` that the importer's
+  `CategorySuggester` consults first).
+- `TransactionRepository.update` still mirrors a transfer leg's amount and date onto the other leg; the sheet's
+  transfer form no longer relies on it.
 
 **Forecast** — horizon chips (4 wks / 12 wks / until next income / 26 wks); forecast chart
 (P10–P90 band, expected line, optional dashed tier-1 line, floor line, buffer line, term
@@ -853,7 +927,8 @@ summary with "Undo import".
   label and group, the batch id so `undoBatch` removes it, no import key) unless it is dated before that
   account's own OPENING_BALANCE date (its opening balance already includes it). `rebuildOpeningBalanceMove`
   treats imported TRANSFER legs on the imported account like imported spending. A lone leg is tolerated
-  (Activity shows it as a single row; forecasts only learn from NORMAL and RECONCILIATION rows, Trends skip
+  (Activity shows it as a single row, and its edit sheet is the transfer form, where a second account can be
+  added or "Not a transfer" applied; forecasts only learn from NORMAL and RECONCILIATION rows, Trends skip
   TRANSFER, balances count every kind).
 - **Summary** for a PDF: the app's balance for the imported account on the statement's last day (after the
   import) is compared with the closing balance — "Matches your statement: £14.79 on 10 Oct ✓", or "Your
@@ -1054,6 +1129,17 @@ now an overlay); daily worker snapshots before any account exists and its widget
   with moves between accounts, the opening-balance cases, the balance check and undo) and
   `ui/StatementImportPdfTest` (the statement PDF shared into the app → review → categorise → import → balance check;
   a non-statement PDF still opens the receipt review); `testing/SantanderPdfFixture` holds the invented content.
+- **Account history and editing (2026-10-16)**: JVM `AccountHistoryMappingTest` (running balance incl. same-day
+  order and every `TxKind`, month/day grouping and totals, badges, filters, ranges and the summary),
+  `TransferEditsTest`, `TransactionEditTest`; device `data/TransactionEditingTest` (normal → transfer with and
+  without the other account, re-pointing/removing/creating legs, "Not a transfer", `recategorise` with and
+  without the rule), `ui/AccountHistoryTest` (opening it, months and running balances, filters, range summary,
+  editing an amount/date/starting balance from the list) and `ui/EditPastTransactionsTest` (the account page's
+  rows, moving a transaction to another account, transfer editing, "Not a transfer" from an account and from
+  Activity, change similar, receipt parts). Shared seeds are in `testing/HistoryTestSupport.kt` (a ledger with
+  fixed 2025 dates so months can be named); test tags are in `AccountHistoryTags`. Beware two screens with the
+  same field label when a sheet opens over a screen (`field(label)` takes the first match): that is why the
+  history's category filter is "Filter by category".
 - UI test conventions: tap through `UiTest.tap` (waits for the target to stop moving: screens
   resize for the keyboard), pick dates with `chooseInDatePicker` (Material 3 day cells carry the
   full date as text), reach cards far down a list with `swipeListUp`, and never address a field by
