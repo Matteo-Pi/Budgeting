@@ -11,15 +11,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -41,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -82,6 +86,7 @@ fun HomeScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var editingPending by remember { mutableStateOf<PendingItem?>(null) }
+    var choosingAccounts by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier,
@@ -113,7 +118,15 @@ fun HomeScreen(
                 item { ForecastErrorCard(error) }
             }
 
-            item { SafeToSpendHero(loading = state.loading, safeToSpend = state.safeToSpend) }
+            item {
+                SafeToSpendHero(
+                    loading = state.loading,
+                    safeToSpend = state.safeToSpend,
+                    noAccountCounted = state.noAccountCounted,
+                    canChooseAccounts = state.accountChoices.isNotEmpty(),
+                    onChooseAccounts = { choosingAccounts = true },
+                )
+            }
 
             item {
                 BalanceCard(
@@ -192,6 +205,14 @@ fun HomeScreen(
         }
     }
 
+    if (choosingAccounts) {
+        ChooseAccountsDialog(
+            accounts = state.accountChoices,
+            onToggle = viewModel::setIncludedInSafeToSpend,
+            onDismiss = { choosingAccounts = false },
+        )
+    }
+
     val pendingToEdit = editingPending
     if (pendingToEdit != null) {
         PendingEditDialog(
@@ -207,18 +228,35 @@ fun HomeScreen(
 }
 
 @Composable
-private fun SafeToSpendHero(loading: Boolean, safeToSpend: SafeToSpend?) {
+private fun SafeToSpendHero(
+    loading: Boolean,
+    safeToSpend: SafeToSpend?,
+    noAccountCounted: Boolean,
+    canChooseAccounts: Boolean,
+    onChooseAccounts: () -> Unit,
+) {
     val sts: SafeToSpend? = safeToSpend
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text(text = "Safe to spend", style = MaterialTheme.typography.titleMedium)
             Text(
-                text = "Across all accounts included in safe-to-spend",
+                text = "Across the accounts you include in safe-to-spend",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(8.dp)
-            if (sts == null) {
+            if (noAccountCounted) {
+                // With no account counted the engine works from £0 and reports the buffer as a shortfall.
+                Text(
+                    text = "None of your accounts is included in safe-to-spend",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    text = "Tap Choose accounts to pick the ones you spend from.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else if (sts == null) {
                 if (loading) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         CircularProgressIndicator(modifier = Modifier.size(20.dp))
@@ -258,8 +296,52 @@ private fun SafeToSpendHero(loading: Boolean, safeToSpend: SafeToSpend?) {
                 )
                 HeroNextIncome(sts, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            if (canChooseAccounts) {
+                TextButton(onClick = onChooseAccounts) { Text("Choose accounts") }
+            }
         }
     }
+}
+
+/** Ticks the accounts that count towards safe-to-spend; each change is saved straight away. */
+@Composable
+private fun ChooseAccountsDialog(
+    accounts: List<Account>,
+    onToggle: (accountId: Long, included: Boolean) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Choose accounts") },
+        text = {
+            Column {
+                Text(
+                    text = "Safe-to-spend is worked out from the accounts you tick.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(8.dp)
+                accounts.forEach { account ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .toggleable(
+                                value = account.includeInSafeToSpend,
+                                role = Role.Checkbox,
+                                onValueChange = { onToggle(account.id, it) },
+                            )
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(checked = account.includeInSafeToSpend, onCheckedChange = null)
+                        Spacer(12.dp)
+                        Text(account.name, style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } },
+    )
 }
 
 @Composable

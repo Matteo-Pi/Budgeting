@@ -15,8 +15,8 @@ data class AppSettings(
     val lastExportDate: LocalDate? = null,
     val theme: AppTheme = AppTheme.DEFAULT,
     val darkMode: DarkMode = DarkMode.DEFAULT,
-    /** What the Forecast, Timeline and Insights charts show: the pool total, one account, or one line per account. */
-    val chartAccountView: AccountView = AccountView.Total,
-    /** What the balance number on Home shows: the pool total or one account (never [AccountView.Each]). */
-    val balanceView: AccountView = AccountView.Total,
+    /** What the Forecast, Timeline and Insights charts show: all accounts, the safe-to-spend accounts, one account, or one line per account. */
+    val chartAccountView: AccountView = AccountView.All,
+    /** What the balance number on Home shows: all accounts, the safe-to-spend accounts or one account (never [AccountView.Each]). */
+    val balanceView: AccountView = AccountView.All,
 )

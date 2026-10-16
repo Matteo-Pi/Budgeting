@@ -92,8 +92,8 @@ class SettingsStoreTest {
         assertNull(settings.lastExportDate)
         assertEquals(AppTheme.PAPER, settings.theme)
         assertEquals(DarkMode.SYSTEM, settings.darkMode)
-        assertEquals(AccountView.Total, settings.chartAccountView)
-        assertEquals(AccountView.Total, settings.balanceView)
+        assertEquals(AccountView.All, settings.chartAccountView)
+        assertEquals(AccountView.All, settings.balanceView)
         assertEquals(AppSettings(), settings)
     }
 
@@ -267,7 +267,7 @@ class SettingsStoreTest {
 
     @Test
     fun chartAccountViewRoundTrips() = runBlocking<Unit> {
-        for (view in listOf(AccountView.Each, AccountView.Single(12L), AccountView.Total)) {
+        for (view in listOf(AccountView.Each, AccountView.Single(12L), AccountView.Pool, AccountView.All)) {
             store.setChartAccountView(view)
             assertEquals(view, app().chartAccountView)
         }
@@ -277,12 +277,14 @@ class SettingsStoreTest {
     fun balanceViewRoundTripsAndNeverEndsUpAsEach() = runBlocking<Unit> {
         store.setBalanceView(AccountView.Single(7L))
         assertEquals(AccountView.Single(7L), app().balanceView)
-        store.setBalanceView(AccountView.Total)
-        assertEquals(AccountView.Total, app().balanceView)
+        store.setBalanceView(AccountView.Pool)
+        assertEquals(AccountView.Pool, app().balanceView)
+        store.setBalanceView(AccountView.All)
+        assertEquals(AccountView.All, app().balanceView)
 
-        // "Each account" makes no sense for a single number, so it reads back as the total.
+        // "Each account" makes no sense for a single number, so it reads back as all accounts.
         store.setBalanceView(AccountView.Each)
-        assertEquals(AccountView.Total, app().balanceView)
+        assertEquals(AccountView.All, app().balanceView)
     }
 
     @Test
@@ -358,20 +360,39 @@ class SettingsStoreTest {
     // ---- bad stored values --------------------------------------------------------------------
 
     @Test
-    fun invalidStoredChartViewsFallBackToTotal() = runBlocking<Unit> {
+    fun invalidStoredChartViewsFallBackToAllAccounts() = runBlocking<Unit> {
         for (bad in listOf("banana", "", "account:", "account:abc", "account:3;extra", "EACH", "Total")) {
             putRawString("chart_account_view", bad)
-            assertEquals(AccountView.Total, app().chartAccountView, "stored \"$bad\"")
+            assertEquals(AccountView.All, app().chartAccountView, "stored \"$bad\"")
         }
     }
 
     @Test
-    fun invalidStoredBalanceViewsFallBackToTotal() = runBlocking<Unit> {
+    fun invalidStoredBalanceViewsFallBackToAllAccounts() = runBlocking<Unit> {
         // "each" is a valid encoding, but not for the balance view.
         for (bad in listOf("banana", "", "account:", "account:abc", "each")) {
             putRawString("balance_view", bad)
-            assertEquals(AccountView.Total, app().balanceView, "stored \"$bad\"")
+            assertEquals(AccountView.All, app().balanceView, "stored \"$bad\"")
         }
+    }
+
+    @Test
+    fun theLegacyStoredTotalViewIsReadAsAllAccounts() = runBlocking<Unit> {
+        // "total" was what the app wrote before "all" and "pool" were told apart; it was always labelled "All accounts".
+        putRawString("chart_account_view", "total")
+        putRawString("balance_view", "total")
+
+        assertEquals(AccountView.All, app().chartAccountView)
+        assertEquals(AccountView.All, app().balanceView)
+    }
+
+    @Test
+    fun storedAllAndPoolViewsAreReadBack() = runBlocking<Unit> {
+        putRawString("chart_account_view", "pool")
+        putRawString("balance_view", "all")
+
+        assertEquals(AccountView.Pool, app().chartAccountView)
+        assertEquals(AccountView.All, app().balanceView)
     }
 
     @Test

@@ -70,9 +70,13 @@ class AccountsTest : UiTest() {
 
         expectAccountRow("Credit card", "-£120.00")
         expectAccountRow("Cash wallet", "£80.00")
-        // The card is not part of the pool, so "Your money" is unchanged.
-        expectYourMoney("£80.00")
+        // "All accounts" counts the card even though it is left out of safe-to-spend...
+        expectYourMoney("-£40.00")
         shot("accounts-05-home-two-accounts")
+        // ...and "Safe-to-spend accounts" leaves it out, so that figure is unchanged.
+        tap(hasTestTag("account-view-chip") and hasText("All accounts"), "the account chip on the 'Your money' card")
+        tapMenuItem("Safe-to-spend accounts")
+        expectYourMoney("£80.00")
     }
 
     @Test

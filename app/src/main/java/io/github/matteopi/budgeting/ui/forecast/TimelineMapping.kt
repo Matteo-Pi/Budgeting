@@ -11,6 +11,7 @@ import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.Regime
 import io.github.matteopi.budgeting.core.model.TermPeriod
 import io.github.matteopi.budgeting.core.model.ZeroPoint
+import io.github.matteopi.budgeting.core.model.sum
 import io.github.matteopi.budgeting.data.settings.AccountView
 import java.time.LocalDate
 
@@ -35,13 +36,13 @@ data class TimelineWeek(
     /** Sum of expected learned flows over the days of this week: spending plus income (signed). Pool-level. */
     val expectedLearned: Money,
     /**
-     * End-of-week balance, display terms: the pool's, or the chosen account's for a single-account
-     * view. Null P10/P90 if Monte Carlo was skipped.
+     * End-of-week balance, display terms: all accounts' or the pool's, or the chosen account's for a
+     * single-account view. Null P10/P90 if Monte Carlo was skipped.
      */
     val endBalanceP10: Money?,
     val endBalanceP50: Money,
     val endBalanceP90: Money?,
-    /** Money reserved in sinking funds at the end of this week. Pool-level. */
+    /** Money reserved in sinking funds at the end of this week. Pool-level (hidden when [showReserved] is false). */
     val reserved: Money,
     /** True when this week's P10 is below the floor — highlighted in the UI. */
     val belowFloor: Boolean,
@@ -49,6 +50,14 @@ data class TimelineWeek(
     val accountBalances: List<TimelineAccountBalance> = emptyList(),
     /** False for a single-account view, where the pool-level "expected spending" and "reserved" rows would mislead. */
     val showPoolFigures: Boolean = true,
+    /**
+     * False when the balance rows cover accounts outside the pool ([AccountView.All] with such
+     * accounts): sinking-fund reservations come out of the pool only, so [reserved] would be
+     * presented as if it applied to the whole figure. Expected spending and income stay shown,
+     * since learned flows only ever touch pool accounts and so are exact for every view that
+     * includes the pool.
+     */
+    val showReserved: Boolean = true,
     /** The spending part of [expectedLearned] (≤ 0). Pool-level. */
     val expectedSpending: Money = Money.ZERO,
     /** The income part of [expectedLearned], e.g. wages (≥ 0). Pool-level. */
@@ -61,17 +70,21 @@ data class TimelineWeek(
  */
 object TimelineMapping {
     /**
-     * [view] picks what the balance rows describe: the pool ([AccountView.Total], the default), one
-     * account ([AccountView.Single]) or every account ([AccountView.Each]); a view that can't be
-     * drawn (no forecast for that account) falls back to the pool. Single-account balances are
-     * converted with that account's own overdraft, and the floor is display £0 in every view.
+     * [view] picks what the balance rows describe: every account summed ([AccountView.All], the
+     * default), the safe-to-spend accounts ([AccountView.Pool]), one account ([AccountView.Single])
+     * or each account on its own row ([AccountView.Each]); a view that can't be drawn (no forecast
+     * for that account) falls back to [AccountView.All]. With no account outside the pool,
+     * [AccountView.All] is exactly [AccountView.Pool]. Otherwise the outside accounts' expected
+     * balances (they are deterministic, so exact for every percentile) are added to the pool's, and
+     * the sum is converted with the combined overdraft. Single-account balances are converted with
+     * that account's own overdraft, and the floor is display £0 in every view.
      */
     fun buildWeeks(
         result: ForecastResult,
         terms: List<TermPeriod>,
         zeroPoint: ZeroPoint,
         accounts: List<Account> = emptyList(),
-        view: AccountView = AccountView.Total,
+        view: AccountView = AccountView.All,
     ): List<TimelineWeek> {
         // days[0] is `today` itself (no flows yet); the timeline only covers today+1 onward.
         val forecastDays = result.days.drop(1)
@@ -88,6 +101,12 @@ object TimelineMapping {
         val namesById = accounts.associate { it.id to it.name }
         val eachDaysByAccount: Map<Long, Map<LocalDate, AccountDayForecast>> =
             eachForecasts.associate { forecast -> forecast.accountId to forecast.days.associateBy { it.date } }
+        // Accounts outside the pool, whose expected balance is added to the pool's for the All view.
+        val outsidePool: List<AccountForecast> =
+            if (view == AccountView.All) result.accountForecasts.filter { !it.inPool } else emptyList()
+        val outsidePoolDaysByDate: List<Map<LocalDate, AccountDayForecast>> =
+            outsidePool.map { forecast -> forecast.days.associateBy { it.date } }
+        val balanceOverdraft = result.poolOverdraft + outsidePool.map { it.overdraft }.sum()
 
         return byWeek.entries.sortedBy { it.key }.map { (weekStart, weekDays) ->
             val lastDay = weekDays.maxBy { it.date }
@@ -123,9 +142,10 @@ object TimelineMapping {
                 )
             }
 
-            val p10 = lastDay.p10?.let { Balances.toDisplay(it, result.poolOverdraft, zeroPoint) }
-            val p50 = Balances.toDisplay(lastDay.p50 ?: lastDay.expectedBalance, result.poolOverdraft, zeroPoint)
-            val p90 = lastDay.p90?.let { Balances.toDisplay(it, result.poolOverdraft, zeroPoint) }
+            val extra = outsidePoolDaysByDate.map { it[lastDay.date]?.expectedBalance ?: Money.ZERO }.sum()
+            val p10 = lastDay.p10?.let { Balances.toDisplay(it + extra, balanceOverdraft, zeroPoint) }
+            val p50 = Balances.toDisplay((lastDay.p50 ?: lastDay.expectedBalance) + extra, balanceOverdraft, zeroPoint)
+            val p90 = lastDay.p90?.let { Balances.toDisplay(it + extra, balanceOverdraft, zeroPoint) }
 
             val accountBalances = eachForecasts.mapNotNull { forecast ->
                 val day = eachDaysByAccount[forecast.accountId]?.get(lastDay.date) ?: return@mapNotNull null
@@ -152,6 +172,7 @@ object TimelineMapping {
                 endBalanceP50 = p50,
                 endBalanceP90 = p90,
                 reserved = lastDay.reserved,
+                showReserved = outsidePool.isEmpty(),
                 belowFloor = if (accountBalances.isNotEmpty()) accountBalances.any { it.belowFloor } else p10 != null && p10 < floorDisplay,
                 accountBalances = accountBalances,
             )

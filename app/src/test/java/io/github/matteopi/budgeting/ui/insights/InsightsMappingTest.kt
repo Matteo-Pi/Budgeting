@@ -37,10 +37,10 @@ class InsightsMappingTest {
     private fun valueOn(line: BalanceHistoryLine, date: LocalDate): Money = line.points.first { it.first == date }.second
 
     @Test
-    fun `the total is one pool line`() {
-        val lines = InsightsMapping.balanceHistory(AccountView.Total, accounts, transactions, from, to, ZeroPoint.ACCOUNT_BALANCE)
+    fun `the pool is one line of the safe-to-spend accounts`() {
+        val lines = InsightsMapping.balanceHistory(AccountView.Pool, accounts, transactions, from, to, ZeroPoint.ACCOUNT_BALANCE)
         assertEquals(1, lines.size)
-        assertEquals("All accounts", lines[0].label)
+        assertEquals("Safe-to-spend accounts", lines[0].label)
         assertEquals(null, lines[0].accountId)
         assertEquals(9, lines[0].points.size)
         // Pool = Current + Savings (Cash is outside it): £1,000 + £500 on the 24th, less £100 from the 25th, plus £30 from the 26th.
@@ -50,9 +50,33 @@ class InsightsMappingTest {
     }
 
     @Test
-    fun `the total adds the pool's overdraft for the overdraft zero point`() {
-        val lines = InsightsMapping.balanceHistory(AccountView.Total, accounts, transactions, from, to, ZeroPoint.OVERDRAFT_LIMIT)
-        assertEquals(Money.pounds(1_500 + 250), valueOn(lines[0], LocalDate.of(2026, 9, 24)))
+    fun `all accounts is one line that also counts the accounts outside the pool`() {
+        val lines = InsightsMapping.balanceHistory(AccountView.All, accounts, transactions, from, to, ZeroPoint.ACCOUNT_BALANCE)
+        assertEquals(1, lines.size)
+        assertEquals("All accounts", lines[0].label)
+        assertEquals(null, lines[0].accountId)
+        assertEquals(9, lines[0].points.size)
+        // The pool's line plus Cash: £20 on the 24th, £15 from the 27th. The archived account counts for nothing.
+        assertEquals(Money.pounds(1_520), valueOn(lines[0], LocalDate.of(2026, 9, 24)))
+        assertEquals(Money.pounds(1_420), valueOn(lines[0], LocalDate.of(2026, 9, 25)))
+        assertEquals(Money.pounds(1_445), valueOn(lines[0], LocalDate.of(2026, 9, 28)))
+    }
+
+    @Test
+    fun `all accounts is the pool line when every account is in the pool`() {
+        val everyAccount = accounts.map { it.copy(includeInSafeToSpend = true) }
+        val all = InsightsMapping.balanceHistory(AccountView.All, everyAccount, transactions, from, to, ZeroPoint.ACCOUNT_BALANCE).single()
+        val pool = InsightsMapping.balanceHistory(AccountView.Pool, everyAccount, transactions, from, to, ZeroPoint.ACCOUNT_BALANCE).single()
+        assertEquals(pool.points, all.points)
+    }
+
+    @Test
+    fun `each total adds the matching overdrafts for the overdraft zero point`() {
+        val pool = InsightsMapping.balanceHistory(AccountView.Pool, accounts, transactions, from, to, ZeroPoint.OVERDRAFT_LIMIT)
+        assertEquals(Money.pounds(1_500 + 250), valueOn(pool[0], LocalDate.of(2026, 9, 24)))
+        val all = InsightsMapping.balanceHistory(AccountView.All, accounts, transactions, from, to, ZeroPoint.OVERDRAFT_LIMIT)
+        // Cash has no overdraft, so only its £20 is added.
+        assertEquals(Money.pounds(1_520 + 250), valueOn(all[0], LocalDate.of(2026, 9, 24)))
     }
 
     @Test
@@ -83,7 +107,7 @@ class InsightsMappingTest {
     }
 
     @Test
-    fun `a missing or archived single account falls back to the pool line`() {
+    fun `a missing or archived single account falls back to the all-accounts line`() {
         for (id in listOf(4L, 99L)) {
             val lines = InsightsMapping.balanceHistory(AccountView.Single(id), accounts, transactions, from, to, ZeroPoint.ACCOUNT_BALANCE)
             assertEquals(listOf("All accounts"), lines.map { it.label })
@@ -91,7 +115,7 @@ class InsightsMappingTest {
     }
 
     @Test
-    fun `each with no live accounts falls back to the pool line`() {
+    fun `each with no live accounts falls back to the all-accounts line`() {
         val lines = InsightsMapping.balanceHistory(AccountView.Each, listOf(archived), emptyList(), from, to, ZeroPoint.ACCOUNT_BALANCE)
         assertEquals(listOf("All accounts"), lines.map { it.label })
     }

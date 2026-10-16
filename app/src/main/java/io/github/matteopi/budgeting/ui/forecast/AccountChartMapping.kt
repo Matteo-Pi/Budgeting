@@ -7,6 +7,7 @@ import io.github.matteopi.budgeting.core.model.Account
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.Regime
 import io.github.matteopi.budgeting.core.model.ZeroPoint
+import io.github.matteopi.budgeting.core.model.sum
 import io.github.matteopi.budgeting.data.settings.AccountView
 import io.github.matteopi.budgeting.ui.components.charts.ForecastChartDay
 import io.github.matteopi.budgeting.ui.components.charts.ForecastChartLine
@@ -17,15 +18,15 @@ import java.time.LocalDate
  * chosen [AccountView], already in display terms.
  */
 data class ForecastChartData(
-    /** The view actually shown: the requested one, or [AccountView.Total] if it could not be honoured. */
+    /** The view actually shown: the requested one, or [AccountView.All] if it could not be honoured. */
     val view: AccountView,
-    /** The date axis and term shading; for [AccountView.Total] and [AccountView.Single] also the band and expected line. */
+    /** The date axis and term shading; for every view but [AccountView.Each] also the band and expected line. */
     val days: List<ForecastChartDay>,
     /** One expected-balance line per account for [AccountView.Each]; null for the other views. */
     val lines: List<ForecastChartLine>?,
-    /** Height of the buffer line above the floor; zero (no line) for anything but the pool total, which alone has a buffer. */
+    /** Height of the buffer line above the floor; zero (no line) for anything but [AccountView.Pool], which alone has a buffer. */
     val buffer: Money,
-    /** Only the pool total has a tier-1 baseline. */
+    /** Only [AccountView.Pool] has a tier-1 baseline. */
     val hasTier1: Boolean,
 )
 
@@ -37,7 +38,12 @@ data class ForecastChartData(
  */
 object AccountChartMapping {
 
-    /** The chart data for [view]; anything that can't be drawn (no forecast for that account) falls back to the total. */
+    /**
+     * The chart data for [view]; anything that can't be drawn (no forecast for that account) falls
+     * back to [AccountView.All]. [AccountView.Pool] is the safe-to-spend accounts' band, tier-1 line
+     * and buffer; [AccountView.All] adds the accounts outside the pool (see [allAccountsDays]) and,
+     * when there are none, is the same data as the pool.
+     */
     fun build(
         view: AccountView,
         result: ForecastResult,
@@ -46,9 +52,22 @@ object AccountChartMapping {
         buffer: Money,
     ): ForecastChartData {
         val totalDays = ForecastChartMapping.toChartDays(result, zeroPoint)
-        val total = ForecastChartData(AccountView.Total, totalDays, lines = null, buffer = buffer, hasTier1 = true)
+        val pool = ForecastChartData(AccountView.Pool, totalDays, lines = null, buffer = buffer, hasTier1 = true)
+        val outsidePool = result.accountForecasts.filter { !it.inPool }
+        val total = if (outsidePool.isEmpty()) {
+            pool.copy(view = AccountView.All)
+        } else {
+            ForecastChartData(
+                view = AccountView.All,
+                days = allAccountsDays(result, outsidePool, zeroPoint),
+                lines = null,
+                buffer = Money.ZERO,
+                hasTier1 = false,
+            )
+        }
         return when (view) {
-            AccountView.Total -> total
+            AccountView.Pool -> pool
+            AccountView.All -> total
             is AccountView.Single -> {
                 val forecast = result.accountForecasts.firstOrNull { it.accountId == view.accountId } ?: return total
                 ForecastChartData(view, accountDays(result, forecast, zeroPoint), lines = null, buffer = Money.ZERO, hasTier1 = false)
@@ -61,6 +80,31 @@ object AccountChartMapping {
                     ForecastChartData(view, totalDays, lines = lines, buffer = Money.ZERO, hasTier1 = false)
                 }
             }
+        }
+    }
+
+    /**
+     * The pool's band with the accounts outside the pool added on top, aligned with
+     * [ForecastResult.days]. Those accounts only have committed flows, so they are deterministic
+     * (p10 = p50 = p90 = expected) and adding their expected balance to each of the pool's
+     * percentiles is exact. Converted with the pool's overdraft plus theirs; no tier-1 line.
+     */
+    private fun allAccountsDays(
+        result: ForecastResult,
+        outsidePool: List<AccountForecast>,
+        zeroPoint: ZeroPoint,
+    ): List<ForecastChartDay> {
+        val overdraft = result.poolOverdraft + outsidePool.map { it.overdraft }.sum()
+        return result.days.mapIndexed { index, d ->
+            val extra = outsidePool.map { it.days.getOrNull(index)?.expectedBalance ?: Money.ZERO }.sum()
+            ForecastChartDay(
+                date = d.date,
+                regime = d.regime,
+                p10 = d.p10?.let { Balances.toDisplay(it + extra, overdraft, zeroPoint) },
+                p50 = Balances.toDisplay((d.p50 ?: d.expectedBalance) + extra, overdraft, zeroPoint),
+                p90 = d.p90?.let { Balances.toDisplay(it + extra, overdraft, zeroPoint) },
+                tier1 = null,
+            )
         }
     }
 

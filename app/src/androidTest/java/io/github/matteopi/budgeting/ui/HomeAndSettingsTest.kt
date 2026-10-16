@@ -6,9 +6,12 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.isNotEnabled
+import androidx.compose.ui.test.isOff
+import androidx.compose.ui.test.isOn
 import androidx.compose.ui.test.isSelected
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import io.github.matteopi.budgeting.core.model.AccountType
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.ZeroPoint
 import io.github.matteopi.budgeting.data.settings.AppTheme
@@ -20,6 +23,8 @@ import io.github.matteopi.budgeting.testing.asHeaderText
 import io.github.matteopi.budgeting.testing.blocking
 import io.github.matteopi.budgeting.testing.gbp
 import io.github.matteopi.budgeting.testing.hasTextMatching
+import io.github.matteopi.budgeting.testing.seedAccount
+import io.github.matteopi.budgeting.testing.seedOnboardingDone
 import io.github.matteopi.budgeting.testing.seedStandardBudget
 import io.github.matteopi.budgeting.testing.testApp
 import java.time.DayOfWeek
@@ -49,7 +54,7 @@ class HomeAndSettingsTest : UiTest() {
         expectYourMoney(budget.total)
         waitFor("a positive safe-to-spend per week", HEAVY_TIMEOUT_MS) { (safeToSpendPerWeek() ?: 0L) > 0L }
         waitForText("Safe to spend")
-        waitForText("Across all accounts included in safe-to-spend")
+        waitForText("Across the accounts you include in safe-to-spend")
         waitForExists(hasTextMatching(Regex("£[0-9,]+ a day.*")), "the per-day line under the hero")
         waitForText("50 days to Student loan")
         expectAccountRow("Lloyds current", "£6,579.30")
@@ -93,13 +98,78 @@ class HomeAndSettingsTest : UiTest() {
         expectYourMoney(gbp(budget.santanderPence))
         shot("home-07-your-money-santander")
 
-        // Safe-to-spend stays pool-wide whatever account is shown.
+        // Safe-to-spend always covers the accounts included in it, whatever account is shown.
         waitFor("safe-to-spend to still be shown", HEAVY_TIMEOUT_MS) { (safeToSpendPerWeek() ?: 0L) > 0L }
 
         openYourMoneyMenu("Santander current")
         tapMenuItem("All accounts")
         expectYourMoney(budget.total)
         waitForText("Next 8 weeks · All accounts")
+    }
+
+    @Test
+    fun accountsOutsideSafeToSpendAreInAllAccountsButNotInTheSafeToSpendAccounts() {
+        seedOnboardingDone()
+        val main = seedAccount("Main current", AccountType.CURRENT, 100_000)
+        val spare = seedAccount("Spare cash", AccountType.CASH, 25_000, includeInPool = false)
+        launchHome()
+
+        // "All accounts" is every account, including the one left out of safe-to-spend.
+        expectYourMoney("£1,250.00")
+        waitForExists(hasTestTag("account-view-chip") and hasText("All accounts"), "the 'All accounts' chip")
+        shot("home-08-all-accounts-with-an-excluded-account")
+
+        // "Safe-to-spend accounts" is only offered because one account is left out, and shows just the included one.
+        openYourMoneyMenu("All accounts")
+        waitForExists(menuItem("Safe-to-spend accounts"), "the 'Safe-to-spend accounts' option")
+        assertTrue(exists(menuItem("All accounts")) && exists(menuItem("Main current")) && exists(menuItem("Spare cash")))
+        tapMenuItem("Safe-to-spend accounts")
+        expectYourMoney("£1,000.00")
+        waitForExists(hasTestTag("account-view-chip") and hasText("Safe-to-spend accounts"), "the chip to name the view")
+        waitFor("a positive safe-to-spend per week", HEAVY_TIMEOUT_MS) { (safeToSpendPerWeek() ?: 0L) > 0L }
+        shot("home-09-safe-to-spend-accounts")
+
+        // Choose accounts: include the second one. Nothing is left out, so the two views are the same.
+        tapText("Choose accounts")
+        waitForExists(dialogButton("Main current") and isOn(), "Main current ticked")
+        waitForExists(dialogButton("Spare cash") and isOff(), "Spare cash not ticked")
+        shot("home-10-choose-accounts")
+        tap(dialogButton("Spare cash"), "the Spare cash row in the dialog")
+        waitForExists(dialogButton("Spare cash") and isOn(), "Spare cash ticked")
+        waitFor("Spare cash to be included in safe-to-spend") { accountIncluded(spare) }
+        tapInDialog("Done")
+        waitUntilGone(dialogButton("Done"), "the Choose accounts dialog")
+
+        // The chip falls back to "All accounts" and no longer offers a separate safe-to-spend option.
+        expectYourMoney("£1,250.00")
+        waitForExists(hasTestTag("account-view-chip") and hasText("All accounts"), "the chip to fall back to All accounts")
+        openYourMoneyMenu("All accounts")
+        waitForExists(menuItem("Main current"), "the account menu")
+        assertTrue("Safe-to-spend accounts must not be offered", !exists(menuItem("Safe-to-spend accounts")))
+        tapMenuItem("All accounts")
+
+        // Leave every account out: the hero says so instead of claiming a shortfall, and Choose accounts stays.
+        tapText("Choose accounts")
+        tap(dialogButton("Main current"), "the Main current row in the dialog")
+        waitForExists(dialogButton("Main current") and isOff(), "Main current not ticked")
+        tap(dialogButton("Spare cash"), "the Spare cash row in the dialog")
+        waitForExists(dialogButton("Spare cash") and isOff(), "Spare cash not ticked")
+        waitFor("no account to be included in safe-to-spend") { !accountIncluded(main) && !accountIncluded(spare) }
+        tapInDialog("Done")
+        waitUntilGone(dialogButton("Done"), "the Choose accounts dialog")
+        waitForText("None of your accounts is included in safe-to-spend", timeoutMs = HEAVY_TIMEOUT_MS)
+        waitForText("Tap Choose accounts to pick the ones you spend from.")
+        assertTrue(
+            "Home must not claim a shortfall when no account is counted.\n${screenDump()}",
+            !textExists("Even with no spending", substring = true),
+        )
+        waitForExists(clickableText("Choose accounts"), "the Choose accounts button")
+        expectYourMoney("£1,250.00")
+        shot("home-11-no-account-in-safe-to-spend")
+    }
+
+    private fun accountIncluded(accountId: Long): Boolean = blocking {
+        appContainer.accountRepository.observeAccounts().first().first { it.id == accountId }.includeInSafeToSpend
     }
 
     @Test

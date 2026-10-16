@@ -204,7 +204,7 @@ private fun WeekCard(week: TimelineWeek) {
                 }
             }
 
-            if (week.showPoolFigures && week.reserved.pence > 0) {
+            if (week.showPoolFigures && week.showReserved && week.reserved.pence > 0) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,

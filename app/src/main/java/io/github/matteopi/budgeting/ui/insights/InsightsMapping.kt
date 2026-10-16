@@ -45,9 +45,10 @@ object InsightsMapping {
 
     /**
      * The balance-history line(s) for [view], from [from] to [to], converted to display terms:
-     * the pool total ([AccountView.Total]), one account ([AccountView.Single], converted with its
-     * own overdraft) or one line per non-archived account in creation order ([AccountView.Each]).
-     * A single account that is missing or archived falls back to the pool total.
+     * every non-archived account summed ([AccountView.All]), the safe-to-spend accounts summed
+     * ([AccountView.Pool]), one account ([AccountView.Single], converted with its own overdraft) or
+     * one line per non-archived account in creation order ([AccountView.Each]). A single account
+     * that is missing or archived falls back to the all-accounts line.
      *
      * A single account's history reuses [Trends.balanceHistory] with a one-account list (the
      * account is treated as a pool member for that call), so it counts every transaction on it,
@@ -63,25 +64,27 @@ object InsightsMapping {
     ): List<BalanceHistoryLine> {
         val live = accounts.filter { !it.archived }.sortedBy { it.id }
         return when (view) {
-            AccountView.Total -> listOf(totalLine(accounts, transactions, from, to, zeroPoint))
+            AccountView.All -> listOf(allAccountsLine(live, transactions, from, to, zeroPoint))
+            AccountView.Pool -> listOf(poolLine(accounts, transactions, from, to, zeroPoint))
             is AccountView.Single -> {
                 val account = live.firstOrNull { it.id == view.accountId }
                 if (account == null) {
-                    listOf(totalLine(accounts, transactions, from, to, zeroPoint))
+                    listOf(allAccountsLine(live, transactions, from, to, zeroPoint))
                 } else {
                     listOf(accountLine(account, transactions, from, to, zeroPoint))
                 }
             }
             AccountView.Each ->
                 if (live.isEmpty()) {
-                    listOf(totalLine(accounts, transactions, from, to, zeroPoint))
+                    listOf(allAccountsLine(live, transactions, from, to, zeroPoint))
                 } else {
                     live.map { accountLine(it, transactions, from, to, zeroPoint) }
                 }
         }
     }
 
-    private fun totalLine(
+    /** The accounts included in safe-to-spend, summed: the classic total line. */
+    private fun poolLine(
         accounts: List<Account>,
         transactions: List<Transaction>,
         from: LocalDate,
@@ -90,6 +93,22 @@ object InsightsMapping {
     ): BalanceHistoryLine {
         val overdraft = Balances.poolOverdraft(accounts)
         val points = Trends.balanceHistory(accounts, transactions, from, to)
+            .map { (date, raw) -> date to Balances.toDisplay(raw, overdraft, zeroPoint) }
+        return BalanceHistoryLine(accountId = null, label = "Safe-to-spend accounts", points = points)
+    }
+
+    /** Every non-archived account in [live], summed and converted with their combined overdraft. */
+    private fun allAccountsLine(
+        live: List<Account>,
+        transactions: List<Transaction>,
+        from: LocalDate,
+        to: LocalDate,
+        zeroPoint: ZeroPoint,
+    ): BalanceHistoryLine {
+        // Trends.balanceHistory sums the safe-to-spend accounts it is given, so treat each live one as such.
+        val everyAccount = live.map { it.copy(includeInSafeToSpend = true, archived = false) }
+        val overdraft = Balances.poolOverdraft(everyAccount)
+        val points = Trends.balanceHistory(everyAccount, transactions, from, to)
             .map { (date, raw) -> date to Balances.toDisplay(raw, overdraft, zeroPoint) }
         return BalanceHistoryLine(accountId = null, label = "All accounts", points = points)
     }

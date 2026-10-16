@@ -684,8 +684,8 @@ class BackupRoundTripTest {
         val json = vm.buildExportJson()
 
         clearDatabase()
-        container.settingsStore.setChartAccountView(AccountView.Total)
-        container.settingsStore.setBalanceView(AccountView.Total)
+        container.settingsStore.setChartAccountView(AccountView.All)
+        container.settingsStore.setBalanceView(AccountView.All)
         vm.confirmRestore(decodeOrFail(json))
 
         val after = container.settingsStore.appSettings.first()

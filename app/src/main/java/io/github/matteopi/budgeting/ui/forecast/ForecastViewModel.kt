@@ -12,6 +12,7 @@ import io.github.matteopi.budgeting.core.model.Account
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.ZeroPoint
 import io.github.matteopi.budgeting.data.settings.AccountView
+import io.github.matteopi.budgeting.data.settings.collapsePool
 import io.github.matteopi.budgeting.data.settings.resolveForChart
 import io.github.matteopi.budgeting.domain.snapshot
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,7 +32,7 @@ data class ForecastUiState(
     /** The non-archived accounts, for the account selector above the chart. */
     val accounts: List<Account> = emptyList(),
     /** The account view actually charted (the persisted one, made safe for the accounts that exist). */
-    val view: AccountView = AccountView.Total,
+    val view: AccountView = AccountView.All,
     /** Set when the latest forecast run failed; any [result] is then the last good one. */
     val error: String? = null,
     val buffer: Money = Money.ZERO,
@@ -58,7 +59,7 @@ class ForecastViewModel(private val container: AppContainer) : ViewModel() {
         } else {
             val input = snapshot.input
             val accounts = input.accounts.filter { !it.archived }
-            val requested = appSettings.chartAccountView.resolveForChart(accounts)
+            val requested = appSettings.chartAccountView.resolveForChart(accounts).collapsePool(accounts)
             val result = snapshot.result
             val chart = result?.let {
                 AccountChartMapping.build(requested, it, input.accounts, input.settings.zeroPoint, input.settings.buffer)

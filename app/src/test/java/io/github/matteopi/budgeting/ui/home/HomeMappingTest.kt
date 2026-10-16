@@ -17,21 +17,66 @@ class HomeMappingTest {
     private val result = ForecastFixtures.result(input)
 
     @Test
-    fun `the total is the pool balance, read from the same input as the account rows`() {
-        val balance = HomeMapping.balance(AccountView.Total, input, result)
-        assertEquals(AccountView.Total, balance.view)
+    fun `the pool is the safe-to-spend accounts' balance, read from the same input as the account rows`() {
+        val balance = HomeMapping.balance(AccountView.Pool, input, result)
+        assertEquals(AccountView.Pool, balance.view)
         // Current £1,000 + Savings £500; Cash is outside the pool.
         assertEquals(Money.pounds(1_500), balance.display)
         assertEquals(Money.ZERO, balance.floorDisplay)
     }
 
     @Test
-    fun `the overdraft zero point adds the pool's overdraft to the total`() {
+    fun `all accounts sums every account, including the ones outside the pool`() {
+        val balance = HomeMapping.balance(AccountView.All, input, result)
+        assertEquals(AccountView.All, balance.view)
+        // Current £1,000 + Savings £500 + Cash £20.
+        assertEquals(Money.pounds(1_520), balance.display)
+        assertEquals(Money.ZERO, balance.floorDisplay)
+    }
+
+    @Test
+    fun `all accounts leaves out archived accounts`() {
+        val archivedInput = ForecastFixtures.input(
+            accounts = ForecastFixtures.accounts().map { if (it.id == ForecastFixtures.CASH) it.copy(archived = true) else it },
+        )
+        val archivedResult = ForecastFixtures.result(archivedInput)
+        assertEquals(Money.pounds(1_500), HomeMapping.balance(AccountView.All, archivedInput, archivedResult).display)
+    }
+
+    @Test
+    fun `the pool view is shown as all accounts when no account is left out of safe-to-spend`() {
+        val everyAccount = ForecastFixtures.input(accounts = ForecastFixtures.accounts().map { it.copy(includeInSafeToSpend = true) })
+        val everyResult = ForecastFixtures.result(everyAccount)
+        val balance = HomeMapping.balance(AccountView.Pool, everyAccount, everyResult)
+        assertEquals(AccountView.All, balance.view)
+        assertEquals(Money.pounds(1_520), balance.display)
+        assertEquals(HomeMapping.balance(AccountView.All, everyAccount, everyResult), balance)
+    }
+
+    @Test
+    fun `the overdraft zero point adds the matching overdrafts to each total`() {
         val overdraftInput = ForecastFixtures.input(zeroPoint = ZeroPoint.OVERDRAFT_LIMIT)
         val overdraftResult = ForecastFixtures.result(overdraftInput)
-        val balance = HomeMapping.balance(AccountView.Total, overdraftInput, overdraftResult)
-        assertEquals(Money.pounds(1_500 + 250), balance.display)
-        assertEquals(Money.ZERO, balance.floorDisplay)
+        val pool = HomeMapping.balance(AccountView.Pool, overdraftInput, overdraftResult)
+        assertEquals(Money.pounds(1_500 + 250), pool.display)
+        assertEquals(Money.ZERO, pool.floorDisplay)
+
+        val all = HomeMapping.balance(AccountView.All, overdraftInput, overdraftResult)
+        // Cash has no overdraft, so all accounts adds just its £20.
+        assertEquals(Money.pounds(1_520 + 250), all.display)
+        assertEquals(Money.ZERO, all.floorDisplay)
+    }
+
+    @Test
+    fun `all accounts adds the overdraft of an account outside the pool`() {
+        val accounts = ForecastFixtures.accounts().map {
+            if (it.id == ForecastFixtures.CASH) it.copy(overdraftLimit = Money.pounds(30)) else it
+        }
+        val overdraftInput = ForecastFixtures.input(zeroPoint = ZeroPoint.OVERDRAFT_LIMIT, accounts = accounts)
+        val overdraftResult = ForecastFixtures.result(overdraftInput)
+        val all = HomeMapping.balance(AccountView.All, overdraftInput, overdraftResult)
+        assertEquals(Money.pounds(1_520 + 250 + 30), all.display)
+        assertEquals(Money.ZERO, all.floorDisplay)
     }
 
     @Test
@@ -58,28 +103,36 @@ class HomeMappingTest {
     }
 
     @Test
-    fun `a missing, archived or each view shows the pool total`() {
+    fun `a missing, archived or each view shows all accounts`() {
         val archivedInput = ForecastFixtures.input(
             accounts = ForecastFixtures.accounts().map { if (it.id == ForecastFixtures.CASH) it.copy(archived = true) else it },
         )
         val archivedResult = ForecastFixtures.result(archivedInput)
         val views = listOf(
-            AccountView.Single(999) to (input to result),
-            AccountView.Single(ForecastFixtures.CASH) to (archivedInput to archivedResult),
-            AccountView.Each to (input to result),
+            Triple(AccountView.Single(999), input to result, Money.pounds(1_520)),
+            Triple(AccountView.Single(ForecastFixtures.CASH), archivedInput to archivedResult, Money.pounds(1_500)),
+            Triple(AccountView.Each, input to result, Money.pounds(1_520)),
         )
-        for ((view, pair) in views) {
+        for ((view, pair, expected) in views) {
             val balance = HomeMapping.balance(view, pair.first, pair.second)
-            assertEquals(AccountView.Total, balance.view, "$view")
-            assertEquals(Money.pounds(1_500), balance.display, "$view")
+            assertEquals(AccountView.All, balance.view, "$view")
+            assertEquals(expected, balance.display, "$view")
         }
     }
 
     @Test
     fun `the sparkline is eight weekly points of the pool, or of the chosen account`() {
-        val total = HomeMapping.balance(AccountView.Total, input, result)
-        assertEquals(8, total.sparkline.size)
-        assertEquals(listOf(6, 13, 20, 27, 34, 41, 48, 55).map { result.days[it].expectedBalance }, total.sparkline)
+        val weekly = listOf(6, 13, 20, 27, 34, 41, 48, 55)
+        val pool = HomeMapping.balance(AccountView.Pool, input, result)
+        assertEquals(8, pool.sparkline.size)
+        assertEquals(weekly.map { result.days[it].expectedBalance }, pool.sparkline)
+
+        // All accounts adds the Cash account (£20, nothing scheduled) to the pool's expected balance.
+        val cashForecast = result.accountForecasts.first { it.accountId == ForecastFixtures.CASH }
+        val all = HomeMapping.balance(AccountView.All, input, result)
+        assertEquals(8, all.sparkline.size)
+        assertEquals(weekly.map { result.days[it].expectedBalance + cashForecast.days[it].expectedBalance }, all.sparkline)
+        assertEquals(weekly.map { result.days[it].expectedBalance + Money.pounds(20) }, all.sparkline)
 
         val savingsForecast = result.accountForecasts.first { it.accountId == ForecastFixtures.SAVINGS }
         val savings = HomeMapping.balance(AccountView.Single(ForecastFixtures.SAVINGS), input, result)
@@ -89,7 +142,8 @@ class HomeMappingTest {
 
     @Test
     fun `the sparkline is empty until there is a forecast`() {
-        assertEquals(emptyList(), HomeMapping.balance(AccountView.Total, input, null).sparkline)
+        assertEquals(emptyList(), HomeMapping.balance(AccountView.All, input, null).sparkline)
+        assertEquals(emptyList(), HomeMapping.balance(AccountView.Pool, input, null).sparkline)
         assertEquals(
             emptyList(),
             HomeMapping.balance(AccountView.Single(ForecastFixtures.SAVINGS), input, null).sparkline,
@@ -108,7 +162,7 @@ class HomeMappingTest {
 
         // A snapshot pairs the input with ITS result, so the balance and the rows agree.
         val snapshot = ForecastState.Ready(empty, emptyResult, 0L).snapshot()!!
-        assertEquals(Money.ZERO, HomeMapping.balance(AccountView.Total, snapshot.input, snapshot.result).display)
+        assertEquals(Money.ZERO, HomeMapping.balance(AccountView.All, snapshot.input, snapshot.result).display)
         assertEquals(0, snapshot.input.accounts.size)
     }
 

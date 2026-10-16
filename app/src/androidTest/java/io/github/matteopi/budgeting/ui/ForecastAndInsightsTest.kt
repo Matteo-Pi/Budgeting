@@ -51,15 +51,15 @@ class ForecastAndInsightsTest : UiTest() {
     fun forecastChartCanBeShownForAllAccountsOneAccountOrEachAccount() {
         openForecast()
 
-        // Default: the pool total, which alone has the tier-1 baseline switch.
+        // Default: all accounts, which here are all in safe-to-spend, so it is the pool's chart with the tier-1 baseline switch.
         waitForExists(selectedChip("All accounts"), "'All accounts' selected by default")
         waitForText("Show tier-1 baseline")
-        assertTrue(!textExists("Across all accounts in safe-to-spend", substring = true))
+        assertTrue(!textExists("Across the accounts in safe-to-spend", substring = true))
         shot("forecast-01-all-accounts")
 
         // One account: the chart is that account only, and the risk sentence says it is about the pool.
         tapChip("Lloyds current")
-        waitForText("Across all accounts in safe-to-spend", substring = true)
+        waitForText("Across the accounts in safe-to-spend", substring = true)
         waitForNoText("Show tier-1 baseline")
         shot("forecast-02-lloyds-current")
 
@@ -79,10 +79,10 @@ class ForecastAndInsightsTest : UiTest() {
         waitForNoText("Show tier-1 baseline")
         shot("forecast-05-each-account")
 
-        // Back to the total.
+        // Back to all accounts.
         tapChip("All accounts")
         waitForText("Show tier-1 baseline")
-        waitForNoText("Across all accounts in safe-to-spend", substring = true)
+        waitForNoText("Across the accounts in safe-to-spend", substring = true)
         shot("forecast-06-back-to-all-accounts")
     }
 

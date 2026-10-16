@@ -19,6 +19,7 @@ import io.github.matteopi.budgeting.core.model.SinkingFundStatus
 import io.github.matteopi.budgeting.core.model.Transaction
 import io.github.matteopi.budgeting.core.model.TxKind
 import io.github.matteopi.budgeting.core.model.ZeroPoint
+import io.github.matteopi.budgeting.data.repo.AccountRepository
 import io.github.matteopi.budgeting.data.settings.AccountView
 import io.github.matteopi.budgeting.data.settings.SettingsStore
 import io.github.matteopi.budgeting.domain.ForecastService
@@ -33,6 +34,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -46,14 +48,16 @@ data class HomeUiState(
     val zeroPoint: ZeroPoint = ZeroPoint.ACCOUNT_BALANCE,
     val hasAccounts: Boolean = false,
     val accounts: List<HomeAccountRow> = emptyList(),
-    /** "Your money": the balance of [balanceView] (the pool total or one account), in display terms. */
+    /** "Your money": the balance of [balanceView] (all accounts, the safe-to-spend accounts or one account), in display terms. */
     val balanceDisplay: Money = Money.ZERO,
     /** The view actually shown in the "Your money" card (the persisted one, made safe for the accounts that exist). */
-    val balanceView: AccountView = AccountView.Total,
-    /** The non-archived accounts, for the chip that switches [balanceView]. */
+    val balanceView: AccountView = AccountView.All,
+    /** The non-archived accounts, for the chip that switches [balanceView] and the "Choose accounts" dialog. */
     val accountChoices: List<Account> = emptyList(),
     val floorDisplay: Money = Money.ZERO,
-    /** Always the all-accounts figure: safe-to-spend covers every account included in it. */
+    /** There are accounts but none is included in safe-to-spend, so there is nothing to work it out from. */
+    val noAccountCounted: Boolean = false,
+    /** Always the figure for the accounts included in safe-to-spend, whatever [balanceView] is. */
     val safeToSpend: SafeToSpend? = null,
     /** Set when the latest forecast run failed; any numbers shown are then from the last good forecast. */
     val forecastError: String? = null,
@@ -95,6 +99,7 @@ class HomeViewModel(
     private val forecastService: ForecastService,
     private val postingService: PostingService,
     private val settingsStore: SettingsStore,
+    private val accountRepository: AccountRepository,
 ) : ViewModel() {
 
     private val hiddenForSession = MutableStateFlow<Set<String>>(emptySet())
@@ -179,6 +184,7 @@ class HomeViewModel(
             balanceView = balance.view,
             accountChoices = liveAccounts,
             floorDisplay = balance.floorDisplay,
+            noAccountCounted = liveAccounts.isNotEmpty() && poolAccountIds.isEmpty(),
             safeToSpend = result?.safeToSpend,
             forecastError = snapshot.error,
             pendingConfirmations = visiblePending,
@@ -196,6 +202,16 @@ class HomeViewModel(
 
     fun selectBalanceView(view: AccountView) {
         viewModelScope.launch { settingsStore.setBalanceView(view) }
+    }
+
+    /** Includes the account in (or leaves it out of) safe-to-spend, from the "Choose accounts" dialog. */
+    fun setIncludedInSafeToSpend(accountId: Long, included: Boolean) {
+        viewModelScope.launch {
+            val account = accountRepository.observeAccounts().first().firstOrNull { it.id == accountId } ?: return@launch
+            if (account.includeInSafeToSpend != included) {
+                accountRepository.update(account.copy(includeInSafeToSpend = included))
+            }
+        }
     }
 
     fun confirmDefault(item: PendingItem) = viewModelScope.launch {
@@ -222,6 +238,7 @@ class HomeViewModel(
                     forecastService = app.container.forecastService,
                     postingService = app.container.postingService,
                     settingsStore = app.container.settingsStore,
+                    accountRepository = app.container.accountRepository,
                 )
             }
         }

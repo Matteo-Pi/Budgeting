@@ -18,6 +18,7 @@ import io.github.matteopi.budgeting.core.model.ForecastMode
 import io.github.matteopi.budgeting.core.model.TermPeriod
 import io.github.matteopi.budgeting.core.model.Transaction
 import io.github.matteopi.budgeting.data.settings.AccountView
+import io.github.matteopi.budgeting.data.settings.collapsePool
 import io.github.matteopi.budgeting.data.settings.resolveForChart
 import io.github.matteopi.budgeting.ui.receipts.list.ReceiptMapping
 import java.time.LocalDate
@@ -46,7 +47,7 @@ data class InsightsUiState(
     /** The non-archived accounts, for the account selector above the balance history. */
     val accounts: List<Account> = emptyList(),
     /** The account view charted (the persisted one, made safe for the accounts that exist). */
-    val chartView: AccountView = AccountView.Total,
+    val chartView: AccountView = AccountView.All,
     val monthlyInOut: List<MonthInOut> = emptyList(),
     val selectedCategoryId: Long? = null,
     /** The Items card (docs/PLAN.md §10.4); hidden while there are no receipts. */
@@ -133,7 +134,7 @@ class InsightsViewModel(private val container: AppContainer) : ViewModel() {
         val weekly = Trends.weeklyByCategory(core.accounts, core.categories, core.transactions, from, to)
         val termVsHoliday = Trends.termVsHoliday(core.accounts, core.categories, core.transactions, core.terms, settings.historyStartDate)
         val liveAccounts = core.accounts.filter { !it.archived }
-        val chartView = requestedChartView.resolveForChart(liveAccounts)
+        val chartView = requestedChartView.resolveForChart(liveAccounts).collapsePool(liveAccounts)
         val balanceHistory = InsightsMapping.balanceHistory(chartView, core.accounts, core.transactions, from, to, settings.zeroPoint)
         val monthlyInOut = Trends.monthlyInOut(core.accounts, core.categories, core.transactions, months, to)
 

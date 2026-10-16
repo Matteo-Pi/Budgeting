@@ -9,6 +9,7 @@ import io.github.matteopi.budgeting.AppContainer
 import io.github.matteopi.budgeting.BudgetApp
 import io.github.matteopi.budgeting.core.model.Account
 import io.github.matteopi.budgeting.data.settings.AccountView
+import io.github.matteopi.budgeting.data.settings.collapsePool
 import io.github.matteopi.budgeting.data.settings.resolveForChart
 import io.github.matteopi.budgeting.domain.snapshot
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,7 +24,7 @@ data class TimelineUiState(
     /** The non-archived accounts, for the account selector above the weeks. */
     val accounts: List<Account> = emptyList(),
     /** The account view charted (the persisted one, made safe for the accounts that exist). */
-    val view: AccountView = AccountView.Total,
+    val view: AccountView = AccountView.All,
     /** Set when the latest forecast run failed; any [weeks] are then from the last good one. */
     val error: String? = null,
 )
@@ -43,7 +44,7 @@ class TimelineViewModel(private val container: AppContainer) : ViewModel() {
         } else {
             val input = snapshot.input
             val accounts = input.accounts.filter { !it.archived }
-            val view = appSettings.chartAccountView.resolveForChart(accounts)
+            val view = appSettings.chartAccountView.resolveForChart(accounts).collapsePool(accounts)
             TimelineUiState(
                 loading = false,
                 weeks = TimelineMapping.buildWeeks(result, input.termPeriods, input.settings.zeroPoint, input.accounts, view),

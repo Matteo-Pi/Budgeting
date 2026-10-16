@@ -152,10 +152,13 @@ fun ForecastScreen(
 
             item {
                 val poolSentence = ForecastChartMapping.riskSentence(result.risk, result.safeToSpend.horizonEnd)
-                val sentence = if (state.view == AccountView.Total) {
+                // The risk figure is always about the accounts included in safe-to-spend, so say so
+                // whenever the chart shows something else (hasTier1 is true only for the pool's own
+                // data, which "All accounts" also is when no account is left out of safe-to-spend).
+                val sentence = if (state.view == AccountView.Pool || shown.hasTier1) {
                     poolSentence
                 } else {
-                    "Across all accounts in safe-to-spend: $poolSentence"
+                    "Across the accounts in safe-to-spend: $poolSentence"
                 }
                 val isHighRisk = (result.risk?.probBelowFloor ?: 0.0) >= 0.10
                 Card {

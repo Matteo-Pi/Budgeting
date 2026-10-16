@@ -20,16 +20,68 @@ class AccountChartMappingTest {
     }
 
     @Test
-    fun `the total is the existing pool chart with its buffer and tier-1 line`() {
+    fun `the pool is the existing safe-to-spend chart with its buffer and tier-1 line`() {
         val input = ForecastFixtures.input()
         val result = ForecastFixtures.result(input)
-        val data = AccountChartMapping.build(AccountView.Total, result, input.accounts, ZeroPoint.ACCOUNT_BALANCE, buffer)
-        assertEquals(AccountView.Total, data.view)
+        val data = AccountChartMapping.build(AccountView.Pool, result, input.accounts, ZeroPoint.ACCOUNT_BALANCE, buffer)
+        assertEquals(AccountView.Pool, data.view)
         assertNull(data.lines)
         assertEquals(buffer, data.buffer)
         assertTrue(data.hasTier1)
         assertEquals(ForecastChartMapping.toChartDays(result, ZeroPoint.ACCOUNT_BALANCE), data.days)
         assertTrue(data.days.all { it.tier1 != null })
+    }
+
+    @Test
+    fun `all accounts adds the accounts outside the pool to every percentile, with no buffer and no tier-1`() {
+        val input = ForecastFixtures.input()
+        val result = ForecastFixtures.result(input)
+        val pool = AccountChartMapping.build(AccountView.Pool, result, input.accounts, ZeroPoint.ACCOUNT_BALANCE, buffer)
+        val all = AccountChartMapping.build(AccountView.All, result, input.accounts, ZeroPoint.ACCOUNT_BALANCE, buffer)
+        val cash = result.accountForecasts.first { it.accountId == ForecastFixtures.CASH }
+        assertEquals(AccountView.All, all.view)
+        assertNull(all.lines)
+        assertEquals(Money.ZERO, all.buffer)
+        assertEquals(false, all.hasTier1)
+        assertTrue(all.days.all { it.tier1 == null })
+        assertEquals(pool.days.map { it.date }, all.days.map { it.date })
+        assertEquals(pool.days.map { it.regime }, all.days.map { it.regime })
+        // Today: Current £1,000 + Savings £500 in the pool, plus Cash £20 outside it.
+        assertEquals(Money.pounds(1_520), all.days.first().p50)
+        all.days.forEachIndexed { i, day ->
+            val extra = cash.days[i].expectedBalance
+            assertEquals(pool.days[i].p10!! + extra, day.p10, "p10 on day $i")
+            assertEquals(pool.days[i].p50 + extra, day.p50, "p50 on day $i")
+            assertEquals(pool.days[i].p90!! + extra, day.p90, "p90 on day $i")
+        }
+    }
+
+    @Test
+    fun `all accounts are converted with the pool's overdraft plus the other accounts' own`() {
+        val accounts = ForecastFixtures.accounts().map {
+            if (it.id == ForecastFixtures.CASH) it.copy(overdraftLimit = Money.pounds(30)) else it
+        }
+        val input = ForecastFixtures.input(zeroPoint = ZeroPoint.OVERDRAFT_LIMIT, accounts = accounts)
+        val result = ForecastFixtures.result(input)
+        val all = AccountChartMapping.build(AccountView.All, result, input.accounts, ZeroPoint.OVERDRAFT_LIMIT, buffer)
+        // £1,520 raw + (£200 + £50 pool overdraft + £30 Cash overdraft).
+        assertEquals(Money.pounds(1_800), all.days.first().p50)
+        val pool = AccountChartMapping.build(AccountView.Pool, result, input.accounts, ZeroPoint.OVERDRAFT_LIMIT, buffer)
+        assertEquals(Money.pounds(1_750), pool.days.first().p50)
+    }
+
+    @Test
+    fun `all accounts is the pool chart itself when every account is in the pool`() {
+        val accounts = ForecastFixtures.accounts().map { it.copy(includeInSafeToSpend = true) }
+        val input = ForecastFixtures.input(accounts = accounts)
+        val result = ForecastFixtures.result(input)
+        val pool = AccountChartMapping.build(AccountView.Pool, result, input.accounts, ZeroPoint.ACCOUNT_BALANCE, buffer)
+        val all = AccountChartMapping.build(AccountView.All, result, input.accounts, ZeroPoint.ACCOUNT_BALANCE, buffer)
+        assertEquals(AccountView.All, all.view)
+        assertEquals(pool.copy(view = AccountView.All), all)
+        assertEquals(buffer, all.buffer)
+        assertTrue(all.hasTier1)
+        assertEquals(Money.pounds(1_520), all.days.first().p50)
     }
 
     @Test
@@ -85,11 +137,12 @@ class AccountChartMappingTest {
     }
 
     @Test
-    fun `an account with no forecast falls back to the total`() {
+    fun `an account with no forecast falls back to all accounts`() {
         val data = build(AccountView.Single(999))
-        assertEquals(AccountView.Total, data.view)
+        assertEquals(AccountView.All, data.view)
         assertNull(data.lines)
-        assertEquals(buffer, data.buffer)
+        assertEquals(Money.ZERO, data.buffer)
+        assertEquals(Money.pounds(1_520), data.days.first().p50)
     }
 
     @Test
@@ -143,12 +196,12 @@ class AccountChartMappingTest {
     }
 
     @Test
-    fun `without per-account forecasts every view falls back to the total`() {
+    fun `without per-account forecasts every view falls back to all accounts`() {
         val input = ForecastFixtures.input()
         val result = ForecastFixtures.result(input).copy(accountForecasts = emptyList())
         for (view in listOf(AccountView.Each, AccountView.Single(ForecastFixtures.CURRENT))) {
             val data = AccountChartMapping.build(view, result, input.accounts, ZeroPoint.ACCOUNT_BALANCE, buffer)
-            assertEquals(AccountView.Total, data.view)
+            assertEquals(AccountView.All, data.view)
             assertNull(data.lines)
         }
     }

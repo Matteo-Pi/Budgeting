@@ -6,12 +6,14 @@ import io.github.matteopi.budgeting.core.forecast.ForecastResult
 import io.github.matteopi.budgeting.core.forecast.SafeToSpend
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.ZeroPoint
+import io.github.matteopi.budgeting.core.model.sum
 import io.github.matteopi.budgeting.data.settings.AccountView
+import io.github.matteopi.budgeting.data.settings.collapsePool
 import io.github.matteopi.budgeting.data.settings.resolveForBalance
 
 /** The "Your money" number and the sparkline under it, for the chosen [view], in display terms. */
 data class HomeBalance(
-    /** The view actually shown: the requested one, or [AccountView.Total] if that account is gone. */
+    /** The view actually shown: the requested one, or [AccountView.All] if that account is gone. */
     val view: AccountView,
     val display: Money,
     /** Where "£0" sits on the sparkline. */
@@ -36,14 +38,16 @@ object HomeMapping {
     private const val SPARKLINE_WEEKS = 8
 
     /**
-     * The balance for [requestedView]: the pool total, or one account converted with its own
-     * overdraft. A view that points at a missing or archived account (or [AccountView.Each], which
-     * a single number can't show) becomes the pool total. Balances are read from the ledger in
+     * The balance for [requestedView]: every non-archived account ([AccountView.All]), the
+     * safe-to-spend accounts ([AccountView.Pool]) or one account converted with its own overdraft.
+     * A view that points at a missing or archived account (or [AccountView.Each], which a single
+     * number can't show) becomes [AccountView.All], and so does [AccountView.Pool] when no account
+     * is left out of safe-to-spend (they are identical then). Balances are read from the ledger in
      * [input], so they always agree with the account rows drawn from the same input.
      */
     fun balance(requestedView: AccountView, input: ForecastInput, result: ForecastResult?): HomeBalance {
         val zeroPoint = input.settings.zeroPoint
-        val view = requestedView.resolveForBalance(input.accounts)
+        val view = requestedView.resolveForBalance(input.accounts).collapsePool(input.accounts)
         val raw = Balances.balancesByAccount(input.transactions, input.today)
         val single = (view as? AccountView.Single)?.let { v -> input.accounts.firstOrNull { it.id == v.accountId } }
 
@@ -59,14 +63,42 @@ object HomeMapping {
             )
         }
 
+        if (view == AccountView.All) return allAccountsBalance(input, result, raw)
+
         val poolOverdraft = Balances.poolOverdraft(input.accounts)
         val poolRaw = Balances.poolBalance(input.accounts, input.transactions, input.today)
         return HomeBalance(
-            view = AccountView.Total,
+            view = AccountView.Pool,
             display = Balances.toDisplay(poolRaw, poolOverdraft, zeroPoint),
             floorDisplay = Balances.toDisplay(Balances.floor(input.accounts, zeroPoint), poolOverdraft, zeroPoint),
             sparkline = weeklySamples(result?.days?.map { it.expectedBalance }.orEmpty())
                 .map { Balances.toDisplay(it, poolOverdraft, zeroPoint) },
+        )
+    }
+
+    /**
+     * The sum of every non-archived account. The sparkline starts from the pool's expected balance
+     * and adds the accounts outside the pool, which have no learned flows (only committed ones), so
+     * their expected balance is exactly their balance on each day.
+     */
+    private fun allAccountsBalance(
+        input: ForecastInput,
+        result: ForecastResult?,
+        raw: Map<Long, Money>,
+    ): HomeBalance {
+        val zeroPoint = input.settings.zeroPoint
+        val live = input.accounts.filter { !it.archived }
+        val overdraft = live.map { it.overdraftLimit }.sum()
+        val allRaw = live.map { raw[it.id] ?: Money.ZERO }.sum()
+        val outsidePool = result?.accountForecasts.orEmpty().filter { !it.inPool }
+        val dailyAll = result?.days.orEmpty().mapIndexed { index, day ->
+            day.expectedBalance + outsidePool.map { it.days.getOrNull(index)?.expectedBalance ?: Money.ZERO }.sum()
+        }
+        return HomeBalance(
+            view = AccountView.All,
+            display = Balances.toDisplay(allRaw, overdraft, zeroPoint),
+            floorDisplay = Balances.toDisplay(floorRaw(overdraft, zeroPoint), overdraft, zeroPoint),
+            sparkline = weeklySamples(dailyAll).map { Balances.toDisplay(it, overdraft, zeroPoint) },
         )
     }
 

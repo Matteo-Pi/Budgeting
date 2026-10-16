@@ -24,10 +24,12 @@ import androidx.compose.ui.unit.dp
 import io.github.matteopi.budgeting.core.model.Account
 import io.github.matteopi.budgeting.data.settings.AccountView
 import io.github.matteopi.budgeting.data.settings.displayName
+import io.github.matteopi.budgeting.data.settings.poolDiffersFromAll
 
 /**
- * A compact row of chips above a chart: "All accounts", each account by name, and (when
- * [allowEach]) "Each account". [accounts] should be the non-archived ones and [selected] an
+ * A compact row of chips above a chart: "All accounts", "Safe-to-spend accounts" (only when some
+ * account is left out of safe-to-spend, otherwise it would be the same as "All accounts"), each
+ * account by name, and (when [allowEach]) "Each account". [accounts] should be the non-archived ones and [selected] an
  * already-resolved view (see [io.github.matteopi.budgeting.data.settings.resolveForChart]).
  * With a single account there is nothing to choose, so nothing is shown.
  */
@@ -45,10 +47,17 @@ fun AccountViewSelector(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         FilterChip(
-            selected = selected == AccountView.Total,
-            onClick = { onSelect(AccountView.Total) },
-            label = { Text(AccountView.Total.displayName(accounts)) },
+            selected = selected == AccountView.All,
+            onClick = { onSelect(AccountView.All) },
+            label = { Text(AccountView.All.displayName(accounts)) },
         )
+        if (poolDiffersFromAll(accounts)) {
+            FilterChip(
+                selected = selected == AccountView.Pool,
+                onClick = { onSelect(AccountView.Pool) },
+                label = { Text(AccountView.Pool.displayName(accounts)) },
+            )
+        }
         accounts.forEach { account ->
             FilterChip(
                 selected = selected == AccountView.Single(account.id),
@@ -67,8 +76,9 @@ fun AccountViewSelector(
 }
 
 /**
- * A small drop-down chip ("All accounts ▾") that picks the pool total or one account, for a
- * single balance number. [selected] should be a resolved balance view (never
+ * A small drop-down chip ("All accounts ▾") that picks all accounts, the safe-to-spend accounts
+ * (offered only when some account is left out of safe-to-spend) or one account, for a single
+ * balance number. [selected] should be a resolved balance view (never
  * [AccountView.Each]).
  */
 @Composable
@@ -88,12 +98,21 @@ fun AccountViewChip(
         )
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DropdownMenuItem(
-                text = { Text(AccountView.Total.displayName(accounts)) },
+                text = { Text(AccountView.All.displayName(accounts)) },
                 onClick = {
-                    onSelect(AccountView.Total)
+                    onSelect(AccountView.All)
                     expanded = false
                 },
             )
+            if (poolDiffersFromAll(accounts)) {
+                DropdownMenuItem(
+                    text = { Text(AccountView.Pool.displayName(accounts)) },
+                    onClick = {
+                        onSelect(AccountView.Pool)
+                        expanded = false
+                    },
+                )
+            }
             accounts.forEach { account ->
                 DropdownMenuItem(
                     text = { Text(account.name) },

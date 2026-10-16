@@ -630,9 +630,35 @@ lastExportDate: LocalDate?, theme: AppTheme = PAPER, darkMode: DarkMode = SYSTEM
   balances because they came from different subscriptions). Settings → About shows when the
   forecast last ran. `Clock.todayFlow` re-checks the date every 60 s (a single long `delay`
   stalls during deep sleep).
-- **Account views**: `AppSettings.chartAccountView` (all accounts / one account / each account)
-  drives the Forecast chart, Timeline and Insights balance history; `balanceView` (all accounts /
-  one account) drives Home's "Your money" and sparkline. Safe-to-spend stays pool-wide.
+- **Account views** (`data/settings/AccountView.kt`): `AppSettings.chartAccountView` (**All
+  accounts** / **Safe-to-spend accounts** / one account / each account) drives the Forecast chart,
+  Timeline and Insights balance history; `balanceView` (the same, without "each") drives Home's
+  "Your money" and sparkline. *All* is every non-archived account; *Pool* is the §5.4 pool (included
+  in safe-to-spend, not archived). Safe-to-spend itself always uses the pool (no engine change).
+  Encoding: `"all"`, `"pool"`, `"each"`, `"account:<id>"`; the legacy `"total"` (written before
+  the two were told apart, and always labelled "All accounts" in the UI) is read as *All*. A
+  missing/archived account, or "each" for a balance, resolves to *All*. The selectors offer
+  "Safe-to-spend accounts" only when some live account is left out of the pool (otherwise it would
+  equal "All accounts", and a stored *Pool* is shown as *All*; see `poolDiffersFromAll` /
+  `collapsePool`).
+  - Home: *All* sums the raw balances and the overdraft limits of all non-archived accounts
+    (floor via the same zero-point rule); its sparkline is the pool's expected balance plus the
+    expected balances of the non-pool account forecasts.
+  - Charts: *Pool* is the classic pool chart (band, optional tier-1 line, buffer). *All* adds the
+    non-pool accounts' expected balances (deterministic, so exact for every percentile) to the
+    pool's P10/P50/P90 and converts with the pool overdraft plus theirs; no tier-1 line and no
+    buffer (both are pool-only). With no account outside the pool, *All* is the pool data.
+    Timeline *All* shifts its end-of-week balances the same way, lists every committed flow and
+    hides the pool-only "Reserved for sinking funds" row. The Forecast risk sentence is prefixed
+    "Across the accounts in safe-to-spend" whenever the chart is not the pool's own.
+  - Insights balance history: *All* sums every non-archived account ("All accounts"); *Pool* is the
+    previous total line ("Safe-to-spend accounts").
+  - **Choose accounts**: the Home hero has a "Choose accounts" button (shown whenever an account
+    exists, including under the "None of your accounts is included in safe-to-spend" message). It
+    opens a dialog listing every non-archived account with a checkbox for
+    `includeInSafeToSpend`; each toggle is saved immediately through `AccountRepository.update`
+    (`HomeViewModel.setIncludedInSafeToSpend`), so the account edit screen's switch is no longer
+    the only way to change it.
 - **Default account**: the first account created becomes the default (changeable in Settings);
   archiving/deleting it moves the default to the earliest remaining account. One resolver
   (`data/repo/DefaultAccount.kt`) is used everywhere.
@@ -652,7 +678,8 @@ where needed (TopAppBar, DatePicker, ModalBottomSheet).
 
 **Home** — hero card: "Safe to spend" **£71 / week** (big), "£10 a day · until Student loan on
 12 Jan"; red variant if `shortfall > 0` ("Even with no spending you'll be £40 short on 1 Oct").
-Below: pool balance in display terms + days until next money in. Conditional cards (in this
+Below: "Your money" in display terms (all accounts by default; a chip picks the safe-to-spend
+accounts or one account), then days until next money in. Conditional cards (in this
 order): pending confirmations ("Did your £3,100 Student loan arrive?" Confirm / Edit / Not yet /
 Skip), "N spending estimates needed" → Predictions, risk (`probBelowFloor >= 0.10`: "18%
 chance of going below £0 before 12 Jan"), up to 3 anomalies, reconcile nudge (no reconciliation
@@ -690,8 +717,8 @@ ADJUST_PERCENT predictions.
 
 **Timeline** (term-aware calendar) — one row group per week to the forecast end: header
 "Week of 5 Oct · Term (Autumn)" or "· Holiday"; the committed flows that week; expected
-learned spending; end-of-week balance P50 (P10–P90); money reserved in funds; weeks with
-P10 below the floor highlighted.
+learned spending; end-of-week balance P50 (P10–P90) for the chosen account view; money reserved
+in funds (pool views only); weeks with P10 below the floor highlighted.
 
 **Accuracy** — until something can be evaluated: "Accuracy appears after a week of data".
 Then: error at 7/14/28 days for the full model vs the simple baseline, coverage ("the real

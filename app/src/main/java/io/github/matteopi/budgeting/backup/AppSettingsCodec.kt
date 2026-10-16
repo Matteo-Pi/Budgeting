@@ -52,7 +52,7 @@ object AppSettingsCodec {
         darkMode = DarkMode.parse(map[DARK_MODE]) ?: current.darkMode,
         chartAccountView = AccountView.parseOrNull(map[CHART_ACCOUNT_VIEW]) ?: current.chartAccountView,
         balanceView = AccountView.parseOrNull(map[BALANCE_VIEW])?.let { view ->
-            if (view == AccountView.Each) AccountView.Total else view
+            if (view == AccountView.Each) AccountView.All else view
         } ?: current.balanceView,
         lastSnapshotDate = current.lastSnapshotDate,
         lastExportDate = current.lastExportDate,
