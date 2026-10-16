@@ -14,6 +14,7 @@ import io.github.matteopi.budgeting.testing.blocking
 import io.github.matteopi.budgeting.testing.seedAccount
 import io.github.matteopi.budgeting.testing.seedOnboardingDone
 import io.github.matteopi.budgeting.testing.testApp
+import io.github.matteopi.budgeting.ui.importer.ASKED_ABOUT_THIS
 import io.github.matteopi.budgeting.ui.receipts.ReceiptFiles
 import java.io.File
 import java.time.LocalDate
@@ -57,7 +58,7 @@ class StatementImportPdfTest : UiTest() {
         // Straight to the review (no column mapping), with the statement's card and what did not need a second look.
         waitForText("Review rows", timeoutMs = HEAVY_TIMEOUT_MS)
         waitForText("Santander statement · 10 Sep – 10 Oct 2026 · 19 transactions · closing balance £14.79")
-        assertTrue("a statement that adds up has no warning", !textExists("Check these against your statement:"))
+        assertTrue("an empty account has nothing the check step would ask about", !textExists(ASKED_ABOUT_THIS))
         waitForExists(hasText("Import into"), "the account picker for the statement")
         waitForExists(hasText("Looks like a move between your accounts"), "the hint on a move between accounts")
         shot("statement-import-01-review")

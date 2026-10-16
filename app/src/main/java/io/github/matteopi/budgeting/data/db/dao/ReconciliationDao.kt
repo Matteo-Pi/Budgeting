@@ -23,6 +23,13 @@ interface ReconciliationDao {
     @Insert
     suspend fun insertAll(reconciliations: List<ReconciliationEntity>): List<Long>
 
+    /** Removes the reconciliations whose balance-update transaction belongs to an import batch (undoing that import). */
+    @Query(
+        "DELETE FROM reconciliations WHERE transaction_id IN " +
+            "(SELECT id FROM transactions WHERE import_batch_id = :batchId)",
+    )
+    suspend fun deleteForBatch(batchId: Long)
+
     @Query("DELETE FROM reconciliations")
     suspend fun deleteAll()
 }
