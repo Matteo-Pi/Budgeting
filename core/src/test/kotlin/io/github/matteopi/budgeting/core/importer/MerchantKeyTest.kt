@@ -89,6 +89,18 @@ class MerchantKeyTest {
             "PURCHASE CARD PAYMENT TO SLC STUDENT LOANS 12.50 1234567890 AMZN MKTP UK",
             "CARD PAYMENT TO TESCO STORES 3012 ON 15-09-2026",
             "A".repeat(35) + " 12345X",
+            "UNION SHOP (VIA GOOGLE PAY), ON 05-10-2026",
+            "MORRISONS LEEDS - (VIA GOOGLE PAY), ON 06-10-2026",
+            "SQ *CORNER CAFE (VIA APPLE PAY), ON 07-10-2026",
+            "CARD PAYMENT TO SQ * SQ *COFFEE - - -",
+            "NYX*PHOTOBOOTH (VIA GOOGLE PAY), ON 09-10-2026",
+            "A".repeat(38) + " - -x",
+            "A".repeat(38) + " -",
+            "(VIA X)SQ *Y - (VIA Z)",
+            "-",
+            " - ",
+            "SQ *",
+            "XXL SPORTS XXXX1234",
             "",
             "   ",
         )
@@ -101,5 +113,46 @@ class MerchantKeyTest {
     @Test
     fun `collapses repeated whitespace`() {
         assertEquals("TESCO STORES", MerchantKey.normalise("TESCO    STORES"))
+    }
+
+    @Test
+    fun `the wallet a card was presented with is not part of the merchant`() {
+        assertEquals("UNION SHOP", MerchantKey.normalise("UNION SHOP (VIA GOOGLE PAY), ON 05-10-2026"))
+        assertEquals("UNION SHOP", MerchantKey.normalise("UNION SHOP (VIA APPLE PAY), ON 05-10-2026"))
+        assertEquals("UNION SHOP", MerchantKey.normalise("union shop (via samsung pay), on 05-10-2026"))
+        assertEquals("TESCO STORES", MerchantKey.normalise("TESCO STORES 1234 (VIA GOOGLE PAY), ON 08-10-2026"))
+    }
+
+    @Test
+    fun `a dash left dangling after the merchant is removed`() {
+        assertEquals("MORRISONS LEEDS", MerchantKey.normalise("MORRISONS LEEDS - (VIA GOOGLE PAY), ON 06-10-2026"))
+        assertEquals("MORRISONS LEEDS", MerchantKey.normalise("MORRISONS LEEDS -"))
+        assertEquals("MORRISONS LEEDS", MerchantKey.normalise("MORRISONS LEEDS - - -"))
+        // A hyphen inside a name stays.
+        assertEquals("CO-OP FOOD", MerchantKey.normalise("CO-OP FOOD"))
+    }
+
+    @Test
+    fun `Square's SQ star prefix is removed`() {
+        assertEquals("CORNER CAFE", MerchantKey.normalise("SQ *CORNER CAFE (VIA GOOGLE PAY), ON 07-10-2026"))
+        assertEquals("CORNER CAFE", MerchantKey.normalise("SQ * CORNER CAFE"))
+        assertEquals("COFFEE", MerchantKey.normalise("CARD PAYMENT TO SQ *COFFEE"))
+        assertEquals("SQUARE ROOT LTD", MerchantKey.normalise("SQUARE ROOT LTD"))
+    }
+
+    @Test
+    fun `a star inside a name is not a card mask`() {
+        assertEquals("NYX*PHOTOBOOTH", MerchantKey.normalise("NYX*PHOTOBOOTH (VIA GOOGLE PAY), ON 09-10-2026"))
+        assertEquals("XXL SPORTS", MerchantKey.normalise("XXL SPORTS"))
+        // Real masks still go.
+        assertEquals("AMAZON", MerchantKey.normalise("AMAZON XXXX1234"))
+        assertEquals("AMAZON", MerchantKey.normalise("AMAZON ****1234"))
+    }
+
+    @Test
+    fun `cleaned Santander statement descriptions give the same keys as the raw ones`() {
+        assertEquals("JO BLOGGS", MerchantKey.normalise("JO BLOGGS, ref pizza"))
+        assertEquals("JO BLOGGS", MerchantKey.normalise("BILL PAYMENT VIA FASTER PAYMENT TO JO BLOGGS REFERENCE pizza , MANDATE NO 0002"))
+        assertEquals("FROM A TESTER", MerchantKey.normalise("From A Tester"))
     }
 }

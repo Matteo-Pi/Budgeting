@@ -129,7 +129,7 @@ fun BudgetNavHost(
                     onOpenCategories = { navController.navigate(Route.Categories) },
                     onOpenPresets = { navController.navigate(Route.Presets) },
                     onOpenBackup = { navController.navigate(Route.Backup) },
-                    onOpenStatementImport = { navController.navigate(Route.StatementImport) },
+                    onOpenStatementImport = { navController.navigate(Route.StatementImport()) },
                     onOpenReceipts = { navController.navigate(Route.Receipts) },
                 )
             }
@@ -219,8 +219,9 @@ fun BudgetNavHost(
             composable<Route.Backup> {
                 BackupScreen(onBack = { navController.popBackStack() })
             }
-            composable<Route.StatementImport> {
-                StatementImportScreen(onBack = { navController.popBackStack() })
+            composable<Route.StatementImport> { backStackEntry ->
+                val args = backStackEntry.toRoute<Route.StatementImport>()
+                StatementImportScreen(onBack = { navController.popBackStack() }, pdfPath = args.pdfPath)
             }
             composable<Route.Onboarding> {
                 OnboardingScreen(
@@ -229,7 +230,7 @@ fun BudgetNavHost(
                             popUpTo<Route.Onboarding> { inclusive = true }
                         }
                     },
-                    onOpenStatementImport = { navController.navigate(Route.StatementImport) },
+                    onOpenStatementImport = { navController.navigate(Route.StatementImport()) },
                 )
             }
             composable<Route.Receipts> {

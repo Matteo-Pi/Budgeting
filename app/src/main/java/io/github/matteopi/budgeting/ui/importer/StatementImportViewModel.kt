@@ -4,13 +4,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import io.github.matteopi.budgeting.AppContainer
+import io.github.matteopi.budgeting.core.forecast.Balances
 import io.github.matteopi.budgeting.core.importer.CategorySuggester
 import io.github.matteopi.budgeting.core.importer.CsvParser
 import io.github.matteopi.budgeting.core.importer.CsvTable
 import io.github.matteopi.budgeting.core.importer.ImportDedupe
 import io.github.matteopi.budgeting.core.importer.MerchantKey
 import io.github.matteopi.budgeting.core.importer.ParsedRow
+import io.github.matteopi.budgeting.core.importer.ParsedStatement
+import io.github.matteopi.budgeting.core.importer.PdfCells
+import io.github.matteopi.budgeting.core.importer.PdfTextChunk
 import io.github.matteopi.budgeting.core.importer.RowStatus
+import io.github.matteopi.budgeting.core.importer.SantanderParseResult
+import io.github.matteopi.budgeting.core.importer.SantanderStatement
 import io.github.matteopi.budgeting.core.importer.StatementImport
 import io.github.matteopi.budgeting.core.importer.StatementMapping
 import io.github.matteopi.budgeting.core.model.Account
@@ -19,13 +25,16 @@ import io.github.matteopi.budgeting.core.model.ImportBatch
 import io.github.matteopi.budgeting.core.model.MerchantRule
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.data.repo.DefaultAccount
+import io.github.matteopi.budgeting.data.repo.ImportTransfer
 import io.github.matteopi.budgeting.data.repo.SelectedImportRow
 import io.github.matteopi.budgeting.ui.settings.budgetViewModelFactory
 import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 enum class ImportStep { PICK_FILE, MAPPING, REVIEW, CATEGORISE, SUMMARY }
 
@@ -37,6 +46,10 @@ data class MerchantGroup(
     val total: Money,
     val categoryId: Long?,
     val remember: Boolean,
+    /** A move between the user's own accounts rather than spending: no category, and no rule is remembered. */
+    val transfer: Boolean = false,
+    /** For a [transfer]: the user's other account at the other end, or null for an account that isn't in the app. */
+    val otherAccountId: Long? = null,
 )
 
 data class ImportUiState(
@@ -48,6 +61,8 @@ data class ImportUiState(
     val fileName: String = "statement.csv",
     val table: CsvTable? = null,
     val mapping: StatementMapping? = null,
+    /** Set when the rows came from a Santander PDF statement (the mapping step is skipped for those). */
+    val statement: ParsedStatement? = null,
     val rows: List<ParsedRow> = emptyList(),
     val rowErrorCount: Int = 0,
     val importKeys: List<String> = emptyList(),
@@ -56,13 +71,21 @@ data class ImportUiState(
     val merchantGroups: List<MerchantGroup> = emptyList(),
     val moveHistoryStartTo: LocalDate? = null,
     val summaryBatch: ImportBatch? = null,
+    /** After importing a PDF statement: the app's balance on its last day against the statement's closing balance. */
+    val balanceCheck: BalanceCheck? = null,
     val error: String? = null,
-)
+) {
+    /** True if row [index] looks like a move between the user's accounts (only PDF statements say so). */
+    fun isLikelyTransfer(index: Int): Boolean = statement?.lines?.getOrNull(index)?.likelyTransfer == true
+}
 
 /** Drives the statement import wizard: pick file → map columns → review → categorise → import. */
 class StatementImportViewModel(private val container: AppContainer) : ViewModel() {
     private val _state = MutableStateFlow(ImportUiState())
     val state: StateFlow<ImportUiState> = _state
+
+    /** The shared PDF this view model has already started loading, so a rotation does not load it again. */
+    private var claimedPdfPath: String? = null
 
     init {
         viewModelScope.launch {
@@ -71,56 +94,131 @@ class StatementImportViewModel(private val container: AppContainer) : ViewModel(
                     accounts,
                     container.settingsStore.budgetSettings.first().defaultAccountId,
                 )
-                _state.value = _state.value.copy(
-                    accounts = accounts,
-                    selectedAccountId = _state.value.selectedAccountId ?: defaultAccountId,
-                )
+                _state.update { it.copy(accounts = accounts, selectedAccountId = it.selectedAccountId ?: defaultAccountId) }
             }
         }
         viewModelScope.launch {
             container.categoryRepository.observeCategories().collect { categories ->
-                _state.value = _state.value.copy(categories = categories)
+                _state.update { it.copy(categories = categories) }
             }
         }
         viewModelScope.launch {
             container.importRepository.observeBatches().collect { batches ->
-                _state.value = _state.value.copy(pastBatches = batches)
+                _state.update { it.copy(pastBatches = batches) }
             }
         }
     }
 
     fun today(): LocalDate = container.clock.today()
 
+    /**
+     * Chooses the account to import into. For a PDF statement that is already being reviewed the rows
+     * are classified again, since "already imported" depends on the account.
+     */
     fun selectAccount(accountId: Long) {
-        _state.value = _state.value.copy(selectedAccountId = accountId)
+        _state.update { it.copy(selectedAccountId = accountId) }
+        val current = _state.value
+        if (current.statement != null && current.step == ImportStep.REVIEW) {
+            viewModelScope.launch {
+                val review = reviewFor(accountId, current.rows)
+                _state.update {
+                    if (it.selectedAccountId != accountId) {
+                        it
+                    } else {
+                        it.copy(importKeys = review.keys, rowStatuses = review.statuses, rowSelected = review.selected)
+                    }
+                }
+            }
+        }
     }
 
     fun onFileLoaded(fileName: String, text: String) {
         val table = CsvParser.parse(text)
         val mapping = StatementImport.guessMapping(table)
-        _state.value = _state.value.copy(
-            step = ImportStep.MAPPING,
-            fileName = fileName,
-            table = table,
-            mapping = mapping,
-            error = null,
-        )
+        _state.update {
+            it.copy(
+                step = ImportStep.MAPPING,
+                fileName = fileName,
+                table = table,
+                mapping = mapping,
+                statement = null,
+                balanceCheck = null,
+                error = null,
+            )
+        }
     }
 
-    fun onFileLoadFailed() {
-        _state.value = _state.value.copy(error = "Couldn't read that file.")
+    /**
+     * A PDF was read: [chunks] are its glyphs with their positions. A Santander statement goes straight to
+     * the review (the mapping step is for CSV files); anything else shows why it can't be imported.
+     */
+    fun onPdfLoaded(fileName: String, chunks: List<PdfTextChunk>) {
+        val cells = PdfCells.merge(chunks)
+        if (!SantanderStatement.looksLikeSantander(cells)) {
+            fail(StatementText.NOT_SANTANDER)
+            return
+        }
+        when (val result = SantanderStatement.parse(cells)) {
+            is SantanderParseResult.Unreadable -> fail(result.reason)
+            is SantanderParseResult.Success -> viewModelScope.launch { openStatementReview(fileName, result.statement) }
+        }
+    }
+
+    private suspend fun openStatementReview(fileName: String, statement: ParsedStatement) {
+        // A shared statement can arrive before the accounts have loaded.
+        val accountId = _state.value.selectedAccountId
+            ?: withTimeoutOrNull(ACCOUNT_WAIT_MILLIS) { _state.first { it.selectedAccountId != null }.selectedAccountId }
+        if (accountId == null) {
+            fail("Add an account first, then import the statement into it.")
+            return
+        }
+        val rows = statement.lines.map { it.row }
+        val review = reviewFor(accountId, rows)
+        _state.update {
+            it.copy(
+                step = ImportStep.REVIEW,
+                fileName = fileName,
+                table = null,
+                mapping = null,
+                statement = statement,
+                rows = rows,
+                rowErrorCount = 0,
+                importKeys = review.keys,
+                rowStatuses = review.statuses,
+                rowSelected = review.selected,
+                merchantGroups = emptyList(),
+                summaryBatch = null,
+                balanceCheck = null,
+                error = null,
+            )
+        }
+    }
+
+    /** True the first time it is called for [path]; the screen loads a shared PDF only then. */
+    fun claimSharedPdf(path: String): Boolean {
+        if (claimedPdfPath == path) return false
+        claimedPdfPath = path
+        return true
+    }
+
+    fun onFileLoadFailed(message: String = "Couldn't read that file.") {
+        fail(message)
+    }
+
+    private fun fail(message: String) {
+        _state.update { it.copy(error = message) }
     }
 
     fun clearError() {
-        _state.value = _state.value.copy(error = null)
+        _state.update { it.copy(error = null) }
     }
 
     fun updateMapping(mapping: StatementMapping) {
-        _state.value = _state.value.copy(mapping = mapping)
+        _state.update { it.copy(mapping = mapping) }
     }
 
     fun backTo(step: ImportStep) {
-        _state.value = _state.value.copy(step = step)
+        _state.update { it.copy(step = step) }
     }
 
     fun confirmMapping() {
@@ -130,19 +228,29 @@ class StatementImportViewModel(private val container: AppContainer) : ViewModel(
         val accountId = current.selectedAccountId ?: return
         viewModelScope.launch {
             val outcome = StatementImport.parseRows(table, mapping)
-            val keys = ImportDedupe.importKeys(accountId, outcome.rows)
-            val existing = container.transactionRepository.observeAll().first()
-            val statuses = ImportDedupe.classify(accountId, outcome.rows, keys, existing)
-            val selected = statuses.map { ImportSelection.defaultSelected(it) }
-            _state.value = current.copy(
-                step = ImportStep.REVIEW,
-                rows = outcome.rows,
-                rowErrorCount = outcome.errors.size,
-                importKeys = keys,
-                rowStatuses = statuses,
-                rowSelected = selected,
-            )
+            val review = reviewFor(accountId, outcome.rows)
+            _state.update {
+                it.copy(
+                    step = ImportStep.REVIEW,
+                    statement = null,
+                    rows = outcome.rows,
+                    rowErrorCount = outcome.errors.size,
+                    importKeys = review.keys,
+                    rowStatuses = review.statuses,
+                    rowSelected = review.selected,
+                )
+            }
         }
+    }
+
+    private class Review(val keys: List<String>, val statuses: List<RowStatus>, val selected: List<Boolean>)
+
+    /** The import keys, duplicate status and default ticks of [rows] against what is already saved for [accountId]. */
+    private suspend fun reviewFor(accountId: Long, rows: List<ParsedRow>): Review {
+        val keys = ImportDedupe.importKeys(accountId, rows)
+        val existing = container.transactionRepository.observeAll().first()
+        val statuses = ImportDedupe.classify(accountId, rows, keys, existing)
+        return Review(keys, statuses, statuses.map { ImportSelection.defaultSelected(it) })
     }
 
     fun toggleRowSelected(index: Int) {
@@ -150,7 +258,7 @@ class StatementImportViewModel(private val container: AppContainer) : ViewModel(
         if (!ImportSelection.isSelectable(current.rowStatuses[index])) return
         val updated = current.rowSelected.toMutableList()
         updated[index] = !updated[index]
-        _state.value = current.copy(rowSelected = updated)
+        _state.update { it.copy(rowSelected = updated) }
     }
 
     fun confirmReview() {
@@ -171,25 +279,37 @@ class StatementImportViewModel(private val container: AppContainer) : ViewModel(
                         total = Money(indices.sumOf { i -> current.rows[i].amount.pence }),
                         categoryId = suggestion,
                         remember = suggestion != null,
+                        transfer = ImportTransfers.defaultOn(indices.map { i -> current.isLikelyTransfer(i) }),
+                        otherAccountId = null,
                     )
                 }
                 .sortedByDescending { it.total.abs().pence }
-            _state.value = current.copy(step = ImportStep.CATEGORISE, merchantGroups = groups)
+            _state.update { it.copy(step = ImportStep.CATEGORISE, merchantGroups = groups) }
         }
     }
 
     fun setGroupCategory(merchantKey: String, categoryId: Long?) {
-        val current = _state.value
-        val updated = current.merchantGroups.map {
-            if (it.merchantKey == merchantKey) it.copy(categoryId = categoryId, remember = categoryId != null) else it
-        }
-        _state.value = current.copy(merchantGroups = updated)
+        updateGroup(merchantKey) { it.copy(categoryId = categoryId, remember = categoryId != null) }
     }
 
     fun setGroupRemember(merchantKey: String, remember: Boolean) {
-        val current = _state.value
-        val updated = current.merchantGroups.map { if (it.merchantKey == merchantKey) it.copy(remember = remember) else it }
-        _state.value = current.copy(merchantGroups = updated)
+        updateGroup(merchantKey) { it.copy(remember = remember) }
+    }
+
+    /** Marks the group as a move between the user's own accounts (no category), or as ordinary spending again. */
+    fun setGroupTransfer(merchantKey: String, transfer: Boolean) {
+        updateGroup(merchantKey) { it.copy(transfer = transfer) }
+    }
+
+    /** For a transfer group: the user's other account at the other end, or null for one that isn't in the app. */
+    fun setGroupOtherAccount(merchantKey: String, otherAccountId: Long?) {
+        updateGroup(merchantKey) { it.copy(otherAccountId = otherAccountId) }
+    }
+
+    private fun updateGroup(merchantKey: String, change: (MerchantGroup) -> MerchantGroup) {
+        _state.update { state ->
+            state.copy(merchantGroups = state.merchantGroups.map { if (it.merchantKey == merchantKey) change(it) else it })
+        }
     }
 
     fun confirmImport() {
@@ -203,11 +323,16 @@ class StatementImportViewModel(private val container: AppContainer) : ViewModel(
                 SelectedImportRow(
                     row = current.rows[index],
                     importKey = current.importKeys[index],
-                    categoryId = group.categoryId,
+                    categoryId = if (group.transfer) null else group.categoryId,
+                    transfer = if (group.transfer) {
+                        ImportTransfer(ImportTransfers.validOtherAccountId(group.otherAccountId, current.accounts, accountId))
+                    } else {
+                        null
+                    },
                 )
             }
             val rulesToRemember = current.merchantGroups
-                .filter { it.remember && it.categoryId != null }
+                .filter { !it.transfer && it.remember && it.categoryId != null }
                 .map { MerchantRule(merchantKey = it.merchantKey, categoryId = it.categoryId!!) }
 
             val batch = container.importRepository.importRows(
@@ -226,19 +351,36 @@ class StatementImportViewModel(private val container: AppContainer) : ViewModel(
                 null
             }
 
-            _state.value = current.copy(step = ImportStep.SUMMARY, summaryBatch = batch, moveHistoryStartTo = moveTo)
+            val balanceCheck = balanceCheckAfterImport(current.statement, accountId)
+            _state.update {
+                it.copy(
+                    step = ImportStep.SUMMARY,
+                    summaryBatch = batch,
+                    moveHistoryStartTo = moveTo,
+                    balanceCheck = balanceCheck,
+                )
+            }
         }
+    }
+
+    /** The app's balance for [accountId] on the statement's last day against the statement's closing balance. */
+    private suspend fun balanceCheckAfterImport(statement: ParsedStatement?, accountId: Long): BalanceCheck? {
+        if (statement == null) return null
+        val closing = statement.closingBalance ?: return null
+        val transactions = container.transactionRepository.observeAll().first()
+        val inApp = Balances.accountBalance(accountId, transactions, statement.periodEnd)
+        return StatementText.balanceCheck(closing, inApp, statement.periodEnd)
     }
 
     fun moveHistoryStart(date: LocalDate) {
         viewModelScope.launch {
             container.settingsStore.setHistoryStartDate(date)
-            _state.value = _state.value.copy(moveHistoryStartTo = null)
+            _state.update { it.copy(moveHistoryStartTo = null) }
         }
     }
 
     fun dismissMoveHistoryStart() {
-        _state.value = _state.value.copy(moveHistoryStartTo = null)
+        _state.update { it.copy(moveHistoryStartTo = null) }
     }
 
     fun undoBatch(id: Long) {
@@ -257,6 +399,8 @@ class StatementImportViewModel(private val container: AppContainer) : ViewModel(
     }
 
     companion object {
+        private const val ACCOUNT_WAIT_MILLIS = 5_000L
+
         val Factory: ViewModelProvider.Factory = budgetViewModelFactory { StatementImportViewModel(it) }
     }
 }

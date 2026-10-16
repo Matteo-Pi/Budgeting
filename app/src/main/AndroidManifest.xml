@@ -22,7 +22,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Share target: a receipt photo, PDF or text shared from another app opens the review screen. -->
+            <!-- Share target: a receipt photo, PDF or text shared from another app opens the review screen; a Santander statement PDF opens the statement import. -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />

@@ -62,6 +62,14 @@ android {
         compose = true
     }
 
+    packaging {
+        resources {
+            // PDFBox brings three Bouncy Castle jars, each with this multi-release manifest; keeping none of them
+            // avoids the "2 files found with path" merge error.
+            excludes += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+        }
+    }
+
     testOptions {
         animationsDisabled = true
         execution = "ANDROIDX_TEST_ORCHESTRATOR"
@@ -92,6 +100,8 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     // Receipt OCR: the bundled Latin model, so it works offline and nothing leaves the phone (docs/PLAN.md §10.1).
     implementation(libs.mlkit.text.recognition)
+    // Santander PDF statements: PDFBox reads the text layer with exact positions, no OCR (docs/PLAN.md §5.16). Apache-2.0.
+    implementation(libs.pdfbox.android)
 
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.graphics)

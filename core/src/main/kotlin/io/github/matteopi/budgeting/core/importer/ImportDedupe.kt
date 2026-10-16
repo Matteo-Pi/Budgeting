@@ -28,8 +28,10 @@ object ImportDedupe {
 
     /**
      * ALREADY_IMPORTED if [keys] already exists on an [existing] transaction; POSSIBLE_DUPLICATE
-     * if an [existing] NORMAL, not-yet-imported transaction on the same account has the same
-     * amount within +/-2 days (each existing transaction matches at most one row); else NEW.
+     * if an [existing] NORMAL or TRANSFER, not-yet-imported transaction on the same account has the
+     * same amount within +/-2 days (each existing transaction matches at most one row); else NEW.
+     * The TRANSFER case recognises the leg that importing the other account's statement put here
+     * (or a transfer entered by hand) when this account's own statement is imported later.
      */
     fun classify(
         accountId: Long,
@@ -39,7 +41,8 @@ object ImportDedupe {
     ): List<RowStatus> {
         val existingKeys = existing.mapNotNull { it.importKey }.toSet()
         val candidates = existing.filter {
-            it.accountId == accountId && it.kind == TxKind.NORMAL && it.importKey == null
+            it.accountId == accountId && (it.kind == TxKind.NORMAL || it.kind == TxKind.TRANSFER) &&
+                it.importKey == null
         }
         val used = mutableSetOf<Long>()
 

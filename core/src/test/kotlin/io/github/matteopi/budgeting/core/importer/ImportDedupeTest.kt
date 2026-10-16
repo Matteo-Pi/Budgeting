@@ -108,4 +108,60 @@ class ImportDedupeTest {
         val statuses = ImportDedupe.classify(1, rows, keys, existing)
         assertEquals(listOf(RowStatus.NEW), statuses)
     }
+
+    @Test
+    fun `classify flags a transfer leg with the same amount within two days as POSSIBLE_DUPLICATE`() {
+        // The other account's statement was imported first and left this leg behind (no import key).
+        val rows = listOf(row(LocalDate.of(2026, 10, 4), 3_000, "TRANSFER FROM ALEX TESTER"))
+        val keys = ImportDedupe.importKeys(1, rows)
+        val existing = listOf(
+            Transaction(
+                id = 1, accountId = 1, amount = Money(3_000), date = LocalDate.of(2026, 10, 4), categoryId = null,
+                kind = TxKind.TRANSFER, transferGroupId = "group", importBatchId = 9,
+            ),
+        )
+        assertEquals(listOf(RowStatus.POSSIBLE_DUPLICATE), ImportDedupe.classify(1, rows, keys, existing))
+
+        val twoDaysLater = existing.map { it.copy(date = LocalDate.of(2026, 10, 6)) }
+        assertEquals(listOf(RowStatus.POSSIBLE_DUPLICATE), ImportDedupe.classify(1, rows, keys, twoDaysLater))
+
+        val threeDaysLater = existing.map { it.copy(date = LocalDate.of(2026, 10, 7)) }
+        assertEquals(listOf(RowStatus.NEW), ImportDedupe.classify(1, rows, keys, threeDaysLater))
+    }
+
+    @Test
+    fun `classify ignores transfer legs that have another amount, another account or an import key`() {
+        val rows = listOf(row(LocalDate.of(2026, 10, 4), 3_000, "TRANSFER FROM ALEX TESTER"))
+        val keys = ImportDedupe.importKeys(1, rows)
+        val leg = Transaction(
+            id = 1, accountId = 1, amount = Money(3_000), date = LocalDate.of(2026, 10, 4), categoryId = null,
+            kind = TxKind.TRANSFER, transferGroupId = "group",
+        )
+
+        assertEquals(listOf(RowStatus.NEW), ImportDedupe.classify(1, rows, keys, listOf(leg.copy(amount = Money(3_001)))))
+        assertEquals(listOf(RowStatus.NEW), ImportDedupe.classify(1, rows, keys, listOf(leg.copy(accountId = 2))))
+        // A leg an earlier import brought in itself (it has a key of its own) is not a manual entry.
+        assertEquals(listOf(RowStatus.NEW), ImportDedupe.classify(1, rows, keys, listOf(leg.copy(importKey = "other-key"))))
+        // Other kinds never match.
+        assertEquals(
+            listOf(RowStatus.NEW),
+            ImportDedupe.classify(1, rows, keys, listOf(leg.copy(kind = TxKind.OPENING_BALANCE))),
+        )
+    }
+
+    @Test
+    fun `a transfer leg matches at most one row`() {
+        val rows = listOf(
+            row(LocalDate.of(2026, 10, 4), 3_000, "TRANSFER FROM ALEX TESTER", rowIndex = 0),
+            row(LocalDate.of(2026, 10, 4), 3_000, "TRANSFER FROM ALEX TESTER", rowIndex = 1),
+        )
+        val keys = ImportDedupe.importKeys(1, rows)
+        val existing = listOf(
+            Transaction(
+                id = 1, accountId = 1, amount = Money(3_000), date = LocalDate.of(2026, 10, 4), categoryId = null,
+                kind = TxKind.TRANSFER, transferGroupId = "group",
+            ),
+        )
+        assertEquals(listOf(RowStatus.POSSIBLE_DUPLICATE, RowStatus.NEW), ImportDedupe.classify(1, rows, keys, existing))
+    }
 }

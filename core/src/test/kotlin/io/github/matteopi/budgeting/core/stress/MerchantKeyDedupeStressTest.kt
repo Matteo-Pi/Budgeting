@@ -125,7 +125,9 @@ class MerchantKeyDedupeStressTest {
                 break
             }
         }
-        val candidates = existing.count { it.accountId == accountId && it.kind == TxKind.NORMAL && it.importKey == null }
+        val candidates = existing.count {
+            it.accountId == accountId && (it.kind == TxKind.NORMAL || it.kind == TxKind.TRANSFER) && it.importKey == null
+        }
         val possible = statuses.count { it == RowStatus.POSSIBLE_DUPLICATE }
         if (possible > candidates) failures += CaseFailure(seed, "classify.eachCandidateOnce", "$possible possible duplicates from only $candidates candidate transactions")
     }

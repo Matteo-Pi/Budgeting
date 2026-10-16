@@ -19,10 +19,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -33,10 +36,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,15 +50,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.matteopi.budgeting.core.importer.AmountMode
 import io.github.matteopi.budgeting.core.importer.ParsedRow
+import io.github.matteopi.budgeting.core.importer.ParsedStatement
 import io.github.matteopi.budgeting.core.importer.RowStatus
 import io.github.matteopi.budgeting.core.importer.StatementImport
 import io.github.matteopi.budgeting.core.importer.StatementMapping
+import io.github.matteopi.budgeting.core.model.Account
 import io.github.matteopi.budgeting.core.model.Category
 import io.github.matteopi.budgeting.ui.components.AccountPicker
 import io.github.matteopi.budgeting.ui.components.CategoryPicker
@@ -61,18 +69,26 @@ import io.github.matteopi.budgeting.ui.components.MoneyText
 import io.github.matteopi.budgeting.ui.components.PickerField
 import io.github.matteopi.budgeting.ui.components.SectionCard
 import io.github.matteopi.budgeting.ui.components.formatDisplayDate
+import io.github.matteopi.budgeting.ui.receipts.ReceiptFiles
+import java.io.File
 import java.time.LocalDate
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Statement import wizard: pick file + account → map columns → review rows → categorise by
- * merchant → import, with a summary and undo (WP-U5, docs/PLAN.md §6.5, §5.16).
+ * merchant → import, with a summary and undo (WP-U5, docs/PLAN.md §6.5, §5.16). A Santander PDF
+ * statement skips the mapping step. [pdfPath] is a PDF already copied into the app's cache (one
+ * shared into the app); it is read when the screen opens.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StatementImportScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    pdfPath: String? = null,
     viewModel: StatementImportViewModel = viewModel(factory = StatementImportViewModel.Factory),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -80,22 +96,18 @@ fun StatementImportScreen(
     val scope = rememberCoroutineScope()
 
     val pickFileLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            scope.launch {
-                val name = queryDisplayName(context, uri)
-                val text = runCatching {
-                    context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
-                }.getOrNull()
-                if (text != null) viewModel.onFileLoaded(name, text) else viewModel.onFileLoadFailed()
-            }
-        }
+        if (uri != null) scope.launch { loadPickedFile(context, viewModel, uri) }
+    }
+
+    LaunchedEffect(pdfPath) {
+        if (pdfPath != null && viewModel.claimSharedPdf(pdfPath)) loadSharedPdf(context, viewModel, pdfPath)
     }
 
     fun handleBack() {
         when (state.step) {
             ImportStep.PICK_FILE -> onBack()
             ImportStep.MAPPING -> viewModel.backTo(ImportStep.PICK_FILE)
-            ImportStep.REVIEW -> viewModel.backTo(ImportStep.MAPPING)
+            ImportStep.REVIEW -> viewModel.backTo(if (state.statement != null) ImportStep.PICK_FILE else ImportStep.MAPPING)
             ImportStep.CATEGORISE -> viewModel.backTo(ImportStep.REVIEW)
             ImportStep.SUMMARY -> onBack()
         }
@@ -117,7 +129,7 @@ fun StatementImportScreen(
                 ImportStep.PICK_FILE -> PickFileStep(
                     state = state,
                     onSelectAccount = viewModel::selectAccount,
-                    onPickFile = { pickFileLauncher.launch(arrayOf("text/csv", "*/*")) },
+                    onPickFile = { pickFileLauncher.launch(PICKER_TYPES) },
                     onUndo = viewModel::undoBatch,
                 )
                 ImportStep.MAPPING -> MappingStep(
@@ -128,6 +140,7 @@ fun StatementImportScreen(
                 )
                 ImportStep.REVIEW -> ReviewStep(
                     state = state,
+                    onSelectAccount = viewModel::selectAccount,
                     onToggle = viewModel::toggleRowSelected,
                     onBack = { handleBack() },
                     onNext = viewModel::confirmReview,
@@ -136,6 +149,8 @@ fun StatementImportScreen(
                     state = state,
                     onCategoryChange = viewModel::setGroupCategory,
                     onRememberChange = viewModel::setGroupRemember,
+                    onTransferChange = viewModel::setGroupTransfer,
+                    onOtherAccountChange = viewModel::setGroupOtherAccount,
                     onBack = { handleBack() },
                     onImport = viewModel::confirmImport,
                 )
@@ -149,6 +164,57 @@ fun StatementImportScreen(
             }
         }
     }
+}
+
+/** What the file picker offers: statement PDFs and CSV (or other text) exports; the last entry lets any file through. */
+private val PICKER_TYPES = arrayOf("text/csv", "text/comma-separated-values", "text/plain", "application/pdf", "*/*")
+
+/** Reads the file the user picked: a PDF goes to the statement reader, anything else is read as CSV text. */
+private suspend fun loadPickedFile(context: Context, viewModel: StatementImportViewModel, uri: Uri) {
+    val name = queryDisplayName(context, uri)
+    if (isPdf(context, uri)) {
+        try {
+            viewModel.onPdfLoaded(name, PdfStatementReader.read(context, uri))
+        } catch (e: PdfReadException) {
+            viewModel.onFileLoadFailed(e.message ?: "Couldn't read that PDF.")
+        }
+        return
+    }
+    val text = withContext(Dispatchers.IO) {
+        runCatching { context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } }.getOrNull()
+    }
+    if (text != null) viewModel.onFileLoaded(name, text) else viewModel.onFileLoadFailed()
+}
+
+/** Reads a PDF that was shared into the app (copied to the cache already) and deletes the copy afterwards. */
+private suspend fun loadSharedPdf(context: Context, viewModel: StatementImportViewModel, path: String) {
+    val file = File(path)
+    // The route is not trusted to point anywhere else than the folder shared files are copied to.
+    if (!ReceiptFiles.isInside(context, file)) {
+        viewModel.onFileLoadFailed("Couldn't open that PDF.")
+        return
+    }
+    try {
+        viewModel.onPdfLoaded(SHARED_STATEMENT_NAME, PdfStatementReader.read(context, file))
+    } catch (e: PdfReadException) {
+        viewModel.onFileLoadFailed(e.message ?: "Couldn't read that PDF.")
+    } finally {
+        withContext(NonCancellable + Dispatchers.IO) { file.delete() }
+    }
+}
+
+private const val SHARED_STATEMENT_NAME = "statement.pdf"
+
+/** True if the picked file is a PDF, by the type the system reports or by its first bytes. */
+private suspend fun isPdf(context: Context, uri: Uri): Boolean = withContext(Dispatchers.IO) {
+    val header = runCatching {
+        context.contentResolver.openInputStream(uri)?.use { input ->
+            val buffer = ByteArray(PdfDetection.HEADER_LENGTH)
+            val read = input.read(buffer)
+            buffer.copyOf(maxOf(read, 0))
+        }
+    }.getOrNull() ?: ByteArray(0)
+    PdfDetection.isPdf(context.contentResolver.getType(uri), header)
 }
 
 private fun queryDisplayName(context: Context, uri: Uri): String {
@@ -175,7 +241,8 @@ private fun PickFileStep(
     ) {
         SectionCard(title = "Import a bank statement") {
             Text(
-                "Choose a CSV export from your bank and the account it belongs to.",
+                "Choose a CSV export from your bank, or a statement PDF downloaded from Santander online " +
+                    "banking, and the account it belongs to.",
                 style = MaterialTheme.typography.bodySmall,
             )
             Spacer(Modifier.height(8.dp))
@@ -326,7 +393,13 @@ private fun DatePatternPicker(selected: String, onSelect: (String) -> Unit) {
 }
 
 @Composable
-private fun ReviewStep(state: ImportUiState, onToggle: (Int) -> Unit, onBack: () -> Unit, onNext: () -> Unit) {
+private fun ReviewStep(
+    state: ImportUiState,
+    onSelectAccount: (Long) -> Unit,
+    onToggle: (Int) -> Unit,
+    onBack: () -> Unit,
+    onNext: () -> Unit,
+) {
     val visibleIndices = state.rows.indices.filter { ImportSelection.isSelectable(state.rowStatuses[it]) }
     val hiddenCount = state.rows.size - visibleIndices.size
     val selectedCount = visibleIndices.count { state.rowSelected[it] }
@@ -342,19 +415,33 @@ private fun ReviewStep(state: ImportUiState, onToggle: (Int) -> Unit, onBack: ()
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        if (visibleIndices.isEmpty()) {
-            Text(
-                "Nothing new to import from this file.",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(16.dp),
-            )
-        } else {
-            LazyColumn(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
+        LazyColumn(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
+            val statement = state.statement
+            if (statement != null) {
+                item(key = "statement") {
+                    StatementCard(
+                        statement = statement,
+                        accounts = state.accounts.filter { !it.archived },
+                        selectedAccountId = state.selectedAccountId,
+                        onSelectAccount = onSelectAccount,
+                    )
+                }
+            }
+            if (visibleIndices.isEmpty()) {
+                item(key = "nothing-new") {
+                    Text(
+                        "Nothing new to import from this file.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(vertical = 16.dp),
+                    )
+                }
+            } else {
                 items(visibleIndices, key = { it }) { index ->
                     ReviewRow(
                         row = state.rows[index],
                         status = state.rowStatuses[index],
                         selected = state.rowSelected[index],
+                        likelyTransfer = state.isLikelyTransfer(index),
                         onToggle = { onToggle(index) },
                     )
                 }
@@ -367,8 +454,53 @@ private fun ReviewStep(state: ImportUiState, onToggle: (Int) -> Unit, onBack: ()
     }
 }
 
+/** What was read from a PDF statement, which account it goes into, and anything that did not add up. */
 @Composable
-private fun ReviewRow(row: ParsedRow, status: RowStatus, selected: Boolean, onToggle: () -> Unit) {
+private fun StatementCard(
+    statement: ParsedStatement,
+    accounts: List<Account>,
+    selectedAccountId: Long?,
+    onSelectAccount: (Long) -> Unit,
+) {
+    Column(modifier = Modifier.padding(bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SectionCard {
+            Text(StatementText.cardLine(statement), style = MaterialTheme.typography.bodyMedium)
+            if (accounts.size > 1) {
+                Spacer(Modifier.height(8.dp))
+                AccountPicker(
+                    accounts = accounts,
+                    selectedAccountId = selectedAccountId,
+                    onSelect = onSelectAccount,
+                    label = "Import into",
+                )
+            }
+        }
+        if (statement.problems.isNotEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        "Check these against your statement:",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                    statement.problems.forEach { problem ->
+                        Text(
+                            "• $problem",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReviewRow(row: ParsedRow, status: RowStatus, selected: Boolean, likelyTransfer: Boolean, onToggle: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
@@ -377,6 +509,13 @@ private fun ReviewRow(row: ParsedRow, status: RowStatus, selected: Boolean, onTo
         Column(modifier = Modifier.weight(1f)) {
             Text(row.description, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(formatDisplayDate(row.date), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (likelyTransfer) {
+                Text(
+                    "Looks like a move between your accounts",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
         MoneyText(amount = row.amount)
         if (status == RowStatus.POSSIBLE_DUPLICATE) {
@@ -391,10 +530,13 @@ private fun CategoriseStep(
     state: ImportUiState,
     onCategoryChange: (String, Long?) -> Unit,
     onRememberChange: (String, Boolean) -> Unit,
+    onTransferChange: (String, Boolean) -> Unit,
+    onOtherAccountChange: (String, Long?) -> Unit,
     onBack: () -> Unit,
     onImport: () -> Unit,
 ) {
     val categories = state.categories.filter { !it.archived }
+    val otherAccounts = ImportTransfers.otherAccounts(state.accounts, state.selectedAccountId)
 
     Column(modifier = Modifier.fillMaxSize()) {
         Text("Categorise", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(16.dp))
@@ -403,8 +545,11 @@ private fun CategoriseStep(
                 MerchantGroupRow(
                     group = group,
                     categories = categories,
+                    otherAccounts = otherAccounts,
                     onCategoryChange = { categoryId -> onCategoryChange(group.merchantKey, categoryId) },
                     onRememberChange = { remember -> onRememberChange(group.merchantKey, remember) },
+                    onTransferChange = { transfer -> onTransferChange(group.merchantKey, transfer) },
+                    onOtherAccountChange = { accountId -> onOtherAccountChange(group.merchantKey, accountId) },
                 )
             }
         }
@@ -419,8 +564,11 @@ private fun CategoriseStep(
 private fun MerchantGroupRow(
     group: MerchantGroup,
     categories: List<Category>,
+    otherAccounts: List<Account>,
     onCategoryChange: (Long?) -> Unit,
     onRememberChange: (Boolean) -> Unit,
+    onTransferChange: (Boolean) -> Unit,
+    onOtherAccountChange: (Long?) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         Row(
@@ -439,10 +587,52 @@ private fun MerchantGroupRow(
             MoneyText(amount = group.total)
         }
         Spacer(Modifier.height(4.dp))
-        CategoryPicker(categories = categories, selectedCategoryId = group.categoryId, onSelect = { onCategoryChange(it) })
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(checked = group.remember, onCheckedChange = onRememberChange, enabled = group.categoryId != null)
-            Text("Remember this category for \"${group.merchantKey}\"", style = MaterialTheme.typography.bodySmall)
+        if (!group.transfer) {
+            CategoryPicker(categories = categories, selectedCategoryId = group.categoryId, onSelect = { onCategoryChange(it) })
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(checked = group.remember, onCheckedChange = onRememberChange, enabled = group.categoryId != null)
+                Text("Remember this category for \"${group.merchantKey}\"", style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        // The whole row toggles, so the label is part of the switch for TalkBack and the touch target is large.
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .toggleable(value = group.transfer, role = Role.Switch, onValueChange = onTransferChange)
+                .padding(vertical = 4.dp),
+        ) {
+            Switch(checked = group.transfer, onCheckedChange = null)
+            Spacer(Modifier.width(12.dp))
+            Text(TRANSFER_SWITCH_LABEL, style = MaterialTheme.typography.bodyMedium)
+        }
+        if (group.transfer) {
+            Spacer(Modifier.height(4.dp))
+            OtherAccountPicker(accounts = otherAccounts, selectedAccountId = group.otherAccountId, onSelect = onOtherAccountChange)
+        }
+    }
+}
+
+private const val TRANSFER_SWITCH_LABEL = "Move between my accounts"
+private const val NOT_IN_THE_APP = "Not in the app"
+
+/** The user's other account a move went to or came from, or "Not in the app" for an account they don't track here. */
+@Composable
+private fun OtherAccountPicker(accounts: List<Account>, selectedAccountId: Long?, onSelect: (Long?) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val shown = accounts.firstOrNull { it.id == selectedAccountId }?.name ?: NOT_IN_THE_APP
+    Box {
+        PickerField(
+            value = shown,
+            label = "Other account",
+            onClick = { expanded = true },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(text = { Text(NOT_IN_THE_APP) }, onClick = { onSelect(null); expanded = false })
+            accounts.forEach { account ->
+                DropdownMenuItem(text = { Text(account.name) }, onClick = { onSelect(account.id); expanded = false })
+            }
         }
     }
 }
@@ -468,6 +658,13 @@ private fun SummaryStep(
                 style = MaterialTheme.typography.bodyMedium,
             )
             TextButton(onClick = { onUndo(batch.id) }) { Text("Undo import") }
+        }
+        state.balanceCheck?.let { check ->
+            Text(
+                check.message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (check.matches) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+            )
         }
         val moveTo = state.moveHistoryStartTo
         if (moveTo != null) {

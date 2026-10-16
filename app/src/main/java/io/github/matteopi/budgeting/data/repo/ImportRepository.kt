@@ -11,19 +11,30 @@ import io.github.matteopi.budgeting.data.db.BudgetDatabase
 import io.github.matteopi.budgeting.data.db.dao.ImportDao
 import io.github.matteopi.budgeting.data.db.dao.TransactionDao
 import io.github.matteopi.budgeting.widget.WidgetUpdater
+import java.time.LocalDate
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+
+/**
+ * A statement row that is money moving between two of the user's own accounts rather than spending.
+ * [otherAccountId] is the account at the other end, or null when it is an account that isn't in the app
+ * (the row then becomes a single transfer leg).
+ */
+data class ImportTransfer(val otherAccountId: Long?)
 
 /**
  * One statement row the import wizard has decided to bring in: [row] is the parsed statement
  * row, [importKey] its dedupe key (from
  * [io.github.matteopi.budgeting.core.importer.ImportDedupe.importKeys]), [categoryId] the
- * category chosen for its merchant group (null = leave uncategorised).
+ * category chosen for its merchant group (null = leave uncategorised), [transfer] set when the row
+ * is a move between the user's accounts (then it has no category).
  */
 data class SelectedImportRow(
     val row: ParsedRow,
     val importKey: String,
     val categoryId: Long?,
+    val transfer: ImportTransfer? = null,
 )
 
 /** Merchant rules (remembered category choices from statement imports) and import batches. */
@@ -49,10 +60,13 @@ class ImportRepository(
     fun observeBatches(): Flow<List<ImportBatch>> = importDao.observeBatches().map { list -> list.map { it.toModel() } }
 
     /**
-     * Creates the import batch and one NORMAL transaction per row in [rows] (with `importKey`
-     * and the new batch's id), remembers [rulesToRemember] (upserting by merchant key), and moves
-     * the account's opening balance so rows dated before it don't double count (see
-     * [rebuildOpeningBalanceMove]). All in one DB transaction (docs/PLAN.md §5.16, §6.5).
+     * Creates the import batch and one transaction per row in [rows] (with `importKey` and the new
+     * batch's id): NORMAL, or for a row with a [SelectedImportRow.transfer] a TRANSFER leg in a new
+     * transfer group, plus the opposite leg on the other account when one was chosen (see
+     * [ImportTransactions]). It remembers [rulesToRemember] (upserting by merchant key) and moves the
+     * account's opening balance so rows dated before it don't double count (see
+     * [rebuildOpeningBalanceMove]). All in one DB transaction (docs/PLAN.md §5.16, §6.5), so
+     * [undoBatch] removes everything the batch created.
      */
     suspend fun importRows(
         accountId: Long,
@@ -73,20 +87,19 @@ class ImportRepository(
             val batchId = importDao.insertBatch(batch.toEntity())
             batch = batch.copy(id = batchId)
 
+            val openingDates = mutableMapOf<Long, LocalDate?>()
             for (selected in rows) {
-                transactionDao.insert(
-                    Transaction(
-                        accountId = accountId,
-                        amount = selected.row.amount,
-                        date = selected.row.date,
-                        createdAtEpochMillis = nowMillis,
-                        categoryId = selected.categoryId,
-                        label = selected.row.description,
-                        kind = TxKind.NORMAL,
-                        importBatchId = batchId,
-                        importKey = selected.importKey,
-                    ).toEntity(),
+                val otherId = selected.transfer?.otherAccountId?.takeIf { it != accountId }
+                if (otherId != null && otherId !in openingDates) openingDates[otherId] = originalOpeningDate(otherId)
+                val legs = ImportTransactions.forRow(
+                    accountId = accountId,
+                    selected = selected,
+                    batchId = batchId,
+                    nowMillis = nowMillis,
+                    transferGroupId = UUID.randomUUID().toString(),
+                    otherAccountOpeningDate = otherId?.let { openingDates[it] },
                 )
+                for (leg in legs) transactionDao.insert(leg.toEntity())
             }
 
             for (rule in rulesToRemember) {
@@ -134,7 +147,8 @@ class ImportRepository(
         val original = onAccount
             .filter { it.kind == TxKind.OPENING_BALANCE && it.importBatchId == null }
             .minWithOrNull(compareBy({ it.date }, { it.id }))
-        val imported = onAccount.filter { it.kind == TxKind.NORMAL && it.importBatchId != null }
+        // Imported transfer legs count like imported spending: one dated before the opening balance is already in it.
+        val imported = onAccount.filter { (it.kind == TxKind.NORMAL || it.kind == TxKind.TRANSFER) && it.importBatchId != null }
         val adjusted = original?.let { opening ->
             OpeningBalanceAdjuster.adjust(opening, imported.map { ParsedRow(it.date, it.amount, it.label, null, 0) })
         }
@@ -172,6 +186,13 @@ class ImportRepository(
             )
         }
     }
+
+    /** The date of the account's own opening balance (not the entries an import adds), or null if it has none. */
+    private suspend fun originalOpeningDate(accountId: Long): LocalDate? =
+        transactionDao.getForAccount(accountId).map { it.toModel() }
+            .filter { it.kind == TxKind.OPENING_BALANCE && it.importBatchId == null }
+            .minWithOrNull(compareBy({ it.date }, { it.id }))
+            ?.date
 
     private companion object {
         const val MOVED_OPENING_BALANCE_LABEL = "Opening balance (moved by import)"

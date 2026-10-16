@@ -32,7 +32,13 @@ sealed interface Route {
     @Serializable data object Categories : Route
     @Serializable data object Presets : Route
     @Serializable data object Backup : Route
-    @Serializable data object StatementImport : Route
+
+    /**
+     * The statement import wizard. [pdfPath] is set when a PDF statement was shared into the app: a file
+     * in the app's cache that the wizard reads when it opens (docs/PLAN.md §5.16).
+     */
+    @Serializable data class StatementImport(val pdfPath: String? = null) : Route
+
     @Serializable data object Onboarding : Route
 
     @Serializable data object Receipts : Route

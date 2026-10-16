@@ -436,8 +436,10 @@ accountStartDate + 1, else today − 6; never after today.
   DEBIT_CREDIT: amount = credit − |debit|.
 - `MerchantKey.normalise(description)`: uppercase; drop prefixes such as "CARD PAYMENT TO",
   "CONTACTLESS PAYMENT TO", "DIRECT DEBIT PAYMENT TO", "STANDING ORDER TO", "BILL PAYMENT VIA
-  FASTER PAYMENT TO", "FASTER PAYMENTS RECEIPT FROM", "PURCHASE"; drop ",? ON dd-mm-yyyy"-style
-  dates, "REF…" tails, card masks, 4+ digit numbers, amounts, "GBP"; collapse spaces; max 40 chars.
+  FASTER PAYMENT TO", "FASTER PAYMENTS RECEIPT FROM", "PURCHASE", and Square's leading "SQ *"; drop
+  ",? ON dd-mm-yyyy"-style dates, "(VIA GOOGLE PAY)"-style wallet groups, "REF…" tails, card masks
+  (a run of X/* on its own, not the X and * inside "NYX*PHOTOBOOTH"), 4+ digit numbers, amounts,
+  "GBP"; collapse spaces; drop a trailing " -"; max 40 chars. Repeated until nothing changes.
 - `CategorySuggester.suggest(merchantKey, rules, categories): Long?` — exact `MerchantRule` match
   first, then a built-in keyword table keyed by **default category names** (Groceries: TESCO,
   SAINSBURY, ASDA, ALDI, LIDL, MORRISONS, CO-OP, WAITROSE, M&S; Eating out: UBER EATS, DELIVEROO,
@@ -450,14 +452,80 @@ accountStartDate + 1, else today − 6; never after today.
   `accountId|date|pence|merchantKey|occurrence`, where occurrence counts identical
   (date, amount, key) rows earlier in the same file.
 - `ImportDedupe.classify(accountId, rows, keys, existing): List<RowStatus>` —
-  ALREADY_IMPORTED if the key exists; POSSIBLE_DUPLICATE if an existing NORMAL non-imported
-  transaction on the same account has the same amount within ±2 days (each existing
-  transaction matches at most one row); else NEW.
+  ALREADY_IMPORTED if the key exists; POSSIBLE_DUPLICATE if an existing NORMAL **or TRANSFER**
+  transaction on the same account with no import key has the same amount within ±2 days (each
+  existing transaction matches at most one row); else NEW. The TRANSFER case is how the leg an
+  import left on this account (from the other account's statement), or a transfer entered by hand,
+  is recognised when this account's own statement is imported later.
 - `OpeningBalanceAdjuster.adjust(opening: Transaction, imported: List<ParsedRow>): Transaction?` —
   imported rows dated **before** the opening-balance date would double count (the opening
   balance already includes them). Return the opening transaction with
   `amount = old − Σ(those rows)` and `date = earliest imported date − 1`, or null if none.
-- Santander's own text export format: **pending a sample file from the user** (see §9).
+- **Santander PDF statements** (downloaded from Santander online banking). The PDF's text layer is
+  read exactly, with positions (no OCR); the app extracts it with `com.tom-roush:pdfbox-android`
+  2.0.27.0 (Apache-2.0, from Maven Central; `PDFBoxResourceLoader.init` runs once before first use) in
+  `ui/importer/PdfStatementReader`, and everything after that is pure `core` code in `importer/`:
+  - `PdfTextChunk(text, x, y, endX, height, page)` (`PdfText.kt`): one piece of text in drawing order, at
+    any granularity (glyph, word or cell); y grows down the page; height is the font size.
+    `PdfStatementReader` returns one chunk per glyph (from a `PDFTextStripper` subclass with
+    `sortByPosition = false` whose `processTextPosition` collects the glyphs instead of building lines;
+    text drawn twice in the same place is dropped, as PDFBox does) or throws `PdfReadException`.
+  - `PdfCells.merge(chunks)` joins consecutive chunks into cells, so glyph-, word- and cell-level input
+    give identical cells. A new cell starts when the page changes, the baseline moves by more than
+    0.3 × height, the x moves back left by more than 0.5 × height, or a gap exceeds 0.9 × height (a column).
+    Within a cell one space is inserted where the gap exceeds 0.15 × height and neither side already has
+    whitespace there. Cells are trimmed (their edges move in by the trimmed width) and blank ones dropped.
+  - `SantanderStatement.looksLikeSantander(cells)`: a cell contains "santander" and a cell starts with
+    "Your transactions". `parse(cells)` returns `Success(ParsedStatement)` or `Unreadable(reason)` (a
+    sentence for the user: no transactions section / no rows / direction undecidable).
+    `ParsedStatement(periodStart, periodEnd, accountHolder, openingBalance, closingBalance, totalIn,
+    totalOut, lines, problems)`; `StatementLine(row, rawDescription, postedDate, likelyTransfer)` where
+    `row` is a normal `ParsedRow` (signed amount, cleaned description, `balance` = balance after the row,
+    `rowIndex` = index in `lines`) so the rest of the wizard is shared with CSV.
+  - **Period and dates**: "Your transactions 10th Sep 2026 to 10th Oct 2026" (suffixes st/nd/rd/th). Rows
+    carry no year: the period's year is used, and across a December to January period the start year for
+    months at or after the start month, else the end year. A card row's `date` is its ", ON dd-mm-yyyy"
+    card date (when the purchase happened; ignored if after the posted date), else the posted date.
+  - **Table rules**: the table starts after the "Your transactions" heading *and* its header row (cells
+    "Money in" and "Money out"); the right edges of those two cells and the "Date" header's x are
+    remembered. A row starts at a date cell (`^\d{1,2}(st|nd|rd|th) [A-Z][a-z]{2}$`) whose x is within
+    2 × height of the "Date" header's; it takes the following cells on the same page within
+    2.5 × height of its baseline, up to the next date cell (wrapped descriptions put the date and amounts on
+    the middle line). Cells that are entirely money (optional "£", commas, "-" or "−" prefix, trailing "-",
+    " DR" or " OD" for an overdrawn balance) are amounts; the rest is the description (joined with single
+    spaces, " ," → ","). A normal row has two amounts (amount, balance). "Opening Balance", "Balance
+    brought forward…" and "Balance carried forward…" rows have one: they set or check the running balance
+    and are not transactions; "Balance carried forward to next statement" sets the closing balance and ends
+    the table. When cells move to a later page everything is ignored until that page's header row appears
+    again. The "Average balance for the month" table on page 2 comes before the heading and is ignored.
+  - **Direction and checks**: with a known previous balance, `delta = balance − previous`; if `|delta|`
+    equals the amount, the sign is the delta's. Otherwise (or with no previous balance) the amount cell's
+    right edge decides — nearer the "Money in" header's right edge is money in, nearer "Money out" is out
+    (a tie makes the statement unreadable) — and, when the chain disagrees, the problem "Row 7 (7 Oct,
+    UNION SHOP): the balance doesn't follow from the amount" is recorded (the printed balance then becomes
+    the running balance again). The page-1 summary supplies the opening balance ("Balance brought forward
+    from previous Statement"), "Total money in:", "Total money out:" (stored positive) and the closing balance
+    ("Your balance at close of business …"), each the money cell to the right of its label on the same line;
+    the account holder is the cell after "Account name" (or "Account name: X" on page 2). `problems` also
+    holds: opening + Σ amounts ≠ closing, Σ money in ≠ total in, Σ money out ≠ total out.
+  - **`cleanDescription(raw)`**: "<MERCHANT> (VIA GOOGLE PAY), ON 05-10-2026" (also APPLE/SAMSUNG PAY, and the
+    classic "CARD PAYMENT TO <MERCHANT>,7.75 GBP, RATE 1.00/GBP, ON 08-10-2026") → "<MERCHANT>", with a
+    trailing " -" removed; "BILL PAYMENT VIA FASTER PAYMENT TO <X> REFERENCE <r> , MANDATE NO 0002" →
+    "<X>, ref <r>" (the reference keeps its case; standing orders and direct debits likewise);
+    "FASTER PAYMENTS RECEIPT REF.<ref> FROM <payer>" → "From <payer>" (", ref <ref>" only when the reference
+    is not all digits: those are a sort code and account number); "TRANSFER TO/FROM …" and "REGULAR TRANSFER
+    PAYMENT TO ACCOUNT …" are kept; ", MANDATE NO n" is always removed.
+  - **`likelyTransfer`**: descriptions starting "TRANSFER TO/FROM" or "REGULAR TRANSFER PAYMENT TO/FROM
+    ACCOUNT", or whose counterparty (after "… PAYMENT TO " up to " REFERENCE"/" REF"/","; or after
+    "FASTER PAYMENTS RECEIPT … FROM ") is the account holder: titles (MR, MRS, MS, MISS, MX, DR, PROF) are
+    dropped, case is ignored, every counterparty token must equal a holder token or be one letter that
+    starts one, and at least one token must be a full match ("A Tester", "ALEX TESTER" match "MISS ALEX
+    TESTER"; "ALEX SMITH" does not).
+  - Tests: `PdfCellsTest`, `SantanderStatementTest` (the invented `SantanderStatementFixture` at all three
+    granularities, a multi-page table, December to January, tampered balances/amounts, every cleaning and
+    transfer rule); on a device `data/SantanderPdfTest` draws an invented statement into a real PDF with
+    `PdfDocument` and reads it back through PDFBox. **Privacy**: no real statement is ever used as a
+    fixture; all test data is invented.
 
 ### 5.17 Backup (`backup/`)
 - `@Serializable data class BackupV1(format = "budgeting-backup", version = 1, exportedAt: String,
@@ -758,12 +826,39 @@ Untracked system category can only change colour.
 **Presets** — add/edit (label, amount, in/out, category, account or default, show on widget),
 reorder (up/down), delete.
 
-**Statement import** wizard — (1) choose file + account; (2) column mapping, auto-guessed,
-with a 5-row preview; (3) review rows (New / Already imported / Possible duplicate of a manual
-entry — duplicates unticked by default); (4) categorise by merchant group, pre-filled from
-merchant rules/keywords, "remember" ticked; (5) import → batch, transactions, merchant rules,
-opening-balance adjustment; offer to move the history start date earlier; summary with
-"Undo import".
+**Statement import** wizard — (1) choose file + account (a Santander statement PDF or a CSV; the picker
+offers both and the file is told apart by its type or its "%PDF" header); (2) column mapping,
+auto-guessed, with a 5-row preview (CSV only); (3) review rows (New / Already imported / Possible
+duplicate of a manual entry or of a transfer leg — duplicates unticked by default); (4) categorise by
+merchant group, pre-filled from merchant rules/keywords, "remember" ticked; (5) import → batch,
+transactions, merchant rules, opening-balance adjustment; offer to move the history start date earlier;
+summary with "Undo import".
+- **PDF path** (§5.16): `onPdfLoaded` merges the glyphs into cells, checks `looksLikeSantander` and
+  `parse`s; success goes straight to (3), skipping the mapping (Back from the review returns to the file
+  picker). A PDF that is not a Santander statement, or cannot be read, shows a sentence on the picker step
+  ("This PDF doesn't look like a Santander statement. Statement PDFs from Santander online banking, or CSV
+  files from any bank, can be imported."). The review starts with a card — "Santander statement · 10 Sep –
+  10 Oct 2026 · 19 transactions · closing balance £14.79" — an "Import into" account picker (so a shared
+  statement can be pointed at the right account; changing it classifies the rows again) and, if any check
+  failed, a warning "Check these against your statement:" listing `problems`. Rows flagged `likelyTransfer`
+  say "Looks like a move between your accounts". A PDF shared into the app (`ACTION_SEND`, `application/pdf`)
+  that is a Santander statement opens the wizard on `Route.StatementImport(pdfPath)` (the cached copy is read
+  when the screen opens, then deleted) instead of the receipt review; other PDFs still go to receipts.
+- **Move between my accounts** (every merchant group, CSV too; on by default when every row of the group is
+  `likelyTransfer`): the category picker and the "remember" tick are hidden, no `MerchantRule` is saved, and
+  a picker offers each other non-archived account or "Not in the app" (default). `SelectedImportRow.transfer`
+  carries the choice to `ImportRepository.importRows` (via `ImportTransactions.forRow`): the row becomes a
+  `TxKind.TRANSFER` leg (no category, a fresh UUID `transferGroupId` per row, the row's import key and
+  batch); if another account was chosen its opposite leg is inserted there (amount negated, same date,
+  label and group, the batch id so `undoBatch` removes it, no import key) unless it is dated before that
+  account's own OPENING_BALANCE date (its opening balance already includes it). `rebuildOpeningBalanceMove`
+  treats imported TRANSFER legs on the imported account like imported spending. A lone leg is tolerated
+  (Activity shows it as a single row; forecasts only learn from NORMAL and RECONCILIATION rows, Trends skip
+  TRANSFER, balances count every kind).
+- **Summary** for a PDF: the app's balance for the imported account on the statement's last day (after the
+  import) is compared with the closing balance — "Matches your statement: £14.79 on 10 Oct ✓", or "Your
+  statement says £14.79 on 10 Oct; the app says £X (£Y different). Transactions you entered by hand that are
+  also on the statement, or rows you unticked, would explain it."
 
 **Onboarding** (first run, every step skippable) — welcome (data stays on the phone) →
 accounts (suggest "Santander current", "Second current", "Savings") → zero point & buffer →
@@ -947,13 +1042,18 @@ transactions before their import batches (FK failure); app lock rebuilding navig
 now an overlay); daily worker snapshots before any account exists and its widget refresh.
 
 ### Testing (2026-09-29)
-- **Core** (`./gradlew -p core test`): 287 JVM tests, including stress/metamorphic suites and a
-  20,000-budget soak (`core/src/test/.../stress/`); forecast invariants include "expected spending
-  + expected income = expected learned flow".
+- **Core** (`./gradlew -p core test`): 509 JVM tests (2026-10-16, with the Santander PDF importer), including
+  stress/metamorphic suites and a 20,000-budget soak (`core/src/test/.../stress/`); forecast invariants include
+  "expected spending + expected income = expected learned flow".
 - **Device tests** (`app/src/androidTest`, run by CI's `device-tests` job on two API 34 emulators
   in parallel shards, merged by `device-report`; report and screenshots on `refs/ci/device-report`): data layer against the real Room database
   (`data/`), end-to-end UI with screenshots (`ui/`, helpers in `testing/UiTestSupport.kt`), and the
-  widget (`widget/`: Glance layouts at the three sizes, one-tap preset logging).
+  widget (`widget/`: Glance layouts at the three sizes, one-tap preset logging). The PDF statement importer is
+  covered by `data/SantanderPdfTest` (an invented statement drawn into a real PDF with `PdfDocument`, read back
+  through PDFBox and parsed) and `data/StatementImportViewModelTest` (the wizard's view model importing it
+  with moves between accounts, the opening-balance cases, the balance check and undo) and
+  `ui/StatementImportPdfTest` (the statement PDF shared into the app → review → categorise → import → balance check;
+  a non-statement PDF still opens the receipt review); `testing/SantanderPdfFixture` holds the invented content.
 - UI test conventions: tap through `UiTest.tap` (waits for the target to stop moving: screens
   resize for the keyboard), pick dates with `chooseInDatePicker` (Material 3 day cells carry the
   full date as text), reach cards far down a list with `swipeListUp`, and never address a field by
@@ -973,8 +1073,14 @@ now an overlay); daily worker snapshots before any account exists and its widget
 
 ## 9. Open items and future work
 
-- **Santander statement format**: need a real export (amounts/names can be changed) to add a
-  dedicated parser and tune `MerchantKey`. The generic CSV importer works meanwhile.
+- **Santander statement format**: supported through the PDF statements from Santander online banking (§5.16),
+  built from the layout of a real statement and tested only on invented data. The first real imports are the
+  verification: the review's "Check these against your statement" warning and the summary's balance check say
+  when something was misread. A Santander CSV/text export is still unseen; the generic CSV importer works for it.
+- **Opening balance and card dates**: statement rows are dated by their card date, while the bank's opening
+  balance for an account created mid-statement counts rows by their posted date, so an account opened on a
+  day between a purchase and its posting would be adjusted by that purchase. Opening the account on the day
+  after the statement's last day (the usual way) is not affected.
 - **Room schema files**: committed under `app/schemas/` (version 1 taken from CI, which publishes
   every build's schemas to `refs/ci/room-schemas`). Commit each new version's JSON the same way.
 - **Device testing**: the suite runs on emulators in CI (see §8 Testing); nothing has run on a
@@ -1102,7 +1208,8 @@ Code is in `app/.../ui/receipts/` (the list/detail screens live in `ui/receipts/
   `PickVisualMedia` images only), which is replaced by the review. Quick add (a separate activity)
   starts `MainActivity` with `ReceiptFiles.ACTION_SCAN_RECEIPT`. `MainActivity` is a share target for
   `ACTION_SEND` image/*, application/pdf and text/plain; the stream or text is copied to the cache,
-  then the review route is opened once the NavHost exists (behind the app lock overlay as usual).
+  then the review route is opened once the NavHost exists (behind the app lock overlay as usual). A shared PDF that is a Santander
+  statement (read with `PdfStatementReader`, §5.16) opens the statement import instead of the receipt review.
 - **Review** (`ReceiptReviewScreen` / `ReceiptReviewViewModel`): thumbnail (tap for full size,
   pinch to zoom), store, date, total, account, the `ReceiptChecks` result ("Items add up to the total ✓"
   / "Items are £0.23 more than the total — check the highlighted lines"; low-confidence lines are

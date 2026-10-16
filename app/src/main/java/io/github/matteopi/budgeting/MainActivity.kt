@@ -23,19 +23,25 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import io.github.matteopi.budgeting.data.settings.AppTheme
 import io.github.matteopi.budgeting.data.settings.DarkMode
+import io.github.matteopi.budgeting.ui.importer.PdfStatementReader
 import io.github.matteopi.budgeting.ui.lock.AppLockState
 import io.github.matteopi.budgeting.ui.lock.LockScreen
 import io.github.matteopi.budgeting.ui.navigation.BudgetNavHost
 import io.github.matteopi.budgeting.ui.navigation.Route
 import io.github.matteopi.budgeting.ui.receipts.ReceiptFiles
+import io.github.matteopi.budgeting.ui.receipts.ReceiptInputKind
 import io.github.matteopi.budgeting.ui.theme.BudgetingTheme
+import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 // FragmentActivity (not ComponentActivity) because BiometricPrompt requires it (docs/PLAN.md §6.9).
 class MainActivity : FragmentActivity() {
 
-    /** A receipt screen to open once the navigation graph is up: from a shared receipt or quick add's "Scan receipt". */
+    /**
+     * A screen to open once the navigation graph is up: the receipt review for a shared receipt, the scan
+     * screen from quick add's "Scan receipt", or the statement import for a shared Santander statement PDF.
+     */
     private val receiptRequest = MutableStateFlow<Route?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -116,6 +122,7 @@ class MainActivity : FragmentActivity() {
     /**
      * Receipt entry points: `ACTION_SEND` (a photo, PDF or text shared into the app) is copied to
      * the cache folder, then opens the review screen; quick add's scan action opens the scan screen.
+     * A shared PDF that turns out to be a Santander statement opens the statement import instead.
      * The app lock overlay already covers this activity, so nothing is shown before unlocking.
      */
     private fun handleReceiptIntent(intent: Intent?) {
@@ -126,7 +133,16 @@ class MainActivity : FragmentActivity() {
                 val shared = Intent(intent)
                 val app = application as BudgetApp
                 app.container.appScope.launch {
-                    val route = ReceiptFiles.importShared(app, shared)
+                    val review = ReceiptFiles.importShared(app, shared)
+                    val route: Route? = if (
+                        review != null &&
+                        review.kind == ReceiptInputKind.PDF.name &&
+                        PdfStatementReader.isSantanderStatement(app, File(review.path))
+                    ) {
+                        Route.StatementImport(pdfPath = review.path)
+                    } else {
+                        review
+                    }
                     if (route != null) {
                         receiptRequest.value = route
                     } else {
