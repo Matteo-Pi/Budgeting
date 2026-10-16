@@ -12,8 +12,8 @@ class ImportSelectionTest {
     }
 
     @Test
-    fun `possible duplicates are unselected by default`() {
-        assertFalse(ImportSelection.defaultSelected(RowStatus.POSSIBLE_DUPLICATE))
+    fun `possible duplicates are selected by default because the check step asks about them`() {
+        assertTrue(ImportSelection.defaultSelected(RowStatus.POSSIBLE_DUPLICATE))
     }
 
     @Test

@@ -24,8 +24,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -58,7 +56,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.matteopi.budgeting.core.importer.AmountMode
 import io.github.matteopi.budgeting.core.importer.ParsedRow
 import io.github.matteopi.budgeting.core.importer.ParsedStatement
-import io.github.matteopi.budgeting.core.importer.RowStatus
 import io.github.matteopi.budgeting.core.importer.StatementImport
 import io.github.matteopi.budgeting.core.importer.StatementMapping
 import io.github.matteopi.budgeting.core.model.Account
@@ -108,7 +105,8 @@ fun StatementImportScreen(
             ImportStep.PICK_FILE -> onBack()
             ImportStep.MAPPING -> viewModel.backTo(ImportStep.PICK_FILE)
             ImportStep.REVIEW -> viewModel.backTo(if (state.statement != null) ImportStep.PICK_FILE else ImportStep.MAPPING)
-            ImportStep.CATEGORISE -> viewModel.backTo(ImportStep.REVIEW)
+            ImportStep.CHECK -> viewModel.backTo(ImportStep.REVIEW)
+            ImportStep.CATEGORISE -> viewModel.backTo(if (state.hasQuestions) ImportStep.CHECK else ImportStep.REVIEW)
             ImportStep.SUMMARY -> onBack()
         }
     }
@@ -144,6 +142,13 @@ fun StatementImportScreen(
                     onToggle = viewModel::toggleRowSelected,
                     onBack = { handleBack() },
                     onNext = viewModel::confirmReview,
+                )
+                ImportStep.CHECK -> CheckStep(
+                    state = state,
+                    onAnswer = viewModel::answerQuestion,
+                    onAnswerAllDuplicates = { viewModel.answerAllPossibleDuplicates() },
+                    onBack = { handleBack() },
+                    onNext = viewModel::confirmChecks,
                 )
                 ImportStep.CATEGORISE -> CategoriseStep(
                     state = state,
@@ -439,9 +444,9 @@ private fun ReviewStep(
                 items(visibleIndices, key = { it }) { index ->
                     ReviewRow(
                         row = state.rows[index],
-                        status = state.rowStatuses[index],
                         selected = state.rowSelected[index],
                         likelyTransfer = state.isLikelyTransfer(index),
+                        asked = index in state.askedRows,
                         onToggle = { onToggle(index) },
                     )
                 }
@@ -454,7 +459,10 @@ private fun ReviewStep(
     }
 }
 
-/** What was read from a PDF statement, which account it goes into, and anything that did not add up. */
+/**
+ * What was read from a PDF statement and which account it goes into. Anything that did not add up is asked
+ * about in the check step, not warned about here.
+ */
 @Composable
 private fun StatementCard(
     statement: ParsedStatement,
@@ -475,37 +483,17 @@ private fun StatementCard(
                 )
             }
         }
-        if (statement.problems.isNotEmpty()) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        "Check these against your statement:",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                    )
-                    statement.problems.forEach { problem ->
-                        Text(
-                            "• $problem",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                        )
-                    }
-                }
-            }
-        }
     }
 }
 
+/** One statement row in the review. A row the check step will ask about is ticked and decided there ([asked]). */
 @Composable
-private fun ReviewRow(row: ParsedRow, status: RowStatus, selected: Boolean, likelyTransfer: Boolean, onToggle: () -> Unit) {
+private fun ReviewRow(row: ParsedRow, selected: Boolean, likelyTransfer: Boolean, asked: Boolean, onToggle: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
     ) {
-        Checkbox(checked = selected, onCheckedChange = { onToggle() })
+        Checkbox(checked = selected, onCheckedChange = { onToggle() }, enabled = !asked)
         Column(modifier = Modifier.weight(1f)) {
             Text(row.description, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(formatDisplayDate(row.date), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -516,14 +504,20 @@ private fun ReviewRow(row: ParsedRow, status: RowStatus, selected: Boolean, like
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
+            if (asked) {
+                Text(
+                    ASKED_ABOUT_THIS,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
         }
         MoneyText(amount = row.amount)
-        if (status == RowStatus.POSSIBLE_DUPLICATE) {
-            Spacer(Modifier.width(8.dp))
-            Text("Possible duplicate", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
-        }
     }
 }
+
+/** On a review row that the check step will ask about. */
+const val ASKED_ABOUT_THIS = "You'll be asked about this"
 
 @Composable
 private fun CategoriseStep(
@@ -658,6 +652,18 @@ private fun SummaryStep(
                 style = MaterialTheme.typography.bodyMedium,
             )
             TextButton(onClick = { onUndo(batch.id) }) { Text("Undo import") }
+        } else {
+            Text(CheckText.NOTHING_IMPORTED, style = MaterialTheme.typography.bodyMedium)
+        }
+        state.checksSummary?.let { summary ->
+            Text("What the checks changed: $summary", style = MaterialTheme.typography.bodyMedium)
+        }
+        if (state.changedExistingTransactions) {
+            Text(
+                CheckText.NOT_UNDONE,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         state.balanceCheck?.let { check ->
             Text(

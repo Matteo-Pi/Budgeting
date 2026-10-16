@@ -526,6 +526,48 @@ accountStartDate + 1, else today − 6; never after today.
     transfer rule); on a device `data/SantanderPdfTest` draws an invented statement into a real PDF with
     `PdfDocument` and reads it back through PDFBox. **Privacy**: no real statement is ever used as a
     fixture; all test data is invented.
+- **Import checks** (`ImportChecks.kt`, pure; "when I import a statement it checks anything inconsistent and asks
+  me about it"). Before anything is saved the wizard asks about each inconsistency between the statement and the
+  ledger, CSV and PDF alike. `ImportChecks.questions(input, answers)` takes an `ImportCheckInput` (the account, the
+  parsed rows with their import keys, `RowStatus` and review ticks as parallel lists, every existing transaction
+  of every account, the accounts, categories and merchant rules, the statement's coverage and closing balance and
+  the PDF's `problems`) and returns, in this order, questions with a stable `id` (so an answer stays with its
+  question when the list is worked out again). A "row index" is a position in `rows`. Rows whose status is
+  `ALREADY_IMPORTED` (or whose key is already in the ledger) never produce a question.
+  1. `PossibleDuplicate(rowIndex, existing)`: an entry on the same account with no import key, kind NORMAL or
+     TRANSFER, the same amount, dated within ±3 days of the row. Answers: `SameUseBank` (the entry's date becomes
+     the bank's — and its other leg's, for a transfer — and its import key the row's; the row is not imported),
+     `SameKeepMine` (only the import key is set; the row is not imported), `Different` (the row is imported too).
+  2. `AmountMismatch(rowIndex, existing)`: of what is left, a NORMAL entry with no import key within ±2 days, the
+     same direction, a different amount, that looks like the same purchase: the `MerchantKey` of its label shares a
+     word of 4+ letters (not a generic one such as STORES or SHOP) with the row's, or its category is the one
+     `CategorySuggester` suggests for the row. Answers: `FixMine` (amount and date become the bank's and the
+     import key is set; the row is not imported), `Different`.
+  3. `NotOnStatement(existing, transferPartner, mayNotHaveReachedBank, moveTargets)`: an unmatched NORMAL entry or
+     TRANSFER leg with no import key dated inside the coverage (both ends inclusive). Answers: `Keep` (with the
+     hint "it may not have reached the bank yet" in the coverage's last three days), `Delete` (a transfer deletes
+     both legs), `MoveTo(accountId)` for another non-archived account (not the account of its other leg).
+  4. `StatementProblem(text, rowIndex?)`: each PDF parse problem; the row comes from the "Row N (" the reader
+     writes. Answers: `SkipRow` (only when the row would be imported: it is left out) or `Ok`.
+  5. `BeforeOpening(count, openingDate)`: rows to import dated before the account's own OPENING_BALANCE date, which
+     will be adjusted so they aren't counted twice. Information only: pre-answered `Ok`.
+  6. `BalanceGap(date, appBalance, statementBalance)`: the account's balance on the coverage end, from a preview
+     that applies every other answer (rows to import, entries updated, deleted or moved, and the opening-balance
+     move `rebuildOpeningBalanceMove` makes), against the statement's closing balance (a PDF's; a CSV's is the
+     balance column of its last row, `closingBalanceOf`). Answers: `RecordDifference` or `Leave`. A question
+     without an answer is previewed as `defaultAnswer` (SameKeepMine, FixMine, Keep), so the gap is always what
+     the likeliest answers give and it follows every answer the user changes.
+
+  Pairing is one-to-one in both directions and independent of the review ticks: edges sorted by date distance, then
+  shared `MerchantKey` words (then amount distance, row order, entry date and id), taken greedily; the duplicates
+  are paired first, the mismatches from what is left. A row in a pair is imported unless its answer says it is the
+  same purchase, whatever was ticked (the review ticks it and cannot untick it); an unticked row still takes its
+  partner so the partner is not reported as missing. `ImportChecks.plan(input, questions, answers)` turns answers
+  into an `ImportPlan` (rows to import, `ImportChanges` — `ExistingUpdate`s, deletions, `ExistingMove`s and an
+  `ImportReconcile(date, statementBalance)` — and counts for the summary); an unanswered question changes nothing.
+  `appBalance(input, plan, asOf)` is the preview. Tests: `ImportChecksTest` (every question type and answer, the
+  pairing rules, the coverage window, the preview balance including the opening-balance move, the invented
+  statement with hand-entered entries around it, ALREADY_IMPORTED rows asking nothing).
 
 ### 5.17 Backup (`backup/`)
 - `@Serializable data class BackupV1(format = "budgeting-backup", version = 1, exportedAt: String,
@@ -638,7 +680,9 @@ Repositories expose core models, never entities. Every write calls
 - `PlanRepository`: CRUD + observe for recurring rules, scheduled items, term periods,
   predictions (upsert by category+regime; delete = back to automatic), sinking funds.
 - `ScenarioRepository`, `PresetRepository`, `ImportRepository` (merchant rules, batches,
-  `importRows(...)` atomically incl. opening-balance adjustment, `undoBatch(id)`; the adjustment
+  `importRows(...)` atomically incl. opening-balance adjustment, `importWithChanges(...)` (the same plus the
+  wizard's check answers, §6.5, in one DB transaction: rows inserted, then updates / deletions / moves of existing
+  transactions, then the opening-balance move, then the reconciliation), `undoBatch(id)`; the adjustment
   is one pair of batch-tagged OPENING_BALANCE entries, re-derived from the original opening
   balance and the imported rows that remain after every import and undo, so batches can be
   undone in any order),
@@ -828,19 +872,52 @@ reorder (up/down), delete.
 
 **Statement import** wizard — (1) choose file + account (a Santander statement PDF or a CSV; the picker
 offers both and the file is told apart by its type or its "%PDF" header); (2) column mapping,
-auto-guessed, with a 5-row preview (CSV only); (3) review rows (New / Already imported / Possible
-duplicate of a manual entry or of a transfer leg — duplicates unticked by default); (4) categorise by
-merchant group, pre-filled from merchant rules/keywords, "remember" ticked; (5) import → batch,
+auto-guessed, with a 5-row preview (CSV only); (3) review rows (New / Already imported; every row that is
+not already imported starts ticked — possible duplicates are no longer silently unticked, the next step asks);
+(4) **check** — only when there is something to ask (otherwise (3) goes straight to (5)); (5) categorise by
+merchant group, pre-filled from merchant rules/keywords, "remember" ticked; (6) import → batch,
 transactions, merchant rules, opening-balance adjustment; offer to move the history start date earlier;
-summary with "Undo import".
+summary with "Undo import". `ImportStep` is `PICK_FILE, MAPPING, REVIEW, CHECK, CATEGORISE, SUMMARY`.
+- **Check step** (`ImportStep.CHECK`, `ImportCheckStep.kt`, rules in §5.16 `ImportChecks`). Shown when
+  `ImportChecks.questions` returns anything, for CSV and PDF alike; nothing is saved until the import. Heading
+  "N things to check" ("Nothing is saved until you press Import."), then one card per question, showing both
+  sides where there are two — the bank's row (date, description, amount) and the app's transaction (date,
+  label, category, amount) — with plain wording as the title: "This might be the same as something you entered"
+  (`PossibleDuplicate`: "Same, use the bank's date" / "Same, keep mine as it is" / "Different, add the bank's
+  too"), "Same purchase, different amount?" (`AmountMismatch`: "Yes, use the bank's amount and date" / "No, add
+  the bank's too"), "In the app but not on this statement" (`NotOnStatement`: "Keep it" — with "It's from the
+  last few days of this statement, so it may not have reached the bank yet." — / "Delete it" ("Delete both sides"
+  for a move between accounts, with a warning naming the other account) / "Move to another account", which opens
+  a menu of the accounts and then reads "Move to Cash"), "Something on the statement doesn't add up"
+  (`StatementProblem`: "Leave this row out" when it names a row that would be imported / "OK, carry on"; this
+  replaces the old "Check these against your statement" warning on the review), "Dated before this account's
+  starting balance" (`BeforeOpening`, pre-answered "OK") and "Your balance won't match the statement"
+  (`BalanceGap`: "On 10 Oct 2026 the app would show £2.45, but your statement says £14.79: a difference of
+  £12.34." with "Record the difference so they match" / "Leave it"; it is worked out again after every answer
+  and disappears when the answers make the balances agree). Answers are selectable chips; a shortcut at the top,
+  "Same as mine for all possible duplicates" (`SameKeepMine`), appears when there are several duplicates.
+  "Next" (test tag `import-check-next`) is enabled once every question has an answer; when no row is left to
+  import it reads "Import" and saves straight away (no batch is made if no row is imported). Back from the
+  categorise step returns here with the answers kept; going back to the review and forward again keeps the
+  answers of the questions that are still asked. On the review, a row the check will ask about (a pair) shows
+  "You'll be asked about this" and its checkbox is ticked and disabled.
+- **Applying the answers**: on Import, `ImportRepository.importWithChanges` runs in one database transaction:
+  the rows to import (as before, transfer groups included), then the answers' changes to transactions that were
+  already in the app (`ExistingUpdate` sets date / amount / import key; deletions, a transfer's legs together;
+  moves to another account), then the opening-balance move (rebuilt for the account and for any account an entry
+  was moved to), then, for `RecordDifference`, `Reconcile.plan` for the statement's last day with the statement's
+  balance as the actual one (the same reconciliation "Update balance" makes, dated that day instead of today;
+  nothing is recorded if the balance already matches). The balance-update transaction carries the batch id, so
+  `undoBatch` removes it and its `reconciliations` row (`ReconciliationDao.deleteForBatch`) along with the
+  imported rows; the changes made to transactions that were already in the app stay.
 - **PDF path** (§5.16): `onPdfLoaded` merges the glyphs into cells, checks `looksLikeSantander` and
   `parse`s; success goes straight to (3), skipping the mapping (Back from the review returns to the file
   picker). A PDF that is not a Santander statement, or cannot be read, shows a sentence on the picker step
   ("This PDF doesn't look like a Santander statement. Statement PDFs from Santander online banking, or CSV
   files from any bank, can be imported."). The review starts with a card — "Santander statement · 10 Sep –
-  10 Oct 2026 · 19 transactions · closing balance £14.79" — an "Import into" account picker (so a shared
-  statement can be pointed at the right account; changing it classifies the rows again) and, if any check
-  failed, a warning "Check these against your statement:" listing `problems`. Rows flagged `likelyTransfer`
+  10 Oct 2026 · 19 transactions · closing balance £14.79" — and an "Import into" account picker (so a shared
+  statement can be pointed at the right account; changing it classifies the rows again; the statement's
+  `problems` are asked about in the check step). Rows flagged `likelyTransfer`
   say "Looks like a move between your accounts". A PDF shared into the app (`ACTION_SEND`, `application/pdf`)
   that is a Santander statement opens the wizard on `Route.StatementImport(pdfPath)` (the cached copy is read
   when the screen opens, then deleted) instead of the receipt review; other PDFs still go to receipts.
@@ -855,10 +932,15 @@ summary with "Undo import".
   treats imported TRANSFER legs on the imported account like imported spending. A lone leg is tolerated
   (Activity shows it as a single row; forecasts only learn from NORMAL and RECONCILIATION rows, Trends skip
   TRANSFER, balances count every kind).
-- **Summary** for a PDF: the app's balance for the imported account on the statement's last day (after the
-  import) is compared with the closing balance — "Matches your statement: £14.79 on 10 Oct ✓", or "Your
-  statement says £14.79 on 10 Oct; the app says £X (£Y different). Transactions you entered by hand that are
-  also on the statement, or rows you unticked, would explain it."
+- **Summary**: for a PDF (and a CSV whose balance column is mapped, using its last row) the app's balance for
+  the imported account on the statement's last day (after the import) is compared with the closing balance —
+  "Matches your statement: £14.79 on 10 Oct ✓", or "Your statement says £14.79 on 10 Oct; the app says £X (£Y
+  different). Transactions you entered by hand that are also on the statement, or rows you unticked, would
+  explain it." Below "Imported N transaction(s)" and "Undo import" (or "No new transactions were added."), a line
+  lists what the checks changed — "What the checks changed: 2 matched to your own entries, 1 deleted, 1 moved to
+  Cash, difference of £3.20 recorded" (also "N amounts corrected", "N rows left out") — and, when the checks
+  changed, deleted or moved transactions that were already in the app: "Changes you chose for transactions
+  already in the app aren't undone."
 
 **Onboarding** (first run, every step skippable) — welcome (data stays on the phone) →
 accounts (suggest "Santander current", "Second current", "Savings") → zero point & buffer →
@@ -1042,7 +1124,8 @@ transactions before their import batches (FK failure); app lock rebuilding navig
 now an overlay); daily worker snapshots before any account exists and its widget refresh.
 
 ### Testing (2026-09-29)
-- **Core** (`./gradlew -p core test`): 509 JVM tests (2026-10-16, with the Santander PDF importer), including
+- **Core** (`./gradlew -p core test`): 573 JVM tests (2026-10-16, with the Santander PDF importer and the import
+  checks), including
   stress/metamorphic suites and a 20,000-budget soak (`core/src/test/.../stress/`); forecast invariants include
   "expected spending + expected income = expected learned flow".
 - **Device tests** (`app/src/androidTest`, run by CI's `device-tests` job on two API 34 emulators
@@ -1054,6 +1137,12 @@ now an overlay); daily worker snapshots before any account exists and its widget
   with moves between accounts, the opening-balance cases, the balance check and undo) and
   `ui/StatementImportPdfTest` (the statement PDF shared into the app → review → categorise → import → balance check;
   a non-statement PDF still opens the receipt review); `testing/SantanderPdfFixture` holds the invented content.
+  The import checks (§5.16, §6.5) are covered by `data/StatementImportChecksTest` (the wizard's view model on the
+  invented statement and on a small CSV, with hand-entered transactions that produce every question type; each
+  answer is given and the ledger asserted: no duplicates, amounts and dates fixed, deletions, moves, the balance
+  update recorded and the balance then matching, undo, nothing imported when every row is matched) and
+  `ui/StatementImportChecksTest` (the check step walked on screen with screenshots `import-check-*`). App JVM
+  tests: `CheckTextTest`, `ImportSelectionTest`.
 - UI test conventions: tap through `UiTest.tap` (waits for the target to stop moving: screens
   resize for the keyboard), pick dates with `chooseInDatePicker` (Material 3 day cells carry the
   full date as text), reach cards far down a list with `swipeListUp`, and never address a field by
@@ -1075,7 +1164,7 @@ now an overlay); daily worker snapshots before any account exists and its widget
 
 - **Santander statement format**: supported through the PDF statements from Santander online banking (§5.16),
   built from the layout of a real statement and tested only on invented data. The first real imports are the
-  verification: the review's "Check these against your statement" warning and the summary's balance check say
+  verification: the check step's "Something on the statement doesn't add up" questions and the summary's balance check say
   when something was misread. A Santander CSV/text export is still unseen; the generic CSV importer works for it.
 - **Opening balance and card dates**: statement rows are dated by their card date, while the bank's opening
   balance for an account created mid-statement counts rows by their posted date, so an account opened on a

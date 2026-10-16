@@ -6,14 +6,21 @@ import androidx.lifecycle.viewModelScope
 import io.github.matteopi.budgeting.AppContainer
 import io.github.matteopi.budgeting.core.forecast.Balances
 import io.github.matteopi.budgeting.core.importer.CategorySuggester
+import io.github.matteopi.budgeting.core.importer.CheckAnswer
 import io.github.matteopi.budgeting.core.importer.CsvParser
 import io.github.matteopi.budgeting.core.importer.CsvTable
+import io.github.matteopi.budgeting.core.importer.ImportChanges
+import io.github.matteopi.budgeting.core.importer.ImportCheckInput
+import io.github.matteopi.budgeting.core.importer.ImportChecks
 import io.github.matteopi.budgeting.core.importer.ImportDedupe
+import io.github.matteopi.budgeting.core.importer.ImportPlan
+import io.github.matteopi.budgeting.core.importer.ImportQuestion
 import io.github.matteopi.budgeting.core.importer.MerchantKey
 import io.github.matteopi.budgeting.core.importer.ParsedRow
 import io.github.matteopi.budgeting.core.importer.ParsedStatement
 import io.github.matteopi.budgeting.core.importer.PdfCells
 import io.github.matteopi.budgeting.core.importer.PdfTextChunk
+import io.github.matteopi.budgeting.core.importer.PossibleDuplicate
 import io.github.matteopi.budgeting.core.importer.RowStatus
 import io.github.matteopi.budgeting.core.importer.SantanderParseResult
 import io.github.matteopi.budgeting.core.importer.SantanderStatement
@@ -24,6 +31,7 @@ import io.github.matteopi.budgeting.core.model.Category
 import io.github.matteopi.budgeting.core.model.ImportBatch
 import io.github.matteopi.budgeting.core.model.MerchantRule
 import io.github.matteopi.budgeting.core.model.Money
+import io.github.matteopi.budgeting.core.model.Transaction
 import io.github.matteopi.budgeting.data.repo.DefaultAccount
 import io.github.matteopi.budgeting.data.repo.ImportTransfer
 import io.github.matteopi.budgeting.data.repo.SelectedImportRow
@@ -36,7 +44,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
-enum class ImportStep { PICK_FILE, MAPPING, REVIEW, CATEGORISE, SUMMARY }
+enum class ImportStep { PICK_FILE, MAPPING, REVIEW, CHECK, CATEGORISE, SUMMARY }
 
 /** Rows that share a merchant, categorised together (docs/PLAN.md §6.5). */
 data class MerchantGroup(
@@ -51,6 +59,29 @@ data class MerchantGroup(
     /** For a [transfer]: the user's other account at the other end, or null for an account that isn't in the app. */
     val otherAccountId: Long? = null,
 )
+
+/**
+ * The check step's state (docs/PLAN.md §6.5): what the questions were worked out from, the [questions] (the
+ * balance gap among them follows the answers), the user's [answers] by question id, and the [plan] they make.
+ */
+data class CheckState(
+    val input: ImportCheckInput,
+    val questions: List<ImportQuestion>,
+    val answers: Map<String, CheckAnswer>,
+    val plan: ImportPlan,
+) {
+    /** True once every question has an answer. */
+    val complete: Boolean get() = ImportChecks.isComplete(questions, answers)
+
+    fun withAnswers(newAnswers: Map<String, CheckAnswer>): CheckState = of(input, newAnswers)
+
+    companion object {
+        fun of(input: ImportCheckInput, answers: Map<String, CheckAnswer>): CheckState {
+            val questions = ImportChecks.questions(input, answers)
+            return CheckState(input, questions, answers, ImportChecks.plan(input, questions, answers))
+        }
+    }
+}
 
 data class ImportUiState(
     val step: ImportStep = ImportStep.PICK_FILE,
@@ -68,18 +99,29 @@ data class ImportUiState(
     val importKeys: List<String> = emptyList(),
     val rowStatuses: List<RowStatus> = emptyList(),
     val rowSelected: List<Boolean> = emptyList(),
+    /** Rows the check step will ask about (a possible duplicate, a different amount): ticked, and decided there. */
+    val askedRows: Set<Int> = emptySet(),
+    /** The check step's questions and answers, once the review has been confirmed. */
+    val check: CheckState? = null,
     val merchantGroups: List<MerchantGroup> = emptyList(),
     val moveHistoryStartTo: LocalDate? = null,
     val summaryBatch: ImportBatch? = null,
-    /** After importing a PDF statement: the app's balance on its last day against the statement's closing balance. */
+    /** After importing: the app's balance on the statement's last day against the statement's closing balance. */
     val balanceCheck: BalanceCheck? = null,
+    /** After importing: what the check step's answers changed ("2 matched to your own entries, 1 deleted"), if anything. */
+    val checksSummary: String? = null,
+    /** After importing: true if the answers changed, deleted or moved transactions that were already in the app. */
+    val changedExistingTransactions: Boolean = false,
     val error: String? = null,
 ) {
     /** True if row [index] looks like a move between the user's accounts (only PDF statements say so). */
     fun isLikelyTransfer(index: Int): Boolean = statement?.lines?.getOrNull(index)?.likelyTransfer == true
+
+    /** True if the check step has anything to ask. */
+    val hasQuestions: Boolean get() = check?.questions?.isNotEmpty() == true
 }
 
-/** Drives the statement import wizard: pick file → map columns → review → categorise → import. */
+/** Drives the statement import wizard: pick file → map columns → review → check → categorise → import. */
 class StatementImportViewModel(private val container: AppContainer) : ViewModel() {
     private val _state = MutableStateFlow(ImportUiState())
     val state: StateFlow<ImportUiState> = _state
@@ -120,12 +162,18 @@ class StatementImportViewModel(private val container: AppContainer) : ViewModel(
         val current = _state.value
         if (current.statement != null && current.step == ImportStep.REVIEW) {
             viewModelScope.launch {
-                val review = reviewFor(accountId, current.rows)
+                val review = reviewFor(accountId, current.rows, current.statement)
                 _state.update {
                     if (it.selectedAccountId != accountId) {
                         it
                     } else {
-                        it.copy(importKeys = review.keys, rowStatuses = review.statuses, rowSelected = review.selected)
+                        it.copy(
+                            importKeys = review.keys,
+                            rowStatuses = review.statuses,
+                            rowSelected = review.selected,
+                            askedRows = review.asked,
+                            check = null,
+                        )
                     }
                 }
             }
@@ -142,6 +190,7 @@ class StatementImportViewModel(private val container: AppContainer) : ViewModel(
                 table = table,
                 mapping = mapping,
                 statement = null,
+                check = null,
                 balanceCheck = null,
                 error = null,
             )
@@ -173,7 +222,7 @@ class StatementImportViewModel(private val container: AppContainer) : ViewModel(
             return
         }
         val rows = statement.lines.map { it.row }
-        val review = reviewFor(accountId, rows)
+        val review = reviewFor(accountId, rows, statement)
         _state.update {
             it.copy(
                 step = ImportStep.REVIEW,
@@ -186,9 +235,13 @@ class StatementImportViewModel(private val container: AppContainer) : ViewModel(
                 importKeys = review.keys,
                 rowStatuses = review.statuses,
                 rowSelected = review.selected,
+                askedRows = review.asked,
+                check = null,
                 merchantGroups = emptyList(),
                 summaryBatch = null,
                 balanceCheck = null,
+                checksSummary = null,
+                changedExistingTransactions = false,
                 error = null,
             )
         }
@@ -228,7 +281,7 @@ class StatementImportViewModel(private val container: AppContainer) : ViewModel(
         val accountId = current.selectedAccountId ?: return
         viewModelScope.launch {
             val outcome = StatementImport.parseRows(table, mapping)
-            val review = reviewFor(accountId, outcome.rows)
+            val review = reviewFor(accountId, outcome.rows, null)
             _state.update {
                 it.copy(
                     step = ImportStep.REVIEW,
@@ -238,54 +291,162 @@ class StatementImportViewModel(private val container: AppContainer) : ViewModel(
                     importKeys = review.keys,
                     rowStatuses = review.statuses,
                     rowSelected = review.selected,
+                    askedRows = review.asked,
+                    check = null,
+                    merchantGroups = emptyList(),
+                    summaryBatch = null,
+                    balanceCheck = null,
+                    checksSummary = null,
+                    changedExistingTransactions = false,
                 )
             }
         }
     }
 
-    private class Review(val keys: List<String>, val statuses: List<RowStatus>, val selected: List<Boolean>)
+    private class Review(
+        val keys: List<String>,
+        val statuses: List<RowStatus>,
+        val selected: List<Boolean>,
+        val asked: Set<Int>,
+    )
 
-    /** The import keys, duplicate status and default ticks of [rows] against what is already saved for [accountId]. */
-    private suspend fun reviewFor(accountId: Long, rows: List<ParsedRow>): Review {
+    /**
+     * The import keys, duplicate status and default ticks of [rows] against what is already saved for [accountId],
+     * and the rows the check step will ask about (those are decided there, so the review shows them ticked).
+     */
+    private suspend fun reviewFor(accountId: Long, rows: List<ParsedRow>, statement: ParsedStatement?): Review {
         val keys = ImportDedupe.importKeys(accountId, rows)
         val existing = container.transactionRepository.observeAll().first()
         val statuses = ImportDedupe.classify(accountId, rows, keys, existing)
-        return Review(keys, statuses, statuses.map { ImportSelection.defaultSelected(it) })
+        val selected = statuses.map { ImportSelection.defaultSelected(it) }
+        val input = checkInput(accountId, rows, keys, statuses, selected, statement, existing)
+        return Review(keys, statuses, selected, ImportChecks.flaggedRows(input))
+    }
+
+    /** What the check step looks at: this import, the whole ledger, and what the statement says about its own span and balance. */
+    private suspend fun checkInput(
+        accountId: Long,
+        rows: List<ParsedRow>,
+        keys: List<String>,
+        statuses: List<RowStatus>,
+        selected: List<Boolean>,
+        statement: ParsedStatement?,
+        existing: List<Transaction>,
+    ): ImportCheckInput {
+        val snapshot = _state.value
+        val merchantRules = container.importRepository.observeMerchantRules().first()
+        val coverage = if (statement != null) statement.periodStart to statement.periodEnd else ImportChecks.coverageOf(rows)
+        val closingBalance = if (statement != null) statement.closingBalance else ImportChecks.closingBalanceOf(rows)
+        return ImportCheckInput(
+            accountId = accountId,
+            rows = rows,
+            importKeys = keys,
+            statuses = statuses,
+            selected = selected,
+            existing = existing,
+            accounts = snapshot.accounts,
+            coverageStart = coverage?.first,
+            coverageEnd = coverage?.second,
+            closingBalance = closingBalance,
+            problems = statement?.problems.orEmpty(),
+            categories = snapshot.categories,
+            merchantRules = merchantRules,
+        )
     }
 
     fun toggleRowSelected(index: Int) {
         val current = _state.value
-        if (!ImportSelection.isSelectable(current.rowStatuses[index])) return
+        if (!ImportSelection.isSelectable(current.rowStatuses[index]) || index in current.askedRows) return
         val updated = current.rowSelected.toMutableList()
         updated[index] = !updated[index]
         _state.update { it.copy(rowSelected = updated) }
     }
 
+    /**
+     * Next from the review: works out what to ask about. With nothing to ask, on to categorising (or, if every
+     * row turns out to need no import, straight to saving); otherwise to the check step. Answers given before
+     * going back to the review are kept for the questions that are still asked.
+     */
     fun confirmReview() {
         val current = _state.value
+        val accountId = current.selectedAccountId ?: return
+        // Nothing ticked (or everything already imported): nothing to ask about or to import.
+        if (current.rows.indices.none { ImportSelection.isSelectable(current.rowStatuses[it]) && current.rowSelected[it] }) return
         viewModelScope.launch {
-            val merchantRules = container.importRepository.observeMerchantRules().first()
-            val selectedIndices = current.rows.indices.filter {
-                ImportSelection.isSelectable(current.rowStatuses[it]) && current.rowSelected[it]
+            val existing = container.transactionRepository.observeAll().first()
+            val input = checkInput(
+                accountId, current.rows, current.importKeys, current.rowStatuses, current.rowSelected,
+                current.statement, existing,
+            )
+            val first = CheckState.of(input, emptyMap())
+            val kept = current.check?.answers.orEmpty().filter { (id, answer) ->
+                first.questions.any { it.id == id && answer in it.choices }
             }
-            val groups = selectedIndices
-                .groupBy { MerchantKey.normalise(current.rows[it].description) }
-                .map { (key, indices) ->
-                    val suggestion = CategorySuggester.suggest(key, merchantRules, current.categories)
-                    MerchantGroup(
-                        merchantKey = key,
-                        sampleDescription = current.rows[indices.first()].description,
-                        rowIndices = indices,
-                        total = Money(indices.sumOf { i -> current.rows[i].amount.pence }),
-                        categoryId = suggestion,
-                        remember = suggestion != null,
-                        transfer = ImportTransfers.defaultOn(indices.map { i -> current.isLikelyTransfer(i) }),
-                        otherAccountId = null,
-                    )
-                }
-                .sortedByDescending { it.total.abs().pence }
-            _state.update { it.copy(step = ImportStep.CATEGORISE, merchantGroups = groups) }
+            val check = CheckState.of(input, ImportChecks.preAnswers(first.questions) + kept)
+            if (check.questions.isEmpty()) {
+                openCategorise(check)
+            } else {
+                _state.update { it.copy(step = ImportStep.CHECK, check = check, checksSummary = null) }
+            }
         }
+    }
+
+    /** Gives [answer] to the question [questionId]; the questions (the balance gap above all) are worked out again. */
+    fun answerQuestion(questionId: String, answer: CheckAnswer) {
+        _state.update { state ->
+            val check = state.check ?: return@update state
+            val question = check.questions.firstOrNull { it.id == questionId } ?: return@update state
+            if (answer !in question.choices) return@update state
+            state.copy(check = check.withAnswers(check.answers + (questionId to answer)))
+        }
+    }
+
+    /** The shortcut at the top of the check step: [answer] to every possible duplicate that accepts it. */
+    fun answerAllPossibleDuplicates(answer: CheckAnswer = CheckAnswer.SameKeepMine) {
+        _state.update { state ->
+            val check = state.check ?: return@update state
+            val duplicates = check.questions.filterIsInstance<PossibleDuplicate>().filter { answer in it.choices }
+            if (duplicates.isEmpty()) {
+                state
+            } else {
+                state.copy(check = check.withAnswers(check.answers + duplicates.associate { it.id to answer }))
+            }
+        }
+    }
+
+    /** Next from the check step, once every question has an answer. */
+    fun confirmChecks() {
+        val check = _state.value.check ?: return
+        if (!check.complete) return
+        viewModelScope.launch { openCategorise(check) }
+    }
+
+    /** Groups the rows the answers leave to import by merchant and shows the categorise step; with none, saves straight away. */
+    private suspend fun openCategorise(check: CheckState) {
+        val current = _state.value
+        if (check.plan.importRows.isEmpty()) {
+            _state.update { it.copy(check = check, merchantGroups = emptyList()) }
+            runImport()
+            return
+        }
+        val merchantRules = container.importRepository.observeMerchantRules().first()
+        val groups = check.plan.importRows
+            .groupBy { MerchantKey.normalise(current.rows[it].description) }
+            .map { (key, indices) ->
+                val suggestion = CategorySuggester.suggest(key, merchantRules, current.categories)
+                MerchantGroup(
+                    merchantKey = key,
+                    sampleDescription = current.rows[indices.first()].description,
+                    rowIndices = indices,
+                    total = Money(indices.sumOf { i -> current.rows[i].amount.pence }),
+                    categoryId = suggestion,
+                    remember = suggestion != null,
+                    transfer = ImportTransfers.defaultOn(indices.map { i -> current.isLikelyTransfer(i) }),
+                    otherAccountId = null,
+                )
+            }
+            .sortedByDescending { it.total.abs().pence }
+        _state.update { it.copy(step = ImportStep.CATEGORISE, check = check, merchantGroups = groups) }
     }
 
     fun setGroupCategory(merchantKey: String, categoryId: Long?) {
@@ -313,13 +474,28 @@ class StatementImportViewModel(private val container: AppContainer) : ViewModel(
     }
 
     fun confirmImport() {
+        viewModelScope.launch { runImport() }
+    }
+
+    /**
+     * Saves everything in one database transaction: the rows the answers leave to import (as chosen in the categorise
+     * step), the changes the answers make to transactions already in the app, the opening-balance move and, if asked,
+     * the recorded difference. Then the summary.
+     */
+    private suspend fun runImport() {
         val current = _state.value
         val accountId = current.selectedAccountId ?: return
-        viewModelScope.launch {
-            val groupByIndex = mutableMapOf<Int, MerchantGroup>()
-            current.merchantGroups.forEach { group -> group.rowIndices.forEach { groupByIndex[it] = group } }
+        val check = current.check
+        val plan = check?.plan
+        val allowed = plan?.importRows?.toSet()
 
-            val selectedRows = groupByIndex.entries.sortedBy { it.key }.map { (index, group) ->
+        val groupByIndex = mutableMapOf<Int, MerchantGroup>()
+        current.merchantGroups.forEach { group -> group.rowIndices.forEach { groupByIndex[it] = group } }
+
+        val selectedRows = groupByIndex.entries
+            .filter { allowed == null || it.key in allowed }
+            .sortedBy { it.key }
+            .map { (index, group) ->
                 SelectedImportRow(
                     row = current.rows[index],
                     importKey = current.importKeys[index],
@@ -331,45 +507,54 @@ class StatementImportViewModel(private val container: AppContainer) : ViewModel(
                     },
                 )
             }
-            val rulesToRemember = current.merchantGroups
-                .filter { !it.transfer && it.remember && it.categoryId != null }
-                .map { MerchantRule(merchantKey = it.merchantKey, categoryId = it.categoryId!!) }
+        val rulesToRemember = current.merchantGroups
+            .filter { group -> allowed == null || group.rowIndices.any { it in allowed } }
+            .filter { !it.transfer && it.remember && it.categoryId != null }
+            .map { MerchantRule(merchantKey = it.merchantKey, categoryId = it.categoryId!!) }
 
-            val batch = container.importRepository.importRows(
-                accountId = accountId,
-                fileName = current.fileName,
-                rows = selectedRows,
-                rulesToRemember = rulesToRemember,
-                nowMillis = container.clock.nowMillis(),
+        val outcome = container.importRepository.importWithChanges(
+            accountId = accountId,
+            fileName = current.fileName,
+            rows = selectedRows,
+            rulesToRemember = rulesToRemember,
+            changes = plan?.changes ?: ImportChanges.NONE,
+            nowMillis = container.clock.nowMillis(),
+        )
+
+        val earliestImported = selectedRows.minOfOrNull { it.row.date }
+        val historyStart = container.settingsStore.budgetSettings.first().historyStartDate
+        val moveTo = if (earliestImported != null && (historyStart == null || earliestImported.isBefore(historyStart))) {
+            earliestImported
+        } else {
+            null
+        }
+
+        val balanceCheck = balanceCheckAfterImport(check?.input, accountId)
+        val changes = plan?.changes
+        _state.update {
+            it.copy(
+                step = ImportStep.SUMMARY,
+                summaryBatch = outcome.batch,
+                moveHistoryStartTo = moveTo,
+                balanceCheck = balanceCheck,
+                checksSummary = plan?.let { p -> CheckText.changesSummary(p, current.accounts, outcome.recordedDifference) },
+                changedExistingTransactions = changes != null &&
+                    (changes.updates.isNotEmpty() || changes.deletions.isNotEmpty() || changes.moves.isNotEmpty()),
             )
-
-            val earliestImported = selectedRows.minOfOrNull { it.row.date }
-            val historyStart = container.settingsStore.budgetSettings.first().historyStartDate
-            val moveTo = if (earliestImported != null && (historyStart == null || earliestImported.isBefore(historyStart))) {
-                earliestImported
-            } else {
-                null
-            }
-
-            val balanceCheck = balanceCheckAfterImport(current.statement, accountId)
-            _state.update {
-                it.copy(
-                    step = ImportStep.SUMMARY,
-                    summaryBatch = batch,
-                    moveHistoryStartTo = moveTo,
-                    balanceCheck = balanceCheck,
-                )
-            }
         }
     }
 
-    /** The app's balance for [accountId] on the statement's last day against the statement's closing balance. */
-    private suspend fun balanceCheckAfterImport(statement: ParsedStatement?, accountId: Long): BalanceCheck? {
-        if (statement == null) return null
-        val closing = statement.closingBalance ?: return null
+    /**
+     * The app's balance for [accountId] on the statement's last day against the statement's closing balance: a PDF's
+     * own, or a CSV's from its balance column when it has one.
+     */
+    private suspend fun balanceCheckAfterImport(input: ImportCheckInput?, accountId: Long): BalanceCheck? {
+        if (input == null) return null
+        val closing = input.closingBalance ?: return null
+        val end = input.coverageEnd ?: return null
         val transactions = container.transactionRepository.observeAll().first()
-        val inApp = Balances.accountBalance(accountId, transactions, statement.periodEnd)
-        return StatementText.balanceCheck(closing, inApp, statement.periodEnd)
+        val inApp = Balances.accountBalance(accountId, transactions, end)
+        return StatementText.balanceCheck(closing, inApp, end)
     }
 
     fun moveHistoryStart(date: LocalDate) {

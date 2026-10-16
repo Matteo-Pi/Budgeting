@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import io.github.matteopi.budgeting.core.importer.BeforeOpening
 import io.github.matteopi.budgeting.core.importer.ImportDedupe
+import io.github.matteopi.budgeting.core.importer.ImportQuestion
 import io.github.matteopi.budgeting.core.importer.ParsedRow
 import io.github.matteopi.budgeting.core.importer.RowStatus
 import io.github.matteopi.budgeting.core.model.Account
@@ -281,7 +283,12 @@ class StatementImportViewModelTest {
         val viewModel = newViewModel()
         openReview(viewModel, accounts.current)
 
+        // The check step tells the user the starting balance will be adjusted; that needs no decision.
         viewModel.confirmReview()
+        val check = assertNotNull(viewModel.awaitState("the check step") { it.step == ImportStep.CHECK }.check)
+        assertEquals(listOf<ImportQuestion>(BeforeOpening(5, date(10, 5))), check.questions)
+        assertTrue(check.complete, "information only, so it is answered already")
+        viewModel.confirmChecks()
         val categorise = viewModel.awaitState("the categorise step") { it.step == ImportStep.CATEGORISE }
         for (description in listOf("From A Tester", "TRANSFER TO ALEX TESTER", "ALEX TESTER, ref Transfer")) {
             viewModel.setGroupOtherAccount(categorise.group(description).merchantKey, accounts.second.id)
