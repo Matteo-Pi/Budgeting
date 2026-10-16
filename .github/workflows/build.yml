@@ -46,6 +46,15 @@ jobs:
           git -c user.name="CI" -c user.email="ci@users.noreply.github.com" commit -qm "Room schemas at ${GITHUB_SHA::7}"
           git push -q --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:refs/ci/room-schemas
 
+      # Fails the build if the APK is not properly signed (both v1 and v2), so a broken file is
+      # never published to phones.
+      - name: Verify the APK's signature
+        run: |
+          apksigner="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner"
+          "$apksigner" verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk | tee apksigner.txt
+          grep -q "Verified using v1 scheme (JAR signing): true" apksigner.txt
+          grep -q "Verified using v2 scheme (APK Signature Scheme v2): true" apksigner.txt
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:

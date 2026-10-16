@@ -33,6 +33,10 @@ android {
             storePassword = "android"
             keyAlias = "androiddebugkey"
             keyPassword = "android"
+            // v2 alone is enough for Android's own installer (minSdk 26), but some third-party
+            // installers only read the old v1 (JAR) signature and report "no certificates".
+            enableV1Signing = true
+            enableV2Signing = true
         }
     }
 
