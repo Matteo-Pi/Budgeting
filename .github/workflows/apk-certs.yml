@@ -1,0 +1,50 @@
+name: APK certificates
+
+# Diagnostics: prints the signing certificate of the APK each recent build published, and of the
+# "latest-build" release asset, so a phone's "signed with a different certificate" can be traced
+# to the build where the signature changed. Runs only when this file changes (or by hand).
+on:
+  push:
+    paths:
+      - .github/workflows/apk-certs.yml
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  certs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print each build's APK certificate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          apksigner="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner"
+          gh run list -R "$GITHUB_REPOSITORY" -w Build -L 40 --json databaseId,headSha,createdAt,event \
+            --jq '.[] | "\(.databaseId) \(.headSha[0:7]) \(.createdAt)"' > runs.txt
+          cat runs.txt
+          while read -r run sha created; do
+            dir="apk-$run"
+            if ! gh run download "$run" -R "$GITHUB_REPOSITORY" -n budgeting-debug-apk -D "$dir" >/dev/null 2>&1; then
+              echo "== $sha ($created, run $run): no APK artifact"
+              continue
+            fi
+            for f in "$dir"/*.apk; do
+              echo "== $sha ($created, run $run): $(basename "$f"), $(stat -c %s "$f") bytes"
+              "$apksigner" verify --print-certs --min-sdk-version 21 -v "$f" 2>&1 \
+                | grep -E "^Verified using v[123] |Signer.*certificate (DN|SHA-256)|DOES NOT VERIFY|ERROR" || true
+            done
+          done < runs.txt
+
+      - name: Print the release asset's certificate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          apksigner="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner"
+          gh release view latest-build -R "$GITHUB_REPOSITORY" --json targetCommitish,publishedAt
+          gh release download latest-build -R "$GITHUB_REPOSITORY" -p budgeting.apk -D release
+          ls -l release
+          "$apksigner" verify --print-certs --min-sdk-version 21 -v release/budgeting.apk 2>&1 \
+            | grep -E "^Verified using v[123] |Signer.*certificate (DN|SHA-256)|DOES NOT VERIFY|ERROR" || true
