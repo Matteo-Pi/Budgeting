@@ -33,7 +33,7 @@ jobs:
             fi
             for f in "$dir"/*.apk; do
               echo "== $sha ($created, run $run): $(basename "$f"), $(stat -c %s "$f") bytes"
-              "$apksigner" verify --print-certs --min-sdk-version 21 -v "$f" 2>&1 \
+              "$apksigner" verify --print-certs -v "$f" 2>&1 \
                 | grep -E "^Verified using v[123] |Signer.*certificate (DN|SHA-256)|DOES NOT VERIFY|ERROR" || true
             done
           done < runs.txt
@@ -46,5 +46,5 @@ jobs:
           gh release view latest-build -R "$GITHUB_REPOSITORY" --json targetCommitish,publishedAt
           gh release download latest-build -R "$GITHUB_REPOSITORY" -p budgeting.apk -D release
           ls -l release
-          "$apksigner" verify --print-certs --min-sdk-version 21 -v release/budgeting.apk 2>&1 \
+          "$apksigner" verify --print-certs -v release/budgeting.apk 2>&1 \
             | grep -E "^Verified using v[123] |Signer.*certificate (DN|SHA-256)|DOES NOT VERIFY|ERROR" || true
