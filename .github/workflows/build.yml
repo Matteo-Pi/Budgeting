@@ -56,6 +56,8 @@ jobs:
           unzip -l app/build/outputs/apk/debug/app-debug.apk 'META-INF/*' | tee -a apksigner.txt
           grep -q "Verified using v1 scheme (JAR signing): true" apksigner.txt
           grep -q "Verified using v2 scheme (APK Signature Scheme v2): true" apksigner.txt
+          # The committed app/debug.keystore: a different key would stop phones updating over the top.
+          grep -q "certificate SHA-256 digest: 56c27a4047eb8a6bb148bc73840a51d1c3a42223e6434e383484d6d0b6c7b784" apksigner.txt
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -77,7 +79,7 @@ jobs:
             --prerelease \
             --target "$GITHUB_SHA" \
             --title "Latest build" \
-            --notes "Built from ${GITHUB_SHA::7} on ${GITHUB_REF_NAME}. On your phone: download budgeting.apk and open it to install or update."
+            --notes "Build ${GITHUB_RUN_NUMBER}, from ${GITHUB_SHA::7} on ${GITHUB_REF_NAME}. On your phone: download budgeting.apk and open it with Android's own installer (from the browser's downloads) to install or update. Every build is signed with the same key (SHA-256 56:C2:7A:40:47:EB:8A:6B:B1:48:BC:73:84:0A:51:D1:C3:A4:22:23:E6:43:4E:38:34:84:D6:D0:B6:C7:B7:84)."
 
       - name: Upload test reports
         if: failure()

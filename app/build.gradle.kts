@@ -14,8 +14,11 @@ android {
         applicationId = "io.github.matteopi.budgeting"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        // Each CI build gets its run number, so Settings (and Android's app info) shows which build
+        // is installed, and every newer build counts as an update. Local builds stay at 1.
+        val ciBuild = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()
+        versionCode = ciBuild ?: 1
+        versionName = if (ciBuild != null) "0.1.0 (build $ciBuild)" else "0.1.0 (local)"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // With the orchestrator, every test starts from a freshly cleared app (empty database).
         testInstrumentationRunnerArguments["clearPackageData"] = "true"

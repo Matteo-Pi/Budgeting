@@ -7,7 +7,10 @@
   `-Dorg.gradle.internal.repository.max.retries=12 -Dorg.gradle.internal.repository.initial.backoff=3000`).
 - `app/` needs Google Maven (`dl.google.com`), which may be blocked in cloud sessions; then
   only CI (`.github/workflows/build.yml`) can compile it. Check runs with the GitHub tools.
-- Never regenerate `app/debug.keystore`; never use destructive Room migrations.
+- Never regenerate `app/debug.keystore`; never use destructive Room migrations. Every APK is signed
+  with that keystore (certificate SHA-256 `56:C2:7A:40:…:B7:84`) and CI fails the build if not;
+  `.github/workflows/apk-certs.yml` prints the certificate of each recent build's APK (it runs when
+  that file changes). Each CI build's versionCode is its run number (Settings shows "build N").
 - Device tests (`app/src/androidTest`) run on two emulators in CI's `device-tests` job (two shards;
   one emulator running everything ran its runner out of memory), merged by `device-report`. The report
   (SUMMARY.txt, screenshots/, results/, log) is pushed to `refs/ci/device-report`; read it with
