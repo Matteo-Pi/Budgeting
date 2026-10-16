@@ -51,7 +51,9 @@ jobs:
       - name: Verify the APK's signature
         run: |
           apksigner="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner"
-          "$apksigner" verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk | tee apksigner.txt
+          # --min-sdk-version 21: apksigner otherwise skips the v1 check for an app whose minSdk is 24+.
+          "$apksigner" verify --verbose --print-certs --min-sdk-version 21 app/build/outputs/apk/debug/app-debug.apk | tee apksigner.txt
+          unzip -l app/build/outputs/apk/debug/app-debug.apk 'META-INF/*' | tee -a apksigner.txt
           grep -q "Verified using v1 scheme (JAR signing): true" apksigner.txt
           grep -q "Verified using v2 scheme (APK Signature Scheme v2): true" apksigner.txt
 
