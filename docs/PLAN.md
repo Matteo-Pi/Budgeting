@@ -1570,7 +1570,8 @@ Columns are primitives as elsewhere. Quantities and nutrition are `REAL` (Double
 | recipes | title, short_title?, tagline?, style? ("Hob · one pot"), serves, prep_mins?, cook_mins?, time_note?, served_with?, tags (comma-separated), rating (0–5), notes, source (`MINE`/`CLAUDE`/`IMPORTED`), created_at, updated_at, archived | |
 | recipe_lines | recipe_id → CASCADE, position, grp?, text, ingredient_id? → ingredients SET NULL, quantity?, optional | index recipe_id, ingredient_id |
 | recipe_steps | recipe_id → CASCADE, position, kind (`STEP`/`TIP`/`EQUIPMENT`/`STORAGE`), title?, time? ("~10 min"), body | index recipe_id |
-| shopping_entries | recipe_id? → recipes CASCADE, servings?, ingredient_id? → ingredients CASCADE, quantity?, free_text?, checked, have_it, added_at | a recipe entry or an extra item |
+| shopping_entries | recipe_id? → recipes CASCADE, servings?, ingredient_id? → ingredients CASCADE, quantity?, free_text?, checked, added_at | a recipe entry or an extra item; `checked` is used by free-text items only |
+| shopping_marks | ingredient_id → ingredients CASCADE, checked, have_it | unique ingredient_id: the ticks of the list's ingredient lines, which sum several entries |
 
 **Step bodies**
 - A body is paragraphs separated by blank lines.
@@ -1581,7 +1582,7 @@ Columns are primitives as elsewhere. Quantities and nutrition are `REAL` (Double
 
 **Rules**
 - Ingredients are archived, never deleted, while a recipe line points at them.
-- **Backup version 3** adds the seven tables to `core/.../backup/` (`BackupV1`, the DTOs, the mapper,
+- **Backup version 3** adds the eight tables to `core/.../backup/` (`BackupV1`, the DTOs, the mapper,
   and `decode` checking the new references). Versions 1 and 2 still restore, with no food data.
 - **Schema file**: commit `3.json` from `refs/ci/room-schemas` after the first green build.
   `MigrationTest` gains 2 → 3, seeding version-2 rows and checking they survive.
@@ -1601,7 +1602,9 @@ amount, measure or portion word, name words, note, bracket weight, optional flag
 `IngredientLines.resolve(parsed, ingredient)` gives the base quantity and an *estimated* flag.
 - **Amounts**: `2`, `1.5`, `½` `¼` `¾` `⅓` `⅔`, `1 1/2`, `1½`, and `1-2` (the first value; the range
   stays in the text). "a"/"an" counts as 1, and "a pinch of"/"pinch of" is 1 pinch.
-- **Multiplier**: `2 × 400 g tins` or `2 x 400g` is 2 × 400 g.
+- **Multiplier**: `2 × 400 g tins` or `2 x 400g` is 2 × 400 g. If the ingredient has a portion named by the
+  word after it (`tin`), that portion is used instead: beans are weighed drained, so "2 × 400 g tins kidney
+  beans" is 2 × 240 g.
 - **Measures**: as §11.2, singular or plural, with or without a space ("320g").
 - **Counts**: a number with no measure.
   - If a word of the name (singular) is one of the matched ingredient's portion names, that portion
@@ -1740,7 +1743,9 @@ Choosing an ingredient on the review screen learns the alias, so the next recipe
 **Header**: "About £18.40 for 9 items", plus what the recipes themselves use ("£12.10 of it goes into
 these meals": Σ the recipes' unrounded cost at their servings).
 
-**Actions**: ticking is per line; *Clear ticked* and *Clear list*. Scanning a barcode ticks its line.
+**Actions**: ticking is per line (`shopping_marks` for ingredient lines, the entry for free text); *I have it*
+per ingredient line; *Clear ticked* (removes free-text items that are ticked and resets the marks) and *Clear
+list* (everything). Scanning a barcode ticks its line.
 
 ### 11.7 The starter recipe book and recipe bundles (`RecipeBundle`)
 **Format** (JSON, `{"format": "budgeting-recipes", "version": 1, "about", "ingredients": […], "recipes": […]}`):
