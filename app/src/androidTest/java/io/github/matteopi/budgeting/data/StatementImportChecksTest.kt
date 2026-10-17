@@ -383,7 +383,11 @@ class StatementImportChecksTest {
         val review = openCsvReview(viewModel, accounts.current, csv)
         assertEquals(setOf(0, 1), review.askedRows)
         assertEquals(4, review.rows.size)
-        assertTrue(review.rowStatuses.all { it == RowStatus.NEW })
+        // The £12.50 Tesco row has the same amount as the hand-entered one on the same day; the others are new.
+        assertEquals(
+            listOf(RowStatus.POSSIBLE_DUPLICATE, RowStatus.NEW, RowStatus.NEW, RowStatus.NEW),
+            review.rowStatuses,
+        )
 
         viewModel.confirmReview()
         val check = assertNotNull(viewModel.awaitState("the check step") { it.step == ImportStep.CHECK }.check)

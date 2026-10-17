@@ -93,13 +93,25 @@ internal fun CheckStep(
                     }
                 }
             }
-            items(questions, key = { it.id }) { question ->
+            items(questions.filter { it !is BalanceGap }, key = { it.id }) { question ->
                 QuestionCard(
                     question = question,
                     answer = check.answers[question.id],
                     state = state,
                     othersAnswered = othersAnswered,
                     onAnswer = { answer -> onAnswer(question.id, answer) },
+                )
+            }
+        }
+        // The balance card stays in view above the buttons: it changes as the other questions are answered.
+        questions.firstOrNull { it is BalanceGap }?.let { gap ->
+            Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp)) {
+                QuestionCard(
+                    question = gap,
+                    answer = check.answers[gap.id],
+                    state = state,
+                    othersAnswered = othersAnswered,
+                    onAnswer = { answer -> onAnswer(gap.id, answer) },
                 )
             }
         }
