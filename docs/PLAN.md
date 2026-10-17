@@ -47,6 +47,7 @@ All data stays on the phone. No server, no login, no bank connection.
 | Backups | Android auto-backup + manual export/import (JSON) + CSV export. |
 | Widget | Shows safe-to-spend/week and days until next money in; "+" opens quick add; optional one-tap preset buttons. |
 | Laptop | Maybe later. Keep all logic in the pure-Kotlin `core` module so it could be reused; do nothing else for it now. |
+| Food (2026-10-17) | A recipe book, shopping list and cooking view live in this app as their own **Food** section (§11), costed from receipt prices. Offline first: the only network use is an optional, off-by-default barcode lookup that sends just the barcode number to Open Food Facts. |
 
 ### Glossary
 - **Pool**: the accounts with `includeInSafeToSpend = true`. Forecasts are for the pool's summed balance.
@@ -1413,3 +1414,204 @@ Code is in `app/.../ui/receipts/` (the list/detail screens live in `ui/receipts/
   applied to a second receipt, edits and validation), `ui/ReceiptReviewTest` (share a text receipt →
   fix → categorise → save → Activity; replace switch; typing a receipt in; scan entry points). The
   camera and gallery pickers themselves are system UI and are not driven by tests.
+
+---
+
+## 11. Food: recipes, cooking and shopping (planned 2026-10-17)
+
+Goal: the user's recipe book inside this app. Each recipe shows **cost per portion**, **nutrition per
+portion** (UK label style, % of reference intakes) and **veg portions** (5 a day), can be compared
+with the others, cooked from on the phone, scaled, and turned into a shopping list. The user adds
+recipes without help: paste or type a recipe, the app reads it, anything it can't match goes to a
+review screen. Prices come from the user's own receipts (§10) wherever a product has been bought;
+otherwise from a typed price. Nothing here changes the forecast.
+
+Until this is built, the recipes live on a Claude page (3 recipes, 32 Tesco-priced ingredients,
+prices looked up 15 Oct 2026); they arrive through the import in §11.7.
+
+### 11.1 Decisions (agreed with the user 2026-10-17)
+| Topic | Decision |
+|---|---|
+| Where | This app, own section and own tables. The only links to the budget are products (prices) and the shopping list's estimated cost. |
+| Users | Just the user. No sharing, no web version. |
+| Adding recipes | Typed or pasted by the user, or written by Claude in the paste format (§11.4). No AI inside the app in v1. |
+| Prices | Per ingredient: the latest price **paid** for its linked product on a receipt (after Clubcard/multibuy discounts), else a typed pack price. Always shown with its date and source. |
+| Nutrition | Per 100 g or 100 ml, from a photo of the label (ML Kit text recognition, already bundled), from a barcode lookup, or typed. Estimates are marked. |
+| Barcodes | ML Kit barcode scanning, **bundled model** (offline), from a photo (`TakePicture`, as receipts; no camera permission). Looking a barcode up on Open Food Facts is an **opt-in setting, off by default**; it is the app's first network use and sends only the barcode number. |
+| Extras in v1 | Works offline, shopping list, scale servings, barcode scanning, cooking view (keep screen on, tick ingredients and steps). |
+| Not in v1 | Meal planner calendar, pantry stock tracking, importing from recipe websites, AI parsing, nutrition targets/tracking of what was eaten. |
+
+### 11.2 Units, quantities and maths (`core/.../recipes/`, pure Kotlin, fully unit-tested)
+- **Base unit**: every ingredient is measured in grams (`G`) or millilitres (`ML`). A recipe line
+  stores its quantity in the ingredient's base unit (`Double`), plus the text as written.
+- **Measures**: g, kg, ml, l (×1000), tsp = 5 ml, tbsp = 15 ml, pinch = 0.3 g. For a `G` ingredient a
+  spoon uses the ingredient's own "tsp"/"tbsp" portion if set (cornflour: 1 tbsp = 9 g), else
+  1 ml = 1 g, and the line is marked *estimated weight*.
+- **Portions**: named weights per ingredient: `each` (1 onion = 150 g), `clove`, `rasher`, `slice`,
+  `tin`, `head`, `pack`, or any name the user adds. "2 onions" and "3 garlic cloves" resolve through them.
+- **Cost**: `price per base unit = pack price ÷ pack size`; a weighed receipt item gives £/kg
+  directly. A line costs `quantity × price per base unit`, kept unrounded (Double pence) until the
+  recipe total, which is rounded once to `Money`; per portion = total ÷ servings, rounded to the
+  nearest penny. (A deliberate, documented exception to "never Double for amounts": per-gram prices
+  are fractions of a penny.) **From an empty cupboard** = Σ ⌈quantity ÷ pack size⌉ × pack price.
+- **Nutrition**: per portion = Σ quantity ÷ 100 × value per 100 ÷ servings, for energy (kcal and
+  kJ = kcal × 4.184), fat, saturates, carbohydrate, sugars, fibre, protein and salt. % of reference
+  intake against the UK adult RIs (2,000 kcal, fat 70 g, saturates 20 g, carbohydrate 260 g, sugars
+  90 g, protein 50 g, salt 6 g) and fibre against the 30 g guideline. A value is **flagged** when one
+  portion has more than half the day's fat, saturates, sugars or salt. Unknown nutrition on any
+  counted ingredient makes the total "at least" and is said so.
+- **Veg portions** = Σ quantity of ingredients with `countsAsVeg` ÷ servings ÷ 80 g (NHS).
+  Potatoes, garlic, chilli, ginger, herbs and lemon do not count.
+- **Optional lines** (`optional = true`) are counted unless the user turns "Count optional extras" off.
+- **Scaling**: cooking for N instead of `serves` multiplies every quantity by N ÷ serves. Display
+  keeps the cook's unit where it reads well: "1½ onions (225 g)", "3 tbsp", "480 g".
+- **Breakdown**: share of cost, kcal, salt and protein by ingredient (largest first, top 6 + rest).
+
+Files: `RecipeModels.kt`, `Quantities.kt` (amount and unit parsing, base-unit conversion),
+`RecipeMaths.kt` (cost, nutrition, flags, veg, scaling, breakdowns), `Prices.kt` (price resolution,
+below), `ShoppingList.kt` (§11.6), `NutritionLabel.kt` (§11.5), `IngredientLines.kt` +
+`RecipeText.kt` (§11.4), `IngredientMatching.kt`, `OpenFoodFacts.kt` (pure mapping of a parsed
+response), `RecipeBundle.kt` (§11.7).
+
+**Price resolution** (`Prices.resolve(ingredient, purchases, today)`): if the ingredient has a
+`productId` and a `PurchasedItem` exists for it, use the latest one's paid unit price (spend ÷
+quantity; per kg for weighed items) → per base unit via the ingredient's pack size; source
+`RECEIPT(date, store)`. Else the typed pack price; source `TYPED(date)`. Else none: the recipe shows
+"Cost unknown: 2 ingredients have no price" and still shows nutrition. Any price older than 120 days
+is shown as *old*.
+
+### 11.3 Data (`app`, Room version 3 with `@AutoMigration(2, 3)`: new tables only)
+Columns are primitives as elsewhere; quantities and nutrition are `REAL` (Double), money is pence.
+
+| Table | Columns (besides `id`) | Notes |
+|---|---|---|
+| ingredients | name, unit (`G`/`ML`), pack_size, pack_label, price? (pence), price_date?, product_id? → products SET NULL, barcode?, kcal?, fat?, sat?, carbs?, sugars?, fibre?, protein?, salt? (per 100 base units; null = unknown), nutrition_source (`LABEL`/`BARCODE`/`TYPED`/`ESTIMATE`), counts_as_veg, shelf (`MEAT`/`FRUIT_VEG`/`DAIRY`/`CUPBOARD`/`OILS`/`HERBS_SPICES`/`FROZEN`/`OTHER`), note, archived | index product_id; unique barcode |
+| ingredient_portions | ingredient_id → CASCADE, name, amount (base units) | unique (ingredient_id, name) |
+| ingredient_aliases | name_key, ingredient_id → CASCADE | unique name_key (learned, like product aliases) |
+| recipes | title, about, serves, prep_mins, cook_mins, tags (comma-separated), rating (0–5), notes, source (`MINE`/`CLAUDE`/`IMPORTED`), created_at, updated_at, archived | |
+| recipe_lines | recipe_id → CASCADE, position, grp, text, ingredient_id? → ingredients SET NULL, quantity?, optional | index recipe_id, ingredient_id |
+| recipe_steps | recipe_id → CASCADE, position, kind (`STEP`/`TIP`/`EQUIPMENT`), title, body | index recipe_id |
+| shopping_entries | recipe_id? → recipes CASCADE, servings?, ingredient_id? → ingredients CASCADE, quantity?, free_text?, checked, have_it, added_at | a recipe entry or an extra item |
+
+Ingredients are archived, never deleted, while a recipe line points at them. Backup **version 3**
+adds the seven tables (versions 1 and 2 still restore; `decode` checks the new references). Commit
+`3.json`; `MigrationTest` gains 2 → 3. Repositories: `IngredientRepository`, `RecipeRepository`,
+`ShoppingRepository`; a `FoodDao`. Cooking ticks are not data: they live in DataStore per recipe and
+are cleared by *Done cooking*.
+
+### 11.4 Reading recipes (`IngredientLines`, `RecipeText`, `IngredientMatching`)
+- **One line**: `[amount] [unit] name[, note] [(optional)]`. Amounts: `2`, `1.5`, `½`, `1 1/2`,
+  `1-2` (first value; the range stays in the text). Units as §11.2, singular or plural, with or
+  without a space ("320g"). Words after a comma or in brackets are a note ("sliced 1 cm thick").
+  "optional" anywhere marks the line optional. A line with no amount (*salt and pepper to taste*)
+  is kept as text with no quantity and is not counted.
+- **Paste format** (what Claude writes; also what *Share* exports):
+
+  ```
+  # Chicken & Vegetable Stir-Fry
+  Serves: 2 · Prep: 30 min · Cook: 15 min
+  Tags: chicken, rice, quick
+  About: Fast, high-heat cooking: velveted chicken, crisp veg and a glossy pan sauce.
+
+  ## Ingredients
+  ### Chicken
+  - 320 g chicken breast fillets, sliced 1 cm thick against the grain
+  - 1 tbsp cornflour
+  - 1 tbsp oyster sauce (optional)
+
+  ## Method
+  1. Velvet the chicken: Toss the sliced chicken with the cornflour…
+
+  ## Tips
+  - Lower-salt swap: …
+  ```
+  Without headings the reader still copes: lines starting with an amount are ingredients, numbered
+  lines are steps, the first line is the title.
+- **Matching** a line's name to an ingredient: normalise (lower case, strip punctuation, simple
+  plurals, words such as *fresh*, *large*, *finely*), then the learned alias, then an exact name,
+  then token overlap (suggestions, never auto-applied below a set score). Choosing an ingredient
+  on the review screen learns the alias, so the next recipe matches by itself.
+- **Review screen** (like the receipt review): title, servings, times, tags; every line with its
+  matched ingredient (or *Choose ingredient* / *Create ingredient* / *Not counted*), the amount in
+  base units ("1 onion → 150 g"; editable) and a warning for estimated weights; steps and tips
+  editable; live cost and nutrition per portion at the top. Save is allowed with unmatched lines.
+
+### 11.5 Ingredients: prices, labels and barcodes
+- **Ingredient editor**: name, g/ml, pack size and label, typed price (with date), **Link to a
+  product** (picker over `products`, shows the latest paid price from receipts), portions, nutrition
+  per 100, counts as veg, shelf, note, and where it is used.
+- **Label photo** (`NutritionLabel.parse(rows)`): OCR rows (reusing `LineGrouping`) → find the
+  "per 100 g/ml" column from the header; read Energy (kJ/kcal), Fat, of which saturates,
+  Carbohydrate, of which sugars, Fibre, Protein, Salt; "<0.5 g" reads as 0.5 and is marked; a
+  confidence per value. Shown on a review card before saving. Tested on typed UK label texts in the
+  common layouts (per 100 g first or second, with and without %RI and per-serving columns).
+- **Barcode**: photo → ML Kit `BarcodeScanner` (EAN-13/EAN-8/UPC). A known barcode opens its
+  ingredient; in the shopping list it ticks the item. An unknown one starts a new ingredient with the
+  barcode filled in. With *Look up barcodes online* on: `GET https://world.openfoodfacts.org/api/v2/product/{code}.json?fields=product_name,brands,quantity,product_quantity,product_quantity_unit,nutriments`
+  with a custom User-Agent (`Budgeting/<versionName> (<contact>)`, as Open Food Facts requires),
+  `HttpURLConnection` on `Dispatchers.IO`, 10 s timeout, one request per user action (their limit
+  is 15 product reads a minute). `OpenFoodFacts.toDraft(dto)` maps name, pack size and the
+  `*_100g` nutriments; everything is shown for confirmation and marked `BARCODE`. The data is
+  crowd-sourced, so the editor says to check it against the pack.
+- **Manifest**: `android.permission.INTERNET` is added for this one feature. Settings → Food explains
+  exactly what is sent (the barcode number only) and when (only when the user scans with the setting
+  on). No other code may use the network.
+
+### 11.6 Shopping list (`ShoppingList.build(entries, ingredients, prices)`)
+Add a recipe with a servings count (*Add to shopping list* on the recipe), or an extra item. The list
+sums each ingredient across entries (scaled), then packs needed = ⌈total ÷ pack size⌉ (0 when *I
+have it*), estimated cost = packs × pack price, grouped by shelf in a sensible shop order, with
+lines that have no ingredient listed as text. Header: "About £18.40 for 9 items" and what the
+recipes themselves use ("£12.10 of it goes into these meals"). Ticking is per line; *Clear ticked*
+and *Clear list*. Scanning a barcode ticks its line.
+
+### 11.7 Import of the existing recipe book (`RecipeBundle`)
+JSON format `{"format": "budgeting-recipes", "version": 1, ingredients: [...], recipes: [...]}` with
+ingredients (name, unit, pack, price + date, nutrition, portions, veg, shelf, source note) and
+recipes (as §11.3, lines referring to ingredients by bundle id). Shared into the app (application/json
+share target, or *Import recipes* in Settings → Data). Merge: an ingredient matching an existing name
+or alias is offered as "Use existing" / "Import as new"; recipes are always added. Claude produces the
+first bundle from the current recipe page (stir-fry, traybake and braise, 32 ingredients).
+
+### 11.8 Screens (`ui/food/`)
+- **Food** (tab, see open question 1): segmented *Recipes · Compare · Shopping · Ingredients*.
+  - *Recipes*: search, tag chips, sort (newest, cost per portion, protein, kcal, time, rating); a
+    card per recipe with cost per portion, kcal, protein, salt (flag colour), veg dots, time, rating.
+    Empty state: "No recipes yet — tap + to paste or type one."
+  - *Compare*: a table, one row per recipe (cost, kcal, protein, fat, saturates, carbs, sugars,
+    fibre, salt, veg, time, rating), sortable by any column, best-in-column marked, flagged values
+    marked; first column pinned while the rest scroll sideways. Switch: *Count optional extras*.
+  - *Shopping*: §11.6. *Ingredients*: grouped by shelf, search, price with source and date.
+- **Recipe**: header numbers; *Cook* starts the cooking view: large text, keep screen on
+  (`FLAG_KEEP_SCREEN_ON` while open), servings stepper (scales the lines), tick ingredients and
+  steps (tap a step to mark it done), *Done cooking* clears ticks. Below: cost (per portion, whole
+  dish, from an empty cupboard), the nutrition label, veg, the breakdown chips, rating (stars) and
+  notes. Menu: *Edit*, *Add to shopping list*, *Share as text* (the paste format), *Archive*.
+- **Add recipe**: paste box (prefilled from the clipboard paste action) or *Type it* → review (§11.4).
+  The existing share target asks *Receipt or recipe?* when shared text looks like a recipe (has
+  "Ingredients" or "Method" headings).
+
+### 11.9 Order of work
+0. Before starting: the two failing device tests in `StatementImportChecksTest` (data and ui; run 55)
+   are fixed, and the app has been installed on the user's phone once.
+1. Core: `Quantities`, `IngredientLines`, `RecipeText`, `IngredientMatching`, `RecipeMaths`,
+   `Prices`, `ShoppingList`, `RecipeBundle` — with tests (fixtures: the three existing recipes, whose
+   per-portion results must equal the recipe page's: stir-fry £3.09 / 804 kcal / 5.8 g salt / 6.1 veg;
+   traybake £3.83 / 768 kcal; braise £3.72 / 891 kcal).
+2. App: Room 3 + migration test, repositories, backup v3.
+3. App: Food tab with Recipes, the recipe screen and cooking view with scaling, the ingredient
+   editor (typed values), Add recipe → review.
+4. Import the recipe-page bundle (§11.7).
+5. Compare and Shopping.
+6. Link ingredients to products and use receipt prices.
+7. `NutritionLabel` (core, with tests) and the label photo; barcode scanning; the Open Food Facts
+   setting (INTERNET permission).
+
+### 11.10 Open questions for the user
+1. **Navigation**: the bottom bar already has five tabs. Suggested: *Food* replaces *Insights* in the
+   bar, and Insights opens from a button on Home and Forecast. Alternatives: a Food card on Home, or
+   Food inside Plan.
+2. **Open Food Facts contact**: their User-Agent asks for a contact (an email or a web page).
+   Which should the app send?
+3. **Budget link**: should the shopping list's estimate ever reach the forecast (for example as a
+   one-off scheduled grocery item)? Suggested: not in v1; the forecast already learns grocery spend.
