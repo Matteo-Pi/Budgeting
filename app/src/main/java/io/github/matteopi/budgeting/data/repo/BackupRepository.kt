@@ -5,6 +5,7 @@ import io.github.matteopi.budgeting.core.backup.BackupData
 import io.github.matteopi.budgeting.data.db.BudgetDatabase
 import io.github.matteopi.budgeting.data.db.dao.AccountDao
 import io.github.matteopi.budgeting.data.db.dao.CategoryDao
+import io.github.matteopi.budgeting.data.db.dao.FoodDao
 import io.github.matteopi.budgeting.data.db.dao.ImportDao
 import io.github.matteopi.budgeting.data.db.dao.PlanDao
 import io.github.matteopi.budgeting.data.db.dao.PresetDao
@@ -18,9 +19,9 @@ import io.github.matteopi.budgeting.widget.WidgetUpdater
 import kotlinx.coroutines.flow.first
 
 /**
- * Reads/writes every table for backup export/restore (§6.10), as `core.backup.BackupData`. The
- * JSON encode/decode (`BackupMapper`/`BackupCodec`, from `core.backup`) is driven by
- * `backup/BackupViewModel`.
+ * Reads/writes every table (the receipt and food tables included) for backup export/restore (§6.10),
+ * as `core.backup.BackupData`. The JSON encode/decode (`BackupMapper`/`BackupCodec`, from
+ * `core.backup`) is driven by `backup/BackupViewModel`.
  */
 class BackupRepository(
     private val database: BudgetDatabase,
@@ -34,6 +35,7 @@ class BackupRepository(
     private val reconciliationDao: ReconciliationDao,
     private val snapshotDao: SnapshotDao,
     private val receiptDao: ReceiptDao,
+    private val foodDao: FoodDao,
     private val settingsStore: SettingsStore,
     private val widgetUpdater: WidgetUpdater,
 ) {
@@ -61,13 +63,28 @@ class BackupRepository(
             receiptItems = receiptDao.observeAllItems().first().map { it.toModel() },
             products = receiptDao.observeProducts().first().map { it.toModel() },
             productAliases = receiptDao.observeAliases().first().map { it.toModel() },
+            ingredients = foodDao.getIngredients().map { it.toModel() },
+            ingredientAliases = foodDao.getIngredientAliases().map { it.toModel() },
+            recipes = foodDao.getRecipes().map { it.toModel() },
+            shoppingEntries = foodDao.getShoppingEntries().map { it.toModel() },
+            shoppingMarks = foodDao.getShoppingMarks().map { it.toModel() },
         )
     }
 
     /** Deletes every table (children first) then inserts [data] back with its original ids, atomically. */
     suspend fun replaceAll(data: BackupData) {
         database.withTransaction {
-            // Receipt tables first: items and aliases point at receipts/products, and items and
+            // The food tables first (shopping list, recipes, then ingredients and their aliases and
+            // portions): ingredients point at products, so they must go before the products below.
+            foodDao.deleteAllShoppingMarks()
+            foodDao.deleteAllShoppingEntries()
+            foodDao.deleteAllRecipeLines()
+            foodDao.deleteAllRecipeSteps()
+            foodDao.deleteAllRecipes()
+            foodDao.deleteAllIngredientAliases()
+            foodDao.deleteAllPortions()
+            foodDao.deleteAllIngredients()
+            // Receipt tables next: items and aliases point at receipts/products, and items and
             // products point at categories (NO ACTION), so they must go before the categories.
             // transactions.receipt_id has no foreign key, so transactions can go in any order.
             receiptDao.deleteAllItems()
@@ -114,10 +131,22 @@ class BackupRepository(
             receiptDao.insertAliases(data.productAliases.map { it.toEntity() })
             receiptDao.insertReceipts(data.receipts.map { it.toEntity() })
             receiptDao.insertItems(data.receiptItems.map { it.toEntity() })
+            // Food, parents before children: ingredients (after products) -> portions and aliases,
+            // recipes and ingredients -> lines and steps, then the shopping list.
+            foodDao.insertIngredients(data.ingredients.map { it.toEntity() })
+            foodDao.insertPortions(data.ingredients.flatMap { it.toPortionEntities() })
+            foodDao.insertIngredientAliases(data.ingredientAliases.map { it.toEntity() })
+            foodDao.insertRecipes(data.recipes.map { it.toEntity() })
+            foodDao.insertRecipeLines(data.recipes.flatMap { it.toLineEntities() })
+            foodDao.insertRecipeSteps(data.recipes.flatMap { it.toStepEntities() })
+            foodDao.insertShoppingEntries(data.shoppingEntries.map { it.toEntity() })
+            foodDao.insertShoppingMarks(data.shoppingMarks.map { it.toEntity() })
             snapshotDao.insertBalanceSnapshots(data.balanceSnapshots.map { it.toEntity() })
             snapshotDao.insertCategorySnapshots(data.categoryWeekSnapshots.map { it.toEntity() })
         }
         settingsStore.replaceBudgetSettings(data.settings)
+        // Cooking ticks are kept by recipe id, and the restored recipes have other ids.
+        settingsStore.clearAllCookingTicks()
         widgetUpdater.requestUpdate()
     }
 }

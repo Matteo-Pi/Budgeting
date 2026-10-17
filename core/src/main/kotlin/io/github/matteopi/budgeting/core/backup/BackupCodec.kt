@@ -16,7 +16,7 @@ sealed class BackupDecodeResult {
     data class Failure(val errors: List<String>) : BackupDecodeResult()
 }
 
-/** JSON encode/decode for [BackupV1] (versions 1 and 2), with validation. See docs/PLAN.md §5.17. */
+/** JSON encode/decode for [BackupV1] (versions 1 to 3), with validation. See docs/PLAN.md §5.17. */
 object BackupCodec {
 
     private val json = Json {
@@ -170,10 +170,76 @@ object BackupCodec {
             item.categoryId?.let { check(it in categoryIds, "Receipt item ${item.id} refers to a missing category $it.") }
         }
 
+        validateFood(b, productIds) { ok, message -> check(ok, message) }
+
         b.settings.defaultAccountId?.let {
             check(it in accountIds, "Settings refer to a missing default account $it.")
         }
 
         return errors
+    }
+
+    /** The version-3 tables: the same reference checks, plus the uniqueness the food tables enforce. */
+    private fun validateFood(b: BackupV1, productIds: Set<Long>, check: (Boolean, String) -> Unit) {
+        val ingredientIds = b.ingredients.map { it.id }.toSet()
+        val recipeIds = b.recipes.map { it.id }.toSet()
+
+        check(ingredientIds.size == b.ingredients.size, "Two ingredients have the same id.")
+        check(recipeIds.size == b.recipes.size, "Two recipes have the same id.")
+        val barcodes = b.ingredients.mapNotNull { it.barcode }
+        check(barcodes.toSet().size == barcodes.size, "Two ingredients have the same barcode.")
+        check(
+            b.ingredientAliases.map { it.nameKey }.toSet().size == b.ingredientAliases.size,
+            "Two ingredient aliases have the same name.",
+        )
+        check(
+            b.ingredientPortions.map { it.ingredientId to it.name }.toSet().size == b.ingredientPortions.size,
+            "An ingredient has two portions with the same name.",
+        )
+        check(
+            b.shoppingMarks.map { it.ingredientId }.toSet().size == b.shoppingMarks.size,
+            "An ingredient has two shopping list marks.",
+        )
+
+        for (ingredient in b.ingredients) {
+            ingredient.productId?.let {
+                check(it in productIds, "Ingredient ${ingredient.id} refers to a missing product $it.")
+            }
+        }
+        for (portion in b.ingredientPortions) {
+            check(
+                portion.ingredientId in ingredientIds,
+                "Portion \"${portion.name}\" refers to a missing ingredient ${portion.ingredientId}.",
+            )
+        }
+        for (alias in b.ingredientAliases) {
+            check(
+                alias.ingredientId in ingredientIds,
+                "Ingredient alias ${alias.id} refers to a missing ingredient ${alias.ingredientId}.",
+            )
+        }
+        for (line in b.recipeLines) {
+            check(line.recipeId in recipeIds, "A recipe line refers to a missing recipe ${line.recipeId}.")
+            line.ingredientId?.let {
+                check(it in ingredientIds, "A line of recipe ${line.recipeId} refers to a missing ingredient $it.")
+            }
+        }
+        for (step in b.recipeSteps) {
+            check(step.recipeId in recipeIds, "A recipe step refers to a missing recipe ${step.recipeId}.")
+        }
+        for (entry in b.shoppingEntries) {
+            entry.recipeId?.let {
+                check(it in recipeIds, "Shopping list entry ${entry.id} refers to a missing recipe $it.")
+            }
+            entry.ingredientId?.let {
+                check(it in ingredientIds, "Shopping list entry ${entry.id} refers to a missing ingredient $it.")
+            }
+        }
+        for (mark in b.shoppingMarks) {
+            check(
+                mark.ingredientId in ingredientIds,
+                "A shopping list mark refers to a missing ingredient ${mark.ingredientId}.",
+            )
+        }
     }
 }

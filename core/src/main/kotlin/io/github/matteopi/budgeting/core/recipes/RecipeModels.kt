@@ -89,6 +89,16 @@ data class Ingredient(
 )
 
 /**
+ * A learned name for an ingredient (the `ingredient_aliases` table): [nameKey] is
+ * `IngredientMatching.nameKey(...)` of a name that means [ingredientId]. Each key belongs to one ingredient.
+ */
+data class IngredientAliasRecord(
+    val id: Long = 0,
+    val nameKey: String,
+    val ingredientId: Long,
+)
+
+/**
  * One ingredient line of a recipe. [text] is the line as written; [quantity] is the amount in the
  * ingredient's base unit (null when the line isn't counted); [ingredientId] is null for a line that
  * isn't matched to an ingredient.

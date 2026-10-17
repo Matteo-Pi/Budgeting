@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import io.github.matteopi.budgeting.core.model.BudgetSettings
 import io.github.matteopi.budgeting.core.model.Money
@@ -158,5 +159,76 @@ class SettingsStore(context: Context) {
         val DARK_MODE = stringPreferencesKey("dark_mode")
         val CHART_ACCOUNT_VIEW = stringPreferencesKey("chart_account_view")
         val BALANCE_VIEW = stringPreferencesKey("balance_view")
+    }
+
+    // ---- Recipes section (docs/PLAN.md §11.3). Not part of backups. -----------------------------
+
+    /** Whether optional ingredient lines count in a recipe's cost and nutrition. Default true. */
+    val countOptionalExtras: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[FoodKeys.COUNT_OPTIONAL_EXTRAS] ?: true
+    }
+
+    /** Whether scanning a barcode may look it up on Open Food Facts (sends only the number). Default false. */
+    val lookUpBarcodesOnline: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[FoodKeys.LOOK_UP_BARCODES_ONLINE] ?: false
+    }
+
+    suspend fun setCountOptionalExtras(count: Boolean) {
+        dataStore.edit { it[FoodKeys.COUNT_OPTIONAL_EXTRAS] = count }
+    }
+
+    suspend fun setLookUpBarcodesOnline(lookUp: Boolean) {
+        dataStore.edit { it[FoodKeys.LOOK_UP_BARCODES_ONLINE] = lookUp }
+    }
+
+    /**
+     * What is ticked off in the cooking view of [recipeId]: ingredient lines and steps, as the
+     * screen names them (any strings). Empty until something is ticked.
+     */
+    fun observeCookingTicks(recipeId: Long): Flow<Set<String>> = dataStore.data.map { prefs ->
+        prefs[FoodKeys.cookingTicks(recipeId)] ?: emptySet()
+    }
+
+    /** Replaces the ticks of [recipeId]; an empty set clears them. */
+    suspend fun setCookingTicks(recipeId: Long, ticks: Set<String>) {
+        dataStore.edit { prefs ->
+            val key = FoodKeys.cookingTicks(recipeId)
+            prefs.remove(key)
+            if (ticks.isNotEmpty()) prefs[key] = ticks
+        }
+    }
+
+    /** Ticks or unticks one item of [recipeId]'s cooking view, atomically. */
+    suspend fun setCookingTick(recipeId: Long, tick: String, ticked: Boolean) {
+        dataStore.edit { prefs ->
+            val key = FoodKeys.cookingTicks(recipeId)
+            val current: Set<String> = prefs[key] ?: emptySet()
+            val next: Set<String> = if (ticked) current + tick else current - tick
+            prefs.remove(key)
+            if (next.isNotEmpty()) prefs[key] = next
+        }
+    }
+
+    /** *Done cooking*: forgets the ticks of [recipeId]. */
+    suspend fun clearCookingTicks(recipeId: Long) {
+        dataStore.edit { it.remove(FoodKeys.cookingTicks(recipeId)) }
+    }
+
+    /** Forgets every recipe's cooking ticks (after a restore, when recipe ids mean other recipes). */
+    @Suppress("UNCHECKED_CAST")
+    suspend fun clearAllCookingTicks() {
+        dataStore.edit { prefs ->
+            val keys: List<Preferences.Key<*>> =
+                prefs.asMap().keys.filter { it.name.startsWith(FoodKeys.COOKING_TICKS_PREFIX) }
+            for (key in keys) prefs.remove(key as Preferences.Key<Any>)
+        }
+    }
+
+    private object FoodKeys {
+        const val COOKING_TICKS_PREFIX = "cooking_ticks_"
+        val COUNT_OPTIONAL_EXTRAS = booleanPreferencesKey("count_optional_extras")
+        val LOOK_UP_BARCODES_ONLINE = booleanPreferencesKey("look_up_barcodes_online")
+
+        fun cookingTicks(recipeId: Long) = stringSetPreferencesKey("$COOKING_TICKS_PREFIX$recipeId")
     }
 }

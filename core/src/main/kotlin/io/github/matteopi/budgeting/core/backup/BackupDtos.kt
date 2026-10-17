@@ -250,3 +250,112 @@ data class ProductAliasDto(
     val rawNameKey: String,
     val productId: Long,
 )
+
+// ---- Version 3: food (docs/PLAN.md §11.3) -----------------------------------------------------
+
+@Serializable
+data class IngredientDto(
+    val id: Long,
+    val name: String,
+    val unit: String,
+    val packSize: Double,
+    val packLabel: String,
+    val pricePence: Long?,
+    val priceDate: String?,
+    val store: String?,
+    val productId: Long?,
+    val productName: String?,
+    val sourceUrl: String?,
+    val barcode: String?,
+    val kcal: Double?,
+    val fat: Double?,
+    val saturates: Double?,
+    val carbs: Double?,
+    val sugars: Double?,
+    val fibre: Double?,
+    val protein: Double?,
+    val salt: Double?,
+    val nutritionSource: String,
+    val vegKind: String,
+    val shelf: String,
+    val note: String,
+    val archived: Boolean,
+    val createdAtEpochMillis: Long,
+)
+
+@Serializable
+data class IngredientPortionDto(
+    val ingredientId: Long,
+    val name: String,
+    val amount: Double,
+)
+
+@Serializable
+data class IngredientAliasDto(
+    val id: Long,
+    val nameKey: String,
+    val ingredientId: Long,
+)
+
+@Serializable
+data class RecipeDto(
+    val id: Long,
+    val title: String,
+    val shortTitle: String?,
+    val tagline: String?,
+    val style: String?,
+    val serves: Int,
+    val prepMins: Int?,
+    val cookMins: Int?,
+    val timeNote: String?,
+    val servedWith: String?,
+    val tags: List<String>,
+    val rating: Int,
+    val notes: String,
+    val source: String,
+    val createdAtEpochMillis: Long,
+    val updatedAtEpochMillis: Long,
+    val archived: Boolean,
+)
+
+/** [position] orders the lines of one recipe. */
+@Serializable
+data class RecipeLineDto(
+    val recipeId: Long,
+    val position: Int,
+    val group: String?,
+    val text: String,
+    val ingredientId: Long?,
+    val quantity: Double?,
+    val optional: Boolean,
+)
+
+/** [position] orders the steps, tips, equipment and storage notes of one recipe together. */
+@Serializable
+data class RecipeStepDto(
+    val recipeId: Long,
+    val position: Int,
+    val kind: String,
+    val title: String?,
+    val time: String?,
+    val body: String,
+)
+
+@Serializable
+data class ShoppingEntryDto(
+    val id: Long,
+    val recipeId: Long?,
+    val servings: Int?,
+    val ingredientId: Long?,
+    val quantity: Double?,
+    val freeText: String?,
+    val checked: Boolean,
+    val addedAtEpochMillis: Long,
+)
+
+@Serializable
+data class ShoppingMarkDto(
+    val ingredientId: Long,
+    val checked: Boolean,
+    val haveIt: Boolean,
+)

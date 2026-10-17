@@ -51,7 +51,8 @@ object ReceiptMapping {
     /**
      * Joins saved items with their receipts (for the date and store) into the [PurchasedItem]s that
      * `ItemPrices` works on. Items that are not linked to a product, or whose receipt is missing,
-     * are left out. Output keeps the order of [items].
+     * are left out. Output keeps the order of [items]. A weighed item keeps its weight, which the
+     * recipes section turns into a price per gram.
      */
     fun purchasedItems(receipts: List<Receipt>, items: List<ReceiptItem>): List<PurchasedItem> {
         val receiptsById = receipts.associateBy { it.id }
@@ -66,6 +67,7 @@ object ReceiptMapping {
                 unitPrice = item.unitPrice,
                 price = item.price,
                 discount = item.discount,
+                weightGrams = item.weightGrams,
             )
         }
     }
