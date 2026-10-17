@@ -1,0 +1,2178 @@
+{
+ "format": "budgeting-recipes",
+ "version": 1,
+ "about": "Starter recipe book: 4 recipes written by Claude, Tesco prices (online shelf price for the cheapest standard pack, not Clubcard) checked 15-17 Oct 2026.",
+ "ingredients": [
+  {
+   "key": "bacon_streaky",
+   "name": "Smoked streaky bacon",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "300 g pack (14 rashers)",
+    "size": 300,
+    "pricePence": 229,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Smoked Streaky Bacon Rashers 14 Pack 300g",
+   "url": "https://www.tesco.com/shop/en-GB/products/281037392",
+   "per100": {
+    "carbs": 0.2,
+    "fat": 17.8,
+    "fibre": 0,
+    "kcal": 222,
+    "protein": 15.3,
+    "salt": 3.22,
+    "saturates": 6.8,
+    "sugars": 0.2
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "rasher",
+     "amount": 21.5
+    }
+   ],
+   "note": "Nutrition from Tesco's smoked streaky label (2 rashers is about 43 g)."
+  },
+  {
+   "key": "bay",
+   "name": "Bay leaves (dried)",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "3 g jar (about 15 leaves)",
+    "size": 3,
+    "pricePence": 110,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Bay Leaves 3g",
+   "url": "https://www.tesco.com/shop/en-GB/products/264104905",
+   "per100": {
+    "carbs": 50.7,
+    "fat": 8.4,
+    "fibre": 26,
+    "kcal": 358,
+    "protein": 7,
+    "salt": 0.06,
+    "saturates": 2.6,
+    "sugars": 0
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "leaf",
+     "amount": 0.2
+    }
+   ],
+   "note": "Full nutrition from the label. One leaf is about 0.2 g."
+  },
+  {
+   "key": "beef_mince_5",
+   "name": "Lean beef mince (5% fat)",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "500 g pack",
+    "size": 500,
+    "pricePence": 505,
+    "priceDate": "2026-10-17",
+    "store": "Tesco"
+   },
+   "product": "Tesco British Beef Lean Steak Mince 5% Fat 500g",
+   "url": null,
+   "per100": {
+    "kcal": 124,
+    "fat": 5,
+    "saturates": 2.2,
+    "carbs": 0,
+    "sugars": 0,
+    "fibre": 0,
+    "protein": 21.6,
+    "salt": 0.15
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for 5% beef mince, raw. The 20% mince is £3.25 for 500 g."
+  },
+  {
+   "key": "black_pepper",
+   "name": "Ground black pepper",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "100 g",
+    "size": 100,
+    "pricePence": 255,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Ground Black Pepper 100g",
+   "url": "https://www.tesco.com/shop/en-GB/products/256150775",
+   "per100": {
+    "carbs": 44.3,
+    "fat": 3.3,
+    "fibre": 28.5,
+    "kcal": 304,
+    "protein": 12,
+    "salt": 0.05,
+    "saturates": 1,
+    "sugars": 0.6
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 2.4
+    }
+   ],
+   "note": "Fibre and protein from Tesco's coarse black pepper label. ½ tsp is about 1.2 g."
+  },
+  {
+   "key": "broccoli",
+   "name": "Broccoli",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "1 head (about 375 g, £2.39/kg)",
+    "size": 375,
+    "pricePence": 90,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Broccoli Loose",
+   "url": "https://www.tesco.com/shop/en-GB/products/257231200",
+   "per100": {
+    "carbs": 1.8,
+    "fat": 0.5,
+    "fibre": 2.6,
+    "kcal": 32,
+    "protein": 4,
+    "salt": 0.02,
+    "saturates": 0.1,
+    "sugars": 1.5
+   },
+   "nutritionSource": "LABEL",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "head",
+     "amount": 375
+    }
+   ],
+   "note": "Energy, fat, saturates, sugars and salt from the label; the rest typical."
+  },
+  {
+   "key": "carrot",
+   "name": "Carrots",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "1 kg bag",
+    "size": 1000,
+    "pricePence": 69,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Carrots 1kg",
+   "url": "https://www.tesco.com/shop/en-GB/products/305953125",
+   "per100": {
+    "carbs": 8,
+    "fat": 0.3,
+    "fibre": 2.4,
+    "kcal": 42,
+    "protein": 0.6,
+    "salt": 0.01,
+    "saturates": 0.1,
+    "sugars": 7.4
+   },
+   "nutritionSource": "LABEL",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 80
+    }
+   ],
+   "note": "Energy, fat and sugars from Tesco's carrot label; the rest typical. A medium carrot is about 80 g."
+  },
+  {
+   "key": "chicken_breast",
+   "name": "Chicken breast fillets",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "320 g pack (2 fillets)",
+    "size": 320,
+    "pricePence": 244,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Chicken Breast Fillets 320g",
+   "url": "https://www.tesco.com/shop/en-GB/products/320661079",
+   "per100": {
+    "carbs": 0,
+    "fat": 2.1,
+    "fibre": 0,
+    "kcal": 115,
+    "protein": 24,
+    "salt": 0.16,
+    "saturates": 0.6,
+    "sugars": 0
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "fillet",
+     "amount": 160
+    }
+   ],
+   "note": "Energy from this pack's label; fat, saturates and salt from Tesco's diced breast label; protein worked out from the energy."
+  },
+  {
+   "key": "chicken_thigh",
+   "name": "Chicken thigh fillets (boneless, skinless)",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "600 g pack (about 5 fillets)",
+    "size": 600,
+    "pricePence": 560,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco British Chicken Thigh Fillets 600g",
+   "url": "https://www.trolley.co.uk/product/tesco-british-chicken-thigh-fillets/KWC844",
+   "per100": {
+    "carbs": 0,
+    "fat": 9.8,
+    "fibre": 0,
+    "kcal": 161,
+    "protein": 18.1,
+    "salt": 0.33,
+    "saturates": 2.6,
+    "sugars": 0
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "fillet",
+     "amount": 120
+    }
+   ],
+   "note": "Label: 194 kcal and 11.8 g fat per 120 g fillet. Clubcard price was £5. Bigger packs are often cheaper per kg, so check the price-per-kg on the shelf label."
+  },
+  {
+   "key": "chilli",
+   "name": "Bird's eye chillies",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "25 g pack",
+    "size": 25,
+    "pricePence": 90,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Bird Eye Chillies 25g",
+   "url": "https://www.trolley.co.uk/product/tesco-bird-eye-chillies-price-marked/RUJ182",
+   "per100": {
+    "carbs": 4.3,
+    "fat": 4.7,
+    "fibre": 1,
+    "kcal": 65,
+    "protein": 1,
+    "salt": 0,
+    "saturates": 0.1,
+    "sugars": 4.2
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 1.5
+    }
+   ],
+   "note": "Nutrition from the label (protein estimated). One chilli is about 1.5 g."
+  },
+  {
+   "key": "chilli_powder",
+   "name": "Mild chilli powder",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "46 g jar",
+    "size": 46,
+    "pricePence": 110,
+    "priceDate": "2026-10-17",
+    "store": "Tesco"
+   },
+   "product": "Tesco Mild Chilli Powder 46g",
+   "url": null,
+   "per100": {
+    "kcal": 315,
+    "fat": 14,
+    "saturates": 2.5,
+    "carbs": 25,
+    "sugars": 7,
+    "fibre": 35,
+    "protein": 13,
+    "salt": 1
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 2.7
+    }
+   ],
+   "note": "Estimate: typical values for a mild chilli blend; some blends have more salt. 1 tsp is about 2.7 g."
+  },
+  {
+   "key": "cornflour",
+   "name": "Cornflour",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "500 g",
+    "size": 500,
+    "pricePence": 255,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Cornflour 500g",
+   "url": "https://www.tesco.com/shop/en-GB/products/301392869",
+   "per100": {
+    "carbs": 88,
+    "fat": 0.4,
+    "fibre": 0,
+    "kcal": 357,
+    "protein": 0.4,
+    "salt": 0.1,
+    "saturates": 0,
+    "sugars": 0
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tbsp",
+     "amount": 9
+    }
+   ],
+   "note": "Nutrition from Tesco's cornflour label. A level tbsp is about 9 g."
+  },
+  {
+   "key": "courgette",
+   "name": "Courgette",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "1 loose courgette (about 220 g)",
+    "size": 220,
+    "pricePence": 56,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Courgettes Loose",
+   "url": "https://www.trolley.co.uk/product/courgettes-loose-class-1/DVA772",
+   "per100": {
+    "carbs": 1.8,
+    "fat": 0.4,
+    "fibre": 0.9,
+    "kcal": 20,
+    "protein": 1.8,
+    "salt": 0,
+    "saturates": 0.1,
+    "sugars": 1.7
+   },
+   "nutritionSource": "LABEL",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 220
+    }
+   ],
+   "note": "Full nutrition from Tesco's loose courgette label. Weight per courgette is an estimate."
+  },
+  {
+   "key": "cumin",
+   "name": "Ground cumin",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "46 g jar",
+    "size": 46,
+    "pricePence": 110,
+    "priceDate": "2026-10-17",
+    "store": "Tesco"
+   },
+   "product": "Tesco Ground Cumin 46g",
+   "url": null,
+   "per100": {
+    "kcal": 375,
+    "fat": 22.3,
+    "saturates": 1.5,
+    "carbs": 44.2,
+    "sugars": 2.3,
+    "fibre": 10.5,
+    "protein": 17.8,
+    "salt": 0.42
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 2
+    }
+   ],
+   "note": "Typical values. 1 tsp is about 2 g."
+  },
+  {
+   "key": "garlic",
+   "name": "Garlic",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "1 large bulb (about 12 cloves)",
+    "size": 60,
+    "pricePence": 50,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Large Garlic Each",
+   "url": "https://www.tesco.com/shop/en-GB/products/272682288",
+   "per100": {
+    "carbs": 16.3,
+    "fat": 0.6,
+    "fibre": 4.1,
+    "kcal": 110,
+    "protein": 7.9,
+    "salt": 0.01,
+    "saturates": 0.1,
+    "sugars": 1.6
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "clove",
+     "amount": 5
+    },
+    {
+     "name": "bulb",
+     "amount": 60
+    }
+   ],
+   "note": "Nutrition from the label. Bulb weight is an estimate; a clove is about 5 g."
+  },
+  {
+   "key": "garlic_powder",
+   "name": "Garlic powder",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "45 g jar",
+    "size": 45,
+    "pricePence": 110,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Garlic Powder 45g",
+   "url": "https://www.tesco.com/shop/en-GB/products/300456382",
+   "per100": {
+    "carbs": 63.7,
+    "fat": 0.7,
+    "fibre": 9,
+    "kcal": 346,
+    "protein": 16.6,
+    "salt": 0.15,
+    "saturates": 0.3,
+    "sugars": 2.4
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "pinch",
+     "amount": 0.3
+    }
+   ],
+   "note": "Full nutrition from the label. A pinch is about 0.3 g."
+  },
+  {
+   "key": "ginger",
+   "name": "Fresh root ginger",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "loose at £5.60/kg (100 g piece)",
+    "size": 100,
+    "pricePence": 56,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Root Ginger Loose",
+   "url": "https://www.tesco.com/shop/en-GB/products/253559297",
+   "per100": {
+    "carbs": 7.2,
+    "fat": 0.6,
+    "fibre": 2,
+    "kcal": 44,
+    "protein": 1.4,
+    "salt": 0.1,
+    "saturates": 0.2,
+    "sugars": 2.4
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tbsp",
+     "amount": 6
+    }
+   ],
+   "note": "Full nutrition from the label. 1 tbsp grated is about 6 g."
+  },
+  {
+   "key": "green_beans",
+   "name": "Fine green beans",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "200 g pack",
+    "size": 200,
+    "pricePence": 140,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Fine Beans 200g",
+   "url": "https://www.trolley.co.uk/product/tesco-fine-beans/PEA102",
+   "per100": {
+    "carbs": 3.5,
+    "fat": 0.4,
+    "fibre": 3,
+    "kcal": 31,
+    "protein": 1.9,
+    "salt": 0,
+    "saturates": 0.1,
+    "sugars": 2.3
+   },
+   "nutritionSource": "LABEL",
+   "veg": "VEG",
+   "portions": [],
+   "note": "Energy, fat and sugars from Tesco's fine beans label; the rest typical. Often on Clubcard deals."
+  },
+  {
+   "key": "honey",
+   "name": "Clear honey",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "340 g jar",
+    "size": 340,
+    "pricePence": 74,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Stockwell & Co Honey 340g",
+   "url": "https://www.tesco.com/shop/en-GB/products/300257829",
+   "per100": {
+    "carbs": 82.4,
+    "fat": 0,
+    "fibre": 0.2,
+    "kcal": 331,
+    "protein": 0.3,
+    "salt": 0.03,
+    "saturates": 0,
+    "sugars": 82.4
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 7
+    }
+   ],
+   "note": "Full nutrition from the label. 1 tsp is about 7 g."
+  },
+  {
+   "key": "kidney_beans",
+   "name": "Red kidney beans (tin, drained)",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "400 g tin (240 g drained)",
+    "size": 240,
+    "pricePence": 39,
+    "priceDate": "2026-10-17",
+    "store": "Tesco"
+   },
+   "product": "Tesco Red Kidney Beans In Water 400g",
+   "url": null,
+   "per100": {
+    "kcal": 107,
+    "fat": 0.6,
+    "saturates": 0.1,
+    "carbs": 15,
+    "sugars": 1.5,
+    "fibre": 7.3,
+    "protein": 6.9,
+    "salt": 0.03
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "PULSE",
+   "portions": [
+    {
+     "name": "tin",
+     "amount": 240
+    }
+   ],
+   "note": "Typical values per 100 g drained. A tin gives about 240 g once drained. Beans and lentils count as one veg portion at most."
+  },
+  {
+   "key": "lemon",
+   "name": "Lemon (juice)",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "1 lemon (about 40 ml juice)",
+    "size": 40,
+    "pricePence": 37,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Lemons Each",
+   "url": "https://www.trolley.co.uk/product/lemons-each/NBJ510",
+   "per100": {
+    "carbs": 3.2,
+    "fat": 0.3,
+    "fibre": 0,
+    "kcal": 20,
+    "protein": 1,
+    "salt": 0,
+    "saturates": 0.1,
+    "sugars": 3.2
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 40
+    }
+   ],
+   "note": "Counted as the juice only, using Tesco's lemon label values."
+  },
+  {
+   "key": "mixed_herbs",
+   "name": "Dried mixed herbs",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "13 g jar",
+    "size": 13,
+    "pricePence": 85,
+    "priceDate": "2026-10-17",
+    "store": "Tesco"
+   },
+   "product": "Tesco Mixed Herbs 13g",
+   "url": null,
+   "per100": {
+    "kcal": 260,
+    "fat": 6,
+    "saturates": 2,
+    "carbs": 37,
+    "sugars": 4,
+    "fibre": 37,
+    "protein": 11,
+    "salt": 0.1
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 1
+    }
+   ],
+   "note": "Typical values. 1 tsp is about 1 g."
+  },
+  {
+   "key": "mushroom_chestnut",
+   "name": "Chestnut mushrooms",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "250 g pack",
+    "size": 250,
+    "pricePence": 110,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Chestnut Vitamin D Mushrooms 250g",
+   "url": "https://www.tesco.com/shop/en-GB/products/273796618",
+   "per100": {
+    "carbs": 0.3,
+    "fat": 0.2,
+    "fibre": 0.7,
+    "kcal": 8,
+    "protein": 1,
+    "salt": 0.01,
+    "saturates": 0.1,
+    "sugars": 0.3
+   },
+   "nutritionSource": "LABEL",
+   "veg": "VEG",
+   "portions": [],
+   "note": "Energy, fat, saturates and sugars from the label; the rest as Tesco's closed cup label."
+  },
+  {
+   "key": "mushroom_white",
+   "name": "White (closed cup) mushrooms",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "300 g pack",
+    "size": 300,
+    "pricePence": 97,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Closed Cup Mushrooms 300g",
+   "url": "https://www.tesco.com/shop/en-GB/products/280046682",
+   "per100": {
+    "carbs": 0.3,
+    "fat": 0.2,
+    "fibre": 0.7,
+    "kcal": 8,
+    "protein": 1,
+    "salt": 0.01,
+    "saturates": 0.1,
+    "sugars": 0.3
+   },
+   "nutritionSource": "LABEL",
+   "veg": "VEG",
+   "portions": [],
+   "note": "Full nutrition from the label."
+  },
+  {
+   "key": "okra",
+   "name": "Okra",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "175 g pack",
+    "size": 175,
+    "pricePence": 175,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Okra 175g",
+   "url": "https://www.tesco.com/shop/en-GB/products/260918818",
+   "per100": {
+    "carbs": 3.5,
+    "fat": 1,
+    "fibre": 3.2,
+    "kcal": 40,
+    "protein": 2.8,
+    "salt": 0.03,
+    "saturates": 0.1,
+    "sugars": 2.5
+   },
+   "nutritionSource": "LABEL",
+   "veg": "VEG",
+   "portions": [],
+   "note": "Energy, fat, sugars and salt from the label; the rest typical."
+  },
+  {
+   "key": "olive_oil",
+   "name": "Olive oil",
+   "unit": "ML",
+   "shelf": "OILS",
+   "pack": {
+    "label": "1 litre",
+    "size": 1000,
+    "pricePence": 675,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Olive Oil 1L",
+   "url": "https://www.tesco.com/shop/en-GB/products/254918424",
+   "per100": {
+    "carbs": 0,
+    "fat": 91.2,
+    "fibre": 0,
+    "kcal": 820,
+    "protein": 0,
+    "salt": 0,
+    "saturates": 13,
+    "sugars": 0
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Label: 123 kcal per tablespoon (15 ml). Saturates typical for olive oil."
+  },
+  {
+   "key": "onion",
+   "name": "Brown onions",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "1 kg bag",
+    "size": 1000,
+    "pricePence": 99,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Brown Onions 1kg",
+   "url": "https://www.tesco.com/groceries/en-GB/products/255736044",
+   "per100": {
+    "carbs": 7.4,
+    "fat": 0.1,
+    "fibre": 1.8,
+    "kcal": 39,
+    "protein": 1.2,
+    "salt": 0.01,
+    "saturates": 0,
+    "sugars": 5
+   },
+   "nutritionSource": "LABEL",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 150
+    }
+   ],
+   "note": "Energy from the label; other values typical for raw onion. A medium onion is about 150 g."
+  },
+  {
+   "key": "oyster_sauce",
+   "name": "Oyster sauce",
+   "unit": "ML",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "150 ml",
+    "size": 150,
+    "pricePence": 165,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Oyster Sauce 150ml",
+   "url": "https://www.tesco.com/shop/en-GB/products/260827344",
+   "per100": {
+    "carbs": 32,
+    "fat": 0,
+    "fibre": 1.2,
+    "kcal": 140,
+    "protein": 1.2,
+    "salt": 9.6,
+    "saturates": 0,
+    "sugars": 22
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Label gives 117 kcal per 100 g; the rest is estimated from similar own-brand oyster sauces (about 7 to 11 g salt per 100 g), converted at about 1.2 g per ml."
+  },
+  {
+   "key": "pepper_bell",
+   "name": "Pepper (red, yellow or green)",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "1 pepper (about 150 g once deseeded)",
+    "size": 150,
+    "pricePence": 70,
+    "priceDate": "2026-10-17",
+    "store": "Tesco"
+   },
+   "product": "Tesco Red Pepper Each",
+   "url": null,
+   "per100": {
+    "kcal": 30,
+    "fat": 0.3,
+    "saturates": 0.1,
+    "carbs": 5.3,
+    "sugars": 5.3,
+    "fibre": 1.7,
+    "protein": 1,
+    "salt": 0.01
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 150
+    }
+   ],
+   "note": "Typical values for raw pepper. One pepper is about 150 g once the seeds and pith are out."
+  },
+  {
+   "key": "potato",
+   "name": "Baking potatoes",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "4 pack (about 1 kg)",
+    "size": 1000,
+    "pricePence": 79,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Baking Potatoes 4 Pack",
+   "url": "https://www.trolley.co.uk/product/tesco-baking-potatoes/NQV109",
+   "per100": {
+    "carbs": 15.5,
+    "fat": 0.2,
+    "fibre": 1.6,
+    "kcal": 75,
+    "protein": 2,
+    "salt": 0.02,
+    "saturates": 0.1,
+    "sugars": 1
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 250
+    }
+   ],
+   "note": "Label gives 188 kcal per typical potato (about 250 g). Potatoes are a starchy food, so they don't count towards 5 a day."
+  },
+  {
+   "key": "red_lentils",
+   "name": "Red split lentils (dried)",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "1 kg bag",
+    "size": 1000,
+    "pricePence": 260,
+    "priceDate": "2026-10-17",
+    "store": "Tesco"
+   },
+   "product": "Tesco Red Split Lentils 1kg",
+   "url": null,
+   "per100": {
+    "kcal": 318,
+    "fat": 1.3,
+    "saturates": 0.2,
+    "carbs": 48.5,
+    "sugars": 2,
+    "fibre": 11,
+    "protein": 24,
+    "salt": 0.03
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "PULSE",
+   "portions": [],
+   "note": "Typical values, weighed dry. Beans and lentils count as one veg portion at most, however much there is."
+  },
+  {
+   "key": "rice",
+   "name": "Long-grain white rice",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "1 kg bag",
+    "size": 1000,
+    "pricePence": 52,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Grower's Harvest Long Grain Rice 1kg",
+   "url": "https://www.tesco.com/shop/en-GB/products/300843799",
+   "per100": {
+    "carbs": 79,
+    "fat": 1.3,
+    "fibre": 1,
+    "kcal": 360,
+    "protein": 7.1,
+    "salt": 0,
+    "saturates": 0.3,
+    "sugars": 0.3
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Weighed dry. Label: 75 g dry makes about 205 g cooked and has 270 kcal. Protein, carbs and fibre are typical values."
+  },
+  {
+   "key": "salt",
+   "name": "Salt",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "1.5 kg cooking salt",
+    "size": 1500,
+    "pricePence": 190,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Cooking Salt 1.5kg",
+   "url": "https://www.trolley.co.uk/product/asda-table-salt/ZFM057",
+   "per100": {
+    "carbs": 0,
+    "fat": 0,
+    "fibre": 0,
+    "kcal": 0,
+    "protein": 0,
+    "salt": 100,
+    "saturates": 0,
+    "sugars": 0
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 6
+    }
+   ],
+   "note": "1 tsp is about 6 g."
+  },
+  {
+   "key": "sesame_oil",
+   "name": "Toasted sesame oil",
+   "unit": "ML",
+   "shelf": "OILS",
+   "pack": {
+    "label": "250 ml",
+    "size": 250,
+    "pricePence": 265,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Toasted Sesame Oil 250ml",
+   "url": "https://www.tesco.com/shop/en-GB/products/259028703",
+   "per100": {
+    "carbs": 0,
+    "fat": 92,
+    "fibre": 0,
+    "kcal": 827,
+    "protein": 0,
+    "salt": 0,
+    "saturates": 13.3,
+    "sugars": 0
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Label: 124 kcal and 2.0 g saturates per tablespoon."
+  },
+  {
+   "key": "smoked_paprika",
+   "name": "Smoked paprika",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "48 g jar",
+    "size": 48,
+    "pricePence": 110,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Smoked Paprika 48g",
+   "url": "https://www.tesco.com/shop/en-GB/products/255770365",
+   "per100": {
+    "carbs": 18.3,
+    "fat": 13,
+    "fibre": 37.4,
+    "kcal": 324,
+    "protein": 14.8,
+    "salt": 0.09,
+    "saturates": 2.1,
+    "sugars": 10.3
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 2.4
+    }
+   ],
+   "note": "Full nutrition from the label. 1 tsp is about 2.4 g."
+  },
+  {
+   "key": "soy_light",
+   "name": "Light soy sauce",
+   "unit": "ML",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "150 ml",
+    "size": 150,
+    "pricePence": 55,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Light Soy Sauce 150ml",
+   "url": "https://www.trolley.co.uk/product/tesco-light-soy-sauce/QKJ372",
+   "per100": {
+    "carbs": 12,
+    "fat": 0,
+    "fibre": 0.5,
+    "kcal": 65,
+    "protein": 3,
+    "salt": 16,
+    "saturates": 0,
+    "sugars": 10
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Estimate: Tesco's light soy label wasn't available online. Salt is set at 16 g per 100 ml, the same as Tesco's dark soy (2.4 g per tbsp); other own-brand light soys run from about 10 to 20 g. Tesco Reduced Salt Soy Sauce is the same price."
+  },
+  {
+   "key": "stock_cube",
+   "name": "Chicken stock cubes",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "10 cubes of 10 g",
+    "size": 100,
+    "pricePence": 110,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Chicken Stock Cubes 10 x 10g",
+   "url": "https://www.trolley.co.uk/product/tesco-10-chicken-stock-cubes/PSD053",
+   "per100": {
+    "carbs": 20,
+    "fat": 20,
+    "fibre": 0,
+    "kcal": 280,
+    "protein": 5,
+    "salt": 42,
+    "saturates": 10,
+    "sugars": 3
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "cube",
+     "amount": 10
+    }
+   ],
+   "note": "Estimate: Tesco's label wasn't available online, so these are based on similar 10 g chicken cubes (Knorr's label: 41.3 g salt per 100 g, so about 4 g per cube). Salt is the number that matters here."
+  },
+  {
+   "key": "thyme",
+   "name": "Dried thyme (or mixed herbs)",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "19 g jar",
+    "size": 19,
+    "pricePence": 110,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Thyme 19g",
+   "url": "https://www.trolley.co.uk/product/tesco-thyme/DGJ800",
+   "per100": {
+    "carbs": 23.1,
+    "fat": 7.3,
+    "fibre": 37.5,
+    "kcal": 286,
+    "protein": 13.1,
+    "salt": 0.25,
+    "saturates": 2.8,
+    "sugars": 3.1
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 1
+    }
+   ],
+   "note": "Nutrition from Tesco's Mixed Herbs label (a thyme-led blend). 1 tsp is about 1 g."
+  },
+  {
+   "key": "tomato_puree",
+   "name": "Tomato purée",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "200 g tube",
+    "size": 200,
+    "pricePence": 59,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Tomato Puree 200g",
+   "url": "https://www.trolley.co.uk/product/tesco-tomato-puree-tube/FJA033",
+   "per100": {
+    "carbs": 14,
+    "fat": 0.3,
+    "fibre": 3.1,
+    "kcal": 84,
+    "protein": 4.7,
+    "salt": 0.4,
+    "saturates": 0.05,
+    "sugars": 14
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tbsp",
+     "amount": 15
+    }
+   ],
+   "note": "Nutrition from Tesco's Growers Harvest purée label (double concentrate, same price). 1 tbsp is about 15 g."
+  },
+  {
+   "key": "tomatoes_chopped",
+   "name": "Chopped tomatoes (tin)",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "400 g tin",
+    "size": 400,
+    "pricePence": 47,
+    "priceDate": "2026-10-17",
+    "store": "Tesco"
+   },
+   "product": "Tesco Chopped Tomatoes 400g",
+   "url": null,
+   "per100": {
+    "kcal": 21,
+    "fat": 0.1,
+    "saturates": 0,
+    "carbs": 3.5,
+    "sugars": 3.4,
+    "fibre": 0.9,
+    "protein": 1.1,
+    "salt": 0.03
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "tin",
+     "amount": 400
+    }
+   ],
+   "note": "Typical values for tinned chopped tomatoes in juice. They count towards 5 a day."
+  },
+  {
+   "key": "veg_oil",
+   "name": "Vegetable oil (rapeseed)",
+   "unit": "ML",
+   "shelf": "OILS",
+   "pack": {
+    "label": "1 litre",
+    "size": 1000,
+    "pricePence": 145,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Pure Vegetable Oil 1L",
+   "url": "https://www.tesco.com/shop/en-GB/products/254918067",
+   "per100": {
+    "carbs": 0,
+    "fat": 92,
+    "fibre": 0,
+    "kcal": 828,
+    "protein": 0,
+    "salt": 0,
+    "saturates": 7.4,
+    "sugars": 0
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Converted from the label's per-100 g values (oil weighs about 0.92 g per ml)."
+  }
+ ],
+ "recipes": [
+  {
+   "key": "stir-fry",
+   "title": "Chicken & Vegetable Stir-Fry",
+   "shortTitle": "Stir-fry",
+   "tagline": "Fast, high-heat cooking: velveted chicken, crisp veg and a glossy pan sauce.",
+   "style": "Hob · fast, high heat",
+   "serves": 2,
+   "prepMins": 30,
+   "cookMins": 15,
+   "timeNote": "Rice cooks alongside, so it doesn't add to the total.",
+   "servedWith": "Served with rice (included in the numbers).",
+   "tags": [
+    "chicken",
+    "rice",
+    "quick"
+   ],
+   "rating": 0,
+   "notes": "",
+   "source": "CLAUDE",
+   "added": "2026-10-15",
+   "lines": [
+    {
+     "group": "Chicken",
+     "text": "2 chicken breast fillets (about 320 g), sliced about 1 cm thick against the grain",
+     "ingredient": "chicken_breast",
+     "quantity": 320,
+     "optional": false
+    },
+    {
+     "group": "Chicken",
+     "text": "1 tbsp cornflour (for velveting)",
+     "ingredient": "cornflour",
+     "quantity": 9,
+     "optional": false
+    },
+    {
+     "group": "Chicken",
+     "text": "1 tbsp light soy sauce (for velveting)",
+     "ingredient": "soy_light",
+     "quantity": 15,
+     "optional": false
+    },
+    {
+     "group": "Aromatics",
+     "text": "2 garlic cloves, minced",
+     "ingredient": "garlic",
+     "quantity": 10,
+     "optional": false
+    },
+    {
+     "group": "Aromatics",
+     "text": "1 tbsp grated fresh ginger",
+     "ingredient": "ginger",
+     "quantity": 6,
+     "optional": false
+    },
+    {
+     "group": "Aromatics",
+     "text": "1 bird's eye chilli, finely chopped",
+     "ingredient": "chilli",
+     "quantity": 1.5,
+     "optional": false
+    },
+    {
+     "group": "Vegetables",
+     "text": "1 onion, cut into wedges and separated into petals",
+     "ingredient": "onion",
+     "quantity": 150,
+     "optional": false
+    },
+    {
+     "group": "Vegetables",
+     "text": "1 head of broccoli (about 350 g), florets plus the sliced stalk",
+     "ingredient": "broccoli",
+     "quantity": 350,
+     "optional": false
+    },
+    {
+     "group": "Vegetables",
+     "text": "100 g green beans, trimmed",
+     "ingredient": "green_beans",
+     "quantity": 100,
+     "optional": false
+    },
+    {
+     "group": "Vegetables",
+     "text": "150 g chestnut mushrooms, sliced about 0.5 cm",
+     "ingredient": "mushroom_chestnut",
+     "quantity": 150,
+     "optional": false
+    },
+    {
+     "group": "Vegetables",
+     "text": "1 courgette, in half-moons",
+     "ingredient": "courgette",
+     "quantity": 220,
+     "optional": false
+    },
+    {
+     "group": "Vegetables",
+     "text": "2 tbsp neutral oil (vegetable or sunflower)",
+     "ingredient": "veg_oil",
+     "quantity": 30,
+     "optional": false
+    },
+    {
+     "group": "Sauce",
+     "text": "3 tbsp light soy sauce",
+     "ingredient": "soy_light",
+     "quantity": 45,
+     "optional": false
+    },
+    {
+     "group": "Sauce",
+     "text": "1 tbsp oyster sauce",
+     "ingredient": "oyster_sauce",
+     "quantity": 15,
+     "optional": true
+    },
+    {
+     "group": "Sauce",
+     "text": "1 tsp honey (set honey is fine)",
+     "ingredient": "honey",
+     "quantity": 7,
+     "optional": false
+    },
+    {
+     "group": "Sauce",
+     "text": "2 tsp cornflour",
+     "ingredient": "cornflour",
+     "quantity": 6,
+     "optional": false
+    },
+    {
+     "group": "Sauce",
+     "text": "4 tbsp water",
+     "ingredient": null,
+     "quantity": null,
+     "optional": false
+    },
+    {
+     "group": "Sauce",
+     "text": "Pinch of garlic powder",
+     "ingredient": "garlic_powder",
+     "quantity": 0.3,
+     "optional": false
+    },
+    {
+     "group": "To finish and serve",
+     "text": "1 tsp toasted sesame oil",
+     "ingredient": "sesame_oil",
+     "quantity": 5,
+     "optional": false
+    },
+    {
+     "group": "To finish and serve",
+     "text": "150 g long-grain rice (75 g per person)",
+     "ingredient": "rice",
+     "quantity": 150,
+     "optional": false
+    }
+   ],
+   "steps": [
+    {
+     "title": "Velvet the chicken",
+     "time": null,
+     "body": "Toss the sliced chicken with the cornflour and 1 tbsp soy, then leave it while you prep everything else. The thin coating shields the meat from the fierce heat, so it stays juicy."
+    },
+    {
+     "title": "Prep everything first",
+     "time": null,
+     "body": "Cut all the veg and line it up in cooking order. Once the pan is hot this dish moves in minutes, with no time to chop. Slicing tip: 15–20 min in the freezer firms the chicken up for cleaner slices."
+    },
+    {
+     "title": "Start the rice",
+     "time": null,
+     "body": "About 20 minutes before you want to eat. Rinse the rice until the water runs fairly clear, then use about 270 ml water for 150 g rice. Bring to the boil, lid on, lowest heat for 10–12 min. Don't peek or stir. Rest 5–10 min off the heat, then fluff with a fork."
+    },
+    {
+     "title": "Mix the sauce",
+     "time": null,
+     "body": "Stir together the soy, oyster sauce, honey, cornflour, water and garlic powder. The garlic powder goes in here rather than into the hot pan, where it would scorch."
+    },
+    {
+     "title": "Sear the chicken",
+     "time": null,
+     "body": "Heat 1 tbsp oil until hot but not screaming (ceramic pans don't like fierce heat). Add the chicken in a single layer and leave it to colour before turning. Cook until golden and just cooked through, then lift out."
+    },
+    {
+     "title": "Aromatics",
+     "time": "about 30 sec",
+     "body": "Add the rest of the oil, then the garlic, ginger and chilli. Stir for about 30 seconds, just until fragrant."
+    },
+    {
+     "title": "Firm veg",
+     "time": "about 2 min, then steam",
+     "body": "Add the broccoli and beans and stir-fry for 2 minutes. Add a splash of water, cover to steam briefly, then uncover and let the water cook off."
+    },
+    {
+     "title": "Medium veg",
+     "time": "2–3 min",
+     "body": "Add the onion and mushrooms, with room to brown rather than steam."
+    },
+    {
+     "title": "Courgette last",
+     "time": "1–2 min",
+     "body": "It softens fast, so keep some bite."
+    },
+    {
+     "title": "Combine",
+     "time": "about 1 min",
+     "body": "Return the chicken. Stir the sauce (the cornflour sinks to the bottom) and pour it in. Toss for about a minute until glossy and thickened, then take off the heat and stir in the sesame oil."
+    },
+    {
+     "title": "Serve",
+     "time": null,
+     "body": "Straight away, over the rice."
+    }
+   ],
+   "tips": [
+    "Lower-salt swap: most of this dish's salt comes from the soy sauce. Tesco's reduced-salt soy is the same price.",
+    "Sesame oil is a finishing oil. It burns if you fry with it, so it goes in at the end.",
+    "Wood or silicone utensils only on the ceramic pan.",
+    "Leftover rice: cool it within about an hour, refrigerate, eat within 1–2 days, and reheat once until piping hot."
+   ],
+   "equipment": [
+    "Ceramic non-stick pan or wok",
+    "Wood or silicone utensils",
+    "Saucepan with a lid for the rice"
+   ],
+   "storage": []
+  },
+  {
+   "key": "traybake",
+   "title": "Chicken, Potato & Vegetable Traybake",
+   "shortTitle": "Traybake",
+   "tagline": "Hands-off oven roasting, with the veg staged by density so everything finishes together.",
+   "style": "Oven · slow, dry heat",
+   "serves": 2,
+   "prepMins": 25,
+   "cookMins": 50,
+   "timeNote": "Add 20–30 min beforehand if you marinate the chicken.",
+   "servedWith": "Potatoes are the carb, so no rice needed.",
+   "tags": [
+    "chicken",
+    "oven",
+    "potatoes"
+   ],
+   "rating": 0,
+   "notes": "First cook: the courgette went mushy, the chicken was a little dry, and it wasn't quite filling. Now fixed in the method: thick courgette added last, chicken out at 75°C, and potatoes to make it a full meal.",
+   "source": "CLAUDE",
+   "added": "2026-10-15",
+   "lines": [
+    {
+     "group": "Main",
+     "text": "2 chicken breast fillets (about 320 g), butterflied to an even 1.5 cm, or cut into 3 cm chunks",
+     "ingredient": "chicken_breast",
+     "quantity": 320,
+     "optional": false
+    },
+    {
+     "group": "Main",
+     "text": "2 baking potatoes (about 500 g), in 2.5 cm chunks",
+     "ingredient": "potato",
+     "quantity": 500,
+     "optional": false
+    },
+    {
+     "group": "Vegetables",
+     "text": "200 g broccoli, cut into florets",
+     "ingredient": "broccoli",
+     "quantity": 200,
+     "optional": false
+    },
+    {
+     "group": "Vegetables",
+     "text": "100 g green beans, trimmed and halved",
+     "ingredient": "green_beans",
+     "quantity": 100,
+     "optional": false
+    },
+    {
+     "group": "Vegetables",
+     "text": "1 onion, cut into wedges",
+     "ingredient": "onion",
+     "quantity": 150,
+     "optional": false
+    },
+    {
+     "group": "Vegetables",
+     "text": "1 courgette, in 1.5 cm half-moons",
+     "ingredient": "courgette",
+     "quantity": 220,
+     "optional": false
+    },
+    {
+     "group": "Vegetables",
+     "text": "100 g chestnut mushrooms, halved",
+     "ingredient": "mushroom_chestnut",
+     "quantity": 100,
+     "optional": false
+    },
+    {
+     "group": "Vegetables",
+     "text": "150 g okra, whole or halved lengthways",
+     "ingredient": "okra",
+     "quantity": 150,
+     "optional": true
+    },
+    {
+     "group": "Vegetables",
+     "text": "3 garlic cloves, whole or smashed",
+     "ingredient": "garlic",
+     "quantity": 15,
+     "optional": false
+    },
+    {
+     "group": "Seasoning",
+     "text": "4 tbsp olive oil",
+     "ingredient": "olive_oil",
+     "quantity": 60,
+     "optional": false
+    },
+    {
+     "group": "Seasoning",
+     "text": "¾ tsp salt",
+     "ingredient": "salt",
+     "quantity": 4.5,
+     "optional": false
+    },
+    {
+     "group": "Seasoning",
+     "text": "½ tsp black pepper",
+     "ingredient": "black_pepper",
+     "quantity": 1.2,
+     "optional": false
+    },
+    {
+     "group": "Seasoning",
+     "text": "1 tsp smoked paprika",
+     "ingredient": "smoked_paprika",
+     "quantity": 2.4,
+     "optional": true
+    },
+    {
+     "group": "Seasoning",
+     "text": "1 lemon, to finish",
+     "ingredient": "lemon",
+     "quantity": 40,
+     "optional": false
+    }
+   ],
+   "steps": [
+    {
+     "title": "Marinate the chicken (optional)",
+     "time": null,
+     "body": "20–30 min ahead: oil, lemon and salt, or a spoonful of natural yoghurt. A before-you-start job."
+    },
+    {
+     "title": "Heat the oven",
+     "time": null,
+     "body": "200°C fan (220°C conventional / gas 7), before you start chopping, so it's properly hot when the tray goes in."
+    },
+    {
+     "title": "Prep everything",
+     "time": null,
+     "body": "Potatoes into 2.5 cm chunks (even size matters more than shape). Butterfly the chicken to an even 1.5 cm: hand flat on top, knife parallel to the board, open it like a book. Even thickness means even cooking."
+    },
+    {
+     "title": "Potatoes in first",
+     "time": "about 20 min",
+     "body": "Toss with 1 tbsp of the oil and a pinch of salt, and spread out with room. Roast about 20 minutes."
+    },
+    {
+     "title": "Dense veg",
+     "time": "about 10 min",
+     "body": "Toss the broccoli, beans, onion and okra in oil and seasoning, add to the tray and tuck in the garlic. Roast about 10 minutes."
+    },
+    {
+     "title": "Chicken and mushrooms",
+     "time": "about 5 min",
+     "body": "Oil and season them (paprika too, if using) and add to the tray. Roast about 5 minutes."
+    },
+    {
+     "title": "Courgette last",
+     "time": "about 12 min",
+     "body": "Thick-cut and with room, so it keeps some bite. Roast about 12 minutes more."
+    },
+    {
+     "title": "Check the chicken",
+     "time": null,
+     "body": "As soon as the thickest part reads 75°C, take it out. Leaving it longer is what dries it out."
+    },
+    {
+     "title": "Rest and finish",
+     "time": null,
+     "body": "Rest 5 minutes, squeeze over the lemon and serve."
+    }
+   ],
+   "tips": [
+    "Don't crowd the tray: crowded veg steams instead of browning. A second tray is the fix.",
+    "Extra-crispy potatoes: par-boil 8–10 min, drain, let them steam-dry, then roast.",
+    "Okra: trim the stem cap, halve lengthways, and wipe rather than soak.",
+    "The 4 tbsp of oil is roughly a third of this dish's calories. That's fine (olive oil is a good fat); it just explains the number.",
+    "Very hungry? Add half a potato per portion."
+   ],
+   "equipment": [
+    "Large oven tray (or two if it's packed)",
+    "Foil or baking paper (optional, for easier washing-up)",
+    "Meat thermometer"
+   ],
+   "storage": []
+  },
+  {
+   "key": "braise",
+   "title": "Chicken Thigh, Bacon & Vegetable Braise",
+   "shortTitle": "Braise",
+   "tagline": "Wet-heat cooking: browning, fond and deglazing, then a gentle covered simmer.",
+   "style": "Hob · wet heat",
+   "serves": 2,
+   "prepMins": 25,
+   "cookMins": 65,
+   "timeNote": "Rice cooks during the braise, so it doesn't add to the total.",
+   "servedWith": "Served with rice (included in the numbers).",
+   "tags": [
+    "chicken",
+    "rice",
+    "one pot"
+   ],
+   "rating": 0,
+   "notes": "First cook: good overall, but a strong burnt taste. The fond went black before it was scraped up. Now fixed in the method: deglaze after browning the chicken (and the mushrooms if needed), medium heat, and colour cues over timers.",
+   "source": "CLAUDE",
+   "added": "2026-10-15",
+   "lines": [
+    {
+     "group": "Main",
+     "text": "4 boneless, skinless chicken thighs (about 480 g)",
+     "ingredient": "chicken_thigh",
+     "quantity": 480,
+     "optional": false
+    },
+    {
+     "group": "Main",
+     "text": "2 streaky bacon rashers, snipped into 1 cm strips",
+     "ingredient": "bacon_streaky",
+     "quantity": 43,
+     "optional": false
+    },
+    {
+     "group": "Vegetables",
+     "text": "1 onion, diced about 1 cm",
+     "ingredient": "onion",
+     "quantity": 150,
+     "optional": false
+    },
+    {
+     "group": "Vegetables",
+     "text": "2 carrots, in 1.5 cm rounds",
+     "ingredient": "carrot",
+     "quantity": 160,
+     "optional": true
+    },
+    {
+     "group": "Vegetables",
+     "text": "150 g white mushrooms, halved (quartered if wider than about 4 cm)",
+     "ingredient": "mushroom_white",
+     "quantity": 150,
+     "optional": false
+    },
+    {
+     "group": "Vegetables",
+     "text": "3 garlic cloves, minced",
+     "ingredient": "garlic",
+     "quantity": 15,
+     "optional": false
+    },
+    {
+     "group": "Vegetables",
+     "text": "1 bird's eye chilli, finely chopped (fierce: use half, deseeded, if unsure)",
+     "ingredient": "chilli",
+     "quantity": 1.5,
+     "optional": true
+    },
+    {
+     "group": "Vegetables",
+     "text": "150 g green beans, trimmed and halved",
+     "ingredient": "green_beans",
+     "quantity": 150,
+     "optional": false
+    },
+    {
+     "group": "Braising liquid",
+     "text": "300 ml chicken stock (1 cube)",
+     "ingredient": "stock_cube",
+     "quantity": 10,
+     "optional": false
+    },
+    {
+     "group": "Braising liquid",
+     "text": "1 tbsp tomato purée",
+     "ingredient": "tomato_puree",
+     "quantity": 15,
+     "optional": false
+    },
+    {
+     "group": "Braising liquid",
+     "text": "1 tsp dried thyme or mixed herbs",
+     "ingredient": "thyme",
+     "quantity": 1,
+     "optional": false
+    },
+    {
+     "group": "Braising liquid",
+     "text": "1 bay leaf",
+     "ingredient": "bay",
+     "quantity": 0.2,
+     "optional": false
+    },
+    {
+     "group": "Seasoning and finish",
+     "text": "1 tbsp olive oil",
+     "ingredient": "olive_oil",
+     "quantity": 15,
+     "optional": false
+    },
+    {
+     "group": "Seasoning and finish",
+     "text": "½ tsp salt (add late, taste first)",
+     "ingredient": "salt",
+     "quantity": 3,
+     "optional": false
+    },
+    {
+     "group": "Seasoning and finish",
+     "text": "¼ tsp black pepper",
+     "ingredient": "black_pepper",
+     "quantity": 0.6,
+     "optional": false
+    },
+    {
+     "group": "Seasoning and finish",
+     "text": "½ lemon, to finish",
+     "ingredient": "lemon",
+     "quantity": 20,
+     "optional": false
+    },
+    {
+     "group": "To serve",
+     "text": "150 g long-grain rice (75 g per person)",
+     "ingredient": "rice",
+     "quantity": 150,
+     "optional": false
+    }
+   ],
+   "steps": [
+    {
+     "title": "Prep everything first",
+     "time": null,
+     "body": "Cut all the veg. Trim large fat blobs off the thighs and pat them really dry: a wet surface can't brown, it just steams until the water has gone."
+    },
+    {
+     "title": "Render the bacon",
+     "time": "about 6 min",
+     "body": "Into a cold pan, then turn to medium. Starting cold melts the fat out slowly instead of burning the meat first. Lift out with a slotted spoon and leave the fat."
+    },
+    {
+     "title": "Brown the chicken",
+     "time": "about 7 min",
+     "body": "Season, then medium heat (not medium-high), 3–4 min a side, left completely alone. Colour only, not cooked through. Remove."
+    },
+    {
+     "title": "Deglaze #1 — do not skip",
+     "time": null,
+     "body": "With the pan still hot, splash in about 50 ml of the stock and scrape the base immediately. Pour that liquid into a bowl and set it aside. The pan is now clean and the flavour is saved, which is what stops the fond burning during the later dry stages."
+    },
+    {
+     "title": "Brown the mushrooms",
+     "time": "about 5 min",
+     "body": "Cut face down, with room. They release water first and look wet; keep going until it has boiled off and they turn golden. Remove. If the base is darkening again, repeat the splash-and-scrape into the same bowl."
+    },
+    {
+     "title": "Flavour base",
+     "time": "6–8 min",
+     "body": "Medium heat, onion (and carrot if using) with a pinch of salt, until translucent and just catching gold. Salt draws moisture out and helps them soften rather than fry."
+    },
+    {
+     "title": "Garlic and chilli",
+     "time": "about 45 sec",
+     "body": "Just until fragrant. Garlic burns fast and turns bitter."
+    },
+    {
+     "title": "Liquid in",
+     "time": null,
+     "body": "Add the remaining stock plus the reserved deglazing liquid, the tomato purée, herbs and bay leaf, scraping the base once more. Tomato purée is sugary and scorches, so if the pan is hot, add it with the liquid rather than before it."
+    },
+    {
+     "title": "Braise gently",
+     "time": "about 25 min",
+     "body": "Return the chicken and its juices. The liquid should come roughly halfway up, not cover: that's the difference between a braise and a boil. Lazy, occasional bubbles only; lid on, lowest heat. About 15 minutes in, start the rice: rinse 150 g, about 270 ml water, boil, lid on, lowest heat 10–12 min, don't peek, then rest 5–10 min. If timing drifts, let the braise wait rather than the rice."
+    },
+    {
+     "title": "Beans, mushrooms and bacon back in",
+     "time": "about 8 min",
+     "body": "Lid on. Any longer and the beans go drab."
+    },
+    {
+     "title": "Check, reduce, finish",
+     "time": "about 5 min",
+     "body": "Thighs are safe at 75°C but nicer at 80–85°C. If the sauce is thin, lid off and bubble to reduce. Remove the bay leaf, taste, adjust salt and pepper, then add a squeeze of lemon: the acid snaps the rich, long-cooked flavours back into focus."
+    }
+   ],
+   "tips": [
+    "Judge browning by colour, not the timer: deep chestnut brown is the target; black is burnt.",
+    "If the fond ever goes black, wipe the pan out with kitchen paper and carry on with fresh oil. Losing it costs far less than the bitterness does.",
+    "Salt late: the stock cube and bacon are already salty, so taste before adding the ½ tsp. You may not need it all.",
+    "Thicker sauce: toss the thighs in 1 tbsp plain flour before browning.",
+    "Never put okra in this dish. Wet, saucy cooking is exactly where it goes slimy.",
+    "Instead of rice: crusty bread, or 2 potatoes in 2.5 cm chunks added at the braising step."
+   ],
+   "equipment": [
+    "Wide pan with a lid (foil pressed over the top works)",
+    "Slotted spoon",
+    "Wood or silicone utensils",
+    "An uncoated or stainless pan, or a lidded casserole, gives better fond than ceramic non-stick"
+   ],
+   "storage": []
+  },
+  {
+   "key": "chilli",
+   "title": "Beef, Bean & Lentil Chilli",
+   "shortTitle": "Chilli",
+   "tagline": "Browned mince, bloomed spices and red lentils that melt into the sauce. Cook once, eat one, freeze three.",
+   "style": "Hob · one pot · batch of 4 · freezes well",
+   "serves": 4,
+   "prepMins": 20,
+   "cookMins": 55,
+   "timeNote": "Allow about 1½ hours.",
+   "servedWith": "Served with 100 g rice per portion (included in the numbers).",
+   "tags": [
+    "beef",
+    "rice",
+    "batch",
+    "freezes well"
+   ],
+   "rating": 0,
+   "notes": "",
+   "source": "CLAUDE",
+   "added": "2026-10-17",
+   "lines": [
+    {
+     "group": "Main",
+     "text": "500 g lean beef mince (5% fat)",
+     "ingredient": "beef_mince_5",
+     "quantity": 500,
+     "optional": false
+    },
+    {
+     "group": "Main",
+     "text": "1 tbsp olive oil",
+     "ingredient": "olive_oil",
+     "quantity": 15,
+     "optional": false
+    },
+    {
+     "group": "Vegetables",
+     "text": "2 onions, diced about 1 cm",
+     "ingredient": "onion",
+     "quantity": 300,
+     "optional": false
+    },
+    {
+     "group": "Vegetables",
+     "text": "2 peppers (any colour), seeds and white pith removed, in 1.5 cm pieces",
+     "ingredient": "pepper_bell",
+     "quantity": 300,
+     "optional": false
+    },
+    {
+     "group": "Vegetables",
+     "text": "2 carrots, diced about 1 cm (small, so they soften in time)",
+     "ingredient": "carrot",
+     "quantity": 160,
+     "optional": false
+    },
+    {
+     "group": "Vegetables",
+     "text": "4 garlic cloves, minced",
+     "ingredient": "garlic",
+     "quantity": 20,
+     "optional": false
+    },
+    {
+     "group": "Vegetables",
+     "text": "1 bird's eye chilli, finely chopped (the heat)",
+     "ingredient": "chilli",
+     "quantity": 1.5,
+     "optional": true
+    },
+    {
+     "group": "Spice bowl",
+     "text": "2 tsp ground cumin",
+     "ingredient": "cumin",
+     "quantity": 4,
+     "optional": false
+    },
+    {
+     "group": "Spice bowl",
+     "text": "2 tsp mild chilli powder",
+     "ingredient": "chilli_powder",
+     "quantity": 5.4,
+     "optional": false
+    },
+    {
+     "group": "Spice bowl",
+     "text": "2 tsp smoked paprika",
+     "ingredient": "smoked_paprika",
+     "quantity": 4.8,
+     "optional": false
+    },
+    {
+     "group": "Spice bowl",
+     "text": "1 tsp mixed herbs",
+     "ingredient": "mixed_herbs",
+     "quantity": 1,
+     "optional": false
+    },
+    {
+     "group": "Sauce",
+     "text": "2 tbsp tomato purée",
+     "ingredient": "tomato_puree",
+     "quantity": 30,
+     "optional": false
+    },
+    {
+     "group": "Sauce",
+     "text": "2 × 400 g tins chopped tomatoes",
+     "ingredient": "tomatoes_chopped",
+     "quantity": 800,
+     "optional": false
+    },
+    {
+     "group": "Sauce",
+     "text": "100 g dried red split lentils, rinsed",
+     "ingredient": "red_lentils",
+     "quantity": 100,
+     "optional": false
+    },
+    {
+     "group": "Sauce",
+     "text": "2 × 400 g tins kidney beans, drained and rinsed",
+     "ingredient": "kidney_beans",
+     "quantity": 480,
+     "optional": false
+    },
+    {
+     "group": "Sauce",
+     "text": "1 stock cube (beef best, chicken fine)",
+     "ingredient": "stock_cube",
+     "quantity": 10,
+     "optional": false
+    },
+    {
+     "group": "Sauce",
+     "text": "400 ml boiling water, for the stock",
+     "ingredient": null,
+     "quantity": null,
+     "optional": false
+    },
+    {
+     "group": "Finish and serve",
+     "text": "¼ tsp black pepper",
+     "ingredient": "black_pepper",
+     "quantity": 0.6,
+     "optional": false
+    },
+    {
+     "group": "Finish and serve",
+     "text": "Salt only after tasting (up to ¼ tsp)",
+     "ingredient": "salt",
+     "quantity": 1.5,
+     "optional": true
+    },
+    {
+     "group": "Finish and serve",
+     "text": "½ lemon or a lime",
+     "ingredient": "lemon",
+     "quantity": 20,
+     "optional": false
+    },
+    {
+     "group": "Finish and serve",
+     "text": "400 g rice (100 g per portion), cooked fresh each time",
+     "ingredient": "rice",
+     "quantity": 400,
+     "optional": false
+    }
+   ],
+   "steps": [
+    {
+     "title": "Prep everything",
+     "time": "~20 min",
+     "body": "Chop the veg. Tip all four spices into one small bowl: they cook in under a minute, so there's no time to open jars later. Make the stock. Rinse the lentils in the sieve until the water runs mostly clear, and pick out any tiny stones. Drain and rinse the beans. Open the tomato tins."
+    },
+    {
+     "title": "Brown the mince",
+     "time": "~10 min",
+     "body": "Oil in the pot, then the mince. Press it into one flat layer and leave it alone for 4–5 min, then break it up with the spoon. Grey liquid will pool: that's water leaving the meat. Keep going until it boils away.\n\nReady when: the bubbling turns to a sizzle and the pieces are brown and crumbly."
+    },
+    {
+     "title": "Veg in",
+     "time": "8–10 min",
+     "body": "Onion, carrot, pepper and a pinch of salt straight in with the mince. Their water lifts the brown bits off the base as they cook.\n\nReady when: the onion is soft and see-through.\n\nIf the base goes darker than chestnut brown: splash in about 50 ml of the stock and scrape."
+    },
+    {
+     "title": "Garlic and chilli",
+     "time": "~1 min",
+     "body": "Stir until fragrant."
+    },
+    {
+     "title": "Bloom the spices",
+     "time": "30–45 sec",
+     "body": "Heat down to medium-low, tip in the spice bowl and stir constantly. The flavour dissolves into the hot fat and loses its raw, dusty taste.\n\nReady when: it smells strongly fragrant and darkens slightly.\n\nIf it smells acrid or looks black: go straight to the next step. The liquid stops it instantly."
+    },
+    {
+     "title": "Liquid in",
+     "time": null,
+     "body": "Tomatoes, tomato purée, stock, lentils and pepper, scraping the base. The purée goes in with the liquid because its sugar scorches in a dry pan. Bring to a bubble."
+    },
+    {
+     "title": "Simmer",
+     "time": "~25 min",
+     "body": "Lid ajar so water escapes and the sauce thickens. Low–medium, steady gentle bubbles. Stir every 5 min, scraping the bottom, because lentils sink and stick. If it gets very thick before the lentils soften, add about 100 ml water.\n\nReady when: the lentils have mostly melted into the sauce with no chalky bite.\n\nEating tonight? Start the rice now: 100 g rice to about 180 ml water."
+    },
+    {
+     "title": "Beans in",
+     "time": "~10 min",
+     "body": "They're already cooked, so they only need heating through. Adding them late keeps them whole.\n\nReady when: a spoon dragged across the base leaves a trail that stays open for a second."
+    },
+    {
+     "title": "Taste and finish",
+     "time": null,
+     "body": "Taste before adding any salt: the stock cube is already salty. Squeeze in the lemon to lift the rich, long-cooked flavour."
+    }
+   ],
+   "tips": [
+    "Medium heat unless a step says otherwise. Timers are guides; the cues win.",
+    "Tesco's 20% fat mince (£3.25 for 500 g) makes it about 45p a portion cheaper, with about 20 g more fat and 8.5 g more saturates per portion, less whatever you spoon off.",
+    "Lower salt: use a reduced-salt stock cube or skip the final salt.",
+    "More energy: more rice (25 g extra adds about 90 kcal), 30 g grated cheddar (about +125 kcal and +7 g protein) or a tortilla wrap."
+   ],
+   "equipment": [
+    "A pot of at least 4 litres, with a lid. It makes about 3 litres. If yours is smaller, brown the mince in a frying pan, then move everything into your biggest saucepan.",
+    "Sieve or colander, wooden spoon, small bowl for the spices, jug for the stock.",
+    "4 freezer containers of about 750 ml, plus tape and a pen for labels."
+   ],
+   "storage": [
+    "Cool fast. Portion straight into containers, lids off until the steam stops, then freeze within 2 hours. Never put the whole hot pot in the fridge.",
+    "Leave a 1–2 cm gap at the top: liquid expands as it freezes.",
+    "Label with the name and date. Best within about 3 months.",
+    "Freeze the chilli, not the rice. Cook rice fresh; it's the risky one to reheat.",
+    "Defrost in the fridge overnight and eat within 24 hours.",
+    "Reheat until piping hot and steaming all the way through. In the microwave, stir halfway to kill cold spots. Reheat once, never refreeze.",
+    "Mince bought frozen? Defrost it, cook it, then freeze the chilli. Never refreeze raw meat that has been defrosted."
+   ]
+  }
+ ]
+}
