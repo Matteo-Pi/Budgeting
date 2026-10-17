@@ -19,6 +19,7 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptionsBuilder
 import androidx.navigation.compose.currentBackStackEntryAsState
+import io.github.matteopi.budgeting.data.settings.AppSection
 import io.github.matteopi.budgeting.ui.components.AppIcons
 
 private data class BottomBarItem(val route: Route, val label: String, val icon: ImageVector)
@@ -45,25 +46,44 @@ fun BudgetBottomBar(navController: NavHostController) {
     // stack never piles up. Sub-screens left open (an account page, Regular costs, ...) are not brought
     // back: the routes are flat, so a restored sub-screen would leave no tab highlighted and tapping the
     // tab again would restore the same sub-screen instead of the tab.
-    TabBar(navController, bottomBarItems) { popUpTo<Route.Home>() }
+    TabBar(
+        navController = navController,
+        items = bottomBarItems,
+        section = AppSection.BUDGETING,
+        firstTabOnStack = { runCatching { navController.getBackStackEntry<Route.Home>() }.isSuccess },
+    ) { popUpTo<Route.Home>() }
 }
 
 /** The Recipes section's 4-item bottom bar: Recipes, Compare, Shopping, Ingredients (docs/PLAN.md §11.8). */
 @Composable
 fun RecipesBottomBar(navController: NavHostController) {
     // The same as Budgeting's, with the Recipes tab as the first screen.
-    TabBar(navController, recipesBarItems) { popUpTo<Route.Recipes>() }
+    TabBar(
+        navController = navController,
+        items = recipesBarItems,
+        section = AppSection.RECIPES,
+        firstTabOnStack = { runCatching { navController.getBackStackEntry<Route.Recipes>() }.isSuccess },
+    ) { popUpTo<Route.Recipes>() }
 }
 
-/** A bottom bar of [items]; [popUp] says which screen a tapped tab pops back to (the section's first tab). */
+/**
+ * A bottom bar of [items] (the first is the section's first tab); [popUp] pops back to that first tab.
+ *
+ * The first tab can be missing from the back stack: a shared receipt opened while the app was in the other
+ * section sits on top of that section's screens. A tap then switches section first (clearing the stack and
+ * saving [section], as the top-left switch does), so the screens never pile up.
+ */
 @Composable
 private fun TabBar(
     navController: NavHostController,
     items: List<BottomBarItem>,
+    section: AppSection,
+    firstTabOnStack: () -> Boolean,
     popUp: NavOptionsBuilder.() -> Unit,
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val destination = backStackEntry?.destination
+    val switchSection = LocalSectionSwitch.current
 
     NavigationBar {
         items.forEach { item ->
@@ -72,9 +92,14 @@ private fun TabBar(
                 selected = selected,
                 onClick = {
                     if (!selected) {
-                        navController.navigate(item.route) {
-                            popUp()
-                            launchSingleTop = true
+                        val stale = switchSection != null && !firstTabOnStack()
+                        // Switching leaves the section's first tab open, so only another tab is navigated to.
+                        if (stale) switchSection?.invoke(section)
+                        if (!stale || item != items.first()) {
+                            navController.navigate(item.route) {
+                                popUp()
+                                launchSingleTop = true
+                            }
                         }
                     }
                 },

@@ -1830,7 +1830,8 @@ portion makes the pulses cap give exactly 1.
   - The app opens in the last-used section: the start destination is `Route.Recipes` when
     `appSection` is `RECIPES` and onboarding is done.
 - **Other entry points**: shared receipts and statements, quick add and the widget still open their
-  Budgeting screens on top of whatever is showing.
+  Budgeting screens on top of whatever is showing. A bottom-bar tap whose section's first tab isn't on the back
+  stack (a receipt opened over Recipes) switches section first, so screens never pile up.
 
 **Bottom bars**
 - **Budgeting** (unchanged): Home · Activity · Forecast · Plan · Insights.
