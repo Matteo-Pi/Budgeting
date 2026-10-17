@@ -11,8 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -82,37 +83,31 @@ internal fun CheckStep(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        LazyColumn(
-            modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
+        // A plain scrolling column, not a LazyColumn: a statement raises a handful of questions, and with every
+        // card composed, answering one never makes the list drop cards or jump back to an earlier position.
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (duplicateCount > 1) {
-                item(key = "all-duplicates") {
-                    OutlinedButton(onClick = onAnswerAllDuplicates, modifier = Modifier.fillMaxWidth()) {
-                        Text(CheckText.ALL_DUPLICATES)
-                    }
+                OutlinedButton(onClick = onAnswerAllDuplicates, modifier = Modifier.fillMaxWidth()) {
+                    Text(CheckText.ALL_DUPLICATES)
                 }
             }
-            items(questions.filter { it !is BalanceGap }, key = { it.id }) { question ->
-                QuestionCard(
-                    question = question,
-                    answer = check.answers[question.id],
-                    state = state,
-                    othersAnswered = othersAnswered,
-                    onAnswer = { answer -> onAnswer(question.id, answer) },
-                )
-            }
-        }
-        // The balance card stays in view above the buttons: it changes as the other questions are answered.
-        questions.firstOrNull { it is BalanceGap }?.let { gap ->
-            Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp)) {
-                QuestionCard(
-                    question = gap,
-                    answer = check.answers[gap.id],
-                    state = state,
-                    othersAnswered = othersAnswered,
-                    onAnswer = { answer -> onAnswer(gap.id, answer) },
-                )
+            // The balance card comes last: it changes as the other questions are answered.
+            questions.sortedBy { it is BalanceGap }.forEach { question ->
+                key(question.id) {
+                    QuestionCard(
+                        question = question,
+                        answer = check.answers[question.id],
+                        state = state,
+                        othersAnswered = othersAnswered,
+                        onAnswer = { answer -> onAnswer(question.id, answer) },
+                    )
+                }
             }
         }
         Column(modifier = Modifier.padding(16.dp)) {
