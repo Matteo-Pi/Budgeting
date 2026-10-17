@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
+import io.github.matteopi.budgeting.data.settings.AppSection
 import io.github.matteopi.budgeting.data.settings.AppTheme
 import io.github.matteopi.budgeting.data.settings.DarkMode
 import io.github.matteopi.budgeting.ui.importer.PdfStatementReader
@@ -70,12 +71,19 @@ class MainActivity : FragmentActivity() {
                         }
                     }
 
-                    // Captured once, from the first settings emission, so it never changes the
-                    // NavHost's start destination out from under an already-composed graph.
+                    // Captured once, from the first emission of both flows (the settings and the last-used
+                    // section), so it never changes the NavHost's start destination out from under an
+                    // already-composed graph. After onboarding the app opens in the section last used.
+                    val appSection by container.settingsStore.appSection.collectAsStateWithLifecycle(initialValue = null)
+                    val lastSection = appSection
                     var startDestination by remember { mutableStateOf<Route?>(null) }
-                    LaunchedEffect(settings?.onboardingDone) {
-                        if (startDestination == null) {
-                            settings?.let { startDestination = if (it.onboardingDone) Route.Home else Route.Onboarding }
+                    LaunchedEffect(settings?.onboardingDone, lastSection) {
+                        if (startDestination == null && settings != null && lastSection != null) {
+                            startDestination = when {
+                                !settings.onboardingDone -> Route.Onboarding
+                                lastSection == AppSection.RECIPES -> Route.Recipes
+                                else -> Route.Home
+                            }
                         }
                     }
 

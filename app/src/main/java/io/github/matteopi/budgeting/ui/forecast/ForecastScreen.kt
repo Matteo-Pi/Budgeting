@@ -43,11 +43,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.matteopi.budgeting.core.forecast.BudgetPeriod
 import io.github.matteopi.budgeting.data.settings.AccountView
+import io.github.matteopi.budgeting.data.settings.AppSection
 import io.github.matteopi.budgeting.ui.components.AccountViewSelector
 import io.github.matteopi.budgeting.ui.components.ForecastErrorCard
 import io.github.matteopi.budgeting.ui.components.MoneyText
 import io.github.matteopi.budgeting.ui.components.SectionCard
 import io.github.matteopi.budgeting.ui.components.charts.ForecastChart
+import io.github.matteopi.budgeting.ui.navigation.SectionSwitchButton
 
 /**
  * The Forecast tab: horizon chips, the P10-P90 chart, the risk sentence, lumpy-income budget
@@ -67,7 +69,12 @@ fun ForecastScreen(
 
     Scaffold(
         modifier = modifier,
-        topBar = { TopAppBar(title = { Text("Forecast") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Forecast") },
+                navigationIcon = { SectionSwitchButton(AppSection.BUDGETING) },
+            )
+        },
     ) { innerPadding ->
         val result = state.result
         val chart = state.chart

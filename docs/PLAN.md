@@ -1239,6 +1239,12 @@ now an overlay); daily worker snapshots before any account exists and its widget
   fixed 2025 dates so months can be named); test tags are in `AccountHistoryTags`. Beware two screens with the
   same field label when a sheet opens over a screen (`field(label)` takes the first match): that is why the
   history's category filter is "Filter by category".
+- **Sections (2026-10-17)**: device `ui/SectionSwitchTest` (screenshots `sections-*`): the switch from Home to Recipes and
+  back with each section's own tabs and no tab of the other, the switch on every tab and not on a sub-screen, the last
+  section reopening on launch, and Back on the Recipes tab leaving the app (from Android 12 a root launcher activity is
+  moved to the back, not destroyed, so the test waits for it to stop being resumed). The Recipes tabs are placeholders
+  until their packages land; the test looks only at the bars, the switch, the Recipes tab's "Recipe settings" action
+  and a sub-screen's "Back", so it keeps passing when they are replaced. JVM `AppSectionTest` covers parsing.
 - UI test conventions: tap through `UiTest.tap` (waits for the target to stop moving: screens
   resize for the keyboard), pick dates with `chooseInDatePicker` (Material 3 day cells carry the
   full date as text), reach cards far down a list with `swipeListUp`, and never address a field by

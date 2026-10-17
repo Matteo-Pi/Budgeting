@@ -34,6 +34,7 @@ import io.github.matteopi.budgeting.core.model.Category
 import io.github.matteopi.budgeting.core.model.Flow as CategoryFlow
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.Regime
+import io.github.matteopi.budgeting.data.settings.AppSection
 import io.github.matteopi.budgeting.ui.components.AccountViewSelector
 import io.github.matteopi.budgeting.ui.components.EmptyState
 import io.github.matteopi.budgeting.ui.components.MoneyText
@@ -48,6 +49,7 @@ import io.github.matteopi.budgeting.ui.components.charts.StackedBarSegment
 import io.github.matteopi.budgeting.ui.components.charts.WeeklyStackedBarChart
 import io.github.matteopi.budgeting.ui.components.charts.rememberChartColors
 import io.github.matteopi.budgeting.ui.forecast.toShortLabel
+import io.github.matteopi.budgeting.ui.navigation.SectionSwitchButton
 
 /**
  * The Insights tab: weekly spending by category, this month vs. average, term vs. holiday
@@ -76,7 +78,12 @@ fun InsightsScreen(
 
     Scaffold(
         modifier = modifier,
-        topBar = { TopAppBar(title = { Text("Insights") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Insights") },
+                navigationIcon = { SectionSwitchButton(AppSection.BUDGETING) },
+            )
+        },
     ) { innerPadding ->
         LazyColumn(
             state = listState,

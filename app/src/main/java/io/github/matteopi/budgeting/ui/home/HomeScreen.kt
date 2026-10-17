@@ -58,6 +58,7 @@ import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.SinkingFund
 import io.github.matteopi.budgeting.core.model.ZeroPoint
 import io.github.matteopi.budgeting.data.settings.AccountView
+import io.github.matteopi.budgeting.data.settings.AppSection
 import io.github.matteopi.budgeting.data.settings.displayName
 import io.github.matteopi.budgeting.domain.PendingItem
 import io.github.matteopi.budgeting.ui.activity.ActivityRow
@@ -67,6 +68,7 @@ import io.github.matteopi.budgeting.ui.components.AccountViewChip
 import io.github.matteopi.budgeting.ui.components.ForecastErrorCard
 import io.github.matteopi.budgeting.ui.components.MoneyText
 import io.github.matteopi.budgeting.ui.components.SectionCard
+import io.github.matteopi.budgeting.ui.navigation.SectionSwitchButton
 import java.time.LocalDate
 
 /** The Home tab: safe-to-spend hero, cards, accounts, mini forecast and recent activity (WP-U2). */
@@ -93,6 +95,7 @@ fun HomeScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Budgeting") },
+                navigationIcon = { SectionSwitchButton(AppSection.BUDGETING) },
                 actions = {
                     IconButton(onClick = onOpenSettings) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings")
