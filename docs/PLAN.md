@@ -1278,6 +1278,8 @@ now an overlay); daily worker snapshots before any account exists and its widget
       card, a portion added, an ingredient archived; the list summing two recipes, *I have it*, ticks, free text
       and *Clear ticked*.
     - `data/RecipeBundleImportTest`: the JSON import path without the picker.
+    - `ui/ReceiptPricesInRecipesTest` (`receipt-prices-*`): a receipt for the onions' linked product changes the
+      stir-fry card and shows as "paid £1.20 at Tesco" on the Ingredients tab.
   - **JVM tests** (`app/src/test/.../ui/food/`): `FoodMappingsTest` (cards, Compare order and best marks, scaled
     lines on the starter book), `ReviewRulesTest`, `FoodTextsTest` and `IngredientFormRulesTest`.
   - **Screens**: the review and the recipe page are plain scrolling columns rather than lazy lists, so every field
