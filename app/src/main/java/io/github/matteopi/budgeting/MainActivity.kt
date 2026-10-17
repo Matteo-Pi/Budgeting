@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
+import io.github.matteopi.budgeting.core.recipes.RecipeText
 import io.github.matteopi.budgeting.data.settings.AppSection
 import io.github.matteopi.budgeting.data.settings.AppTheme
 import io.github.matteopi.budgeting.data.settings.DarkMode
@@ -141,6 +142,13 @@ class MainActivity : FragmentActivity() {
                 val shared = Intent(intent)
                 val app = application as BudgetApp
                 app.container.appScope.launch {
+                    // Shared text that reads as a recipe (an Ingredients heading and a method) opens the recipe
+                    // review instead (docs/PLAN.md §11.8); a receipt never has those headings.
+                    val text = shared.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()
+                    if (!shared.hasExtra(Intent.EXTRA_STREAM) && text != null && RecipeText.looksLikeRecipe(text)) {
+                        receiptRequest.value = Route.AddRecipe(textPath = ReceiptFiles.writeText(app, text).absolutePath)
+                        return@launch
+                    }
                     val review = ReceiptFiles.importShared(app, shared)
                     val route: Route? = if (
                         review != null &&

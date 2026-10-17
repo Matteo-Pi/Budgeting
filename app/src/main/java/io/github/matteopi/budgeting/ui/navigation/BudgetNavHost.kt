@@ -24,11 +24,16 @@ import io.github.matteopi.budgeting.ui.accounts.AccountDetailScreen
 import io.github.matteopi.budgeting.ui.accounts.AccountEditScreen
 import io.github.matteopi.budgeting.ui.accounts.AccountHistoryScreen
 import io.github.matteopi.budgeting.ui.activity.ActivityScreen
-import io.github.matteopi.budgeting.ui.components.PlaceholderScreen
 import io.github.matteopi.budgeting.ui.food.CompareScreen
 import io.github.matteopi.budgeting.ui.food.IngredientsScreen
+import io.github.matteopi.budgeting.ui.food.RecipeSettingsScreen
 import io.github.matteopi.budgeting.ui.food.RecipesScreen
 import io.github.matteopi.budgeting.ui.food.ShoppingScreen
+import io.github.matteopi.budgeting.ui.food.ingredient.IngredientEditScreen
+import io.github.matteopi.budgeting.ui.food.recipe.CookingScreen
+import io.github.matteopi.budgeting.ui.food.recipe.RecipeDetailScreen
+import io.github.matteopi.budgeting.ui.food.review.AddRecipeScreen
+import io.github.matteopi.budgeting.ui.food.review.EditRecipeScreen
 import io.github.matteopi.budgeting.ui.forecast.AccuracyScreen
 import io.github.matteopi.budgeting.ui.forecast.ForecastScreen
 import io.github.matteopi.budgeting.ui.forecast.PredictionsScreen
@@ -306,36 +311,70 @@ fun BudgetNavHost(
                     ReceiptReviewScreen(path = args.path, kind = args.kind, onBack = { navController.popBackStack() })
                 }
 
-                // ----- The Recipes section (docs/PLAN.md §11.8). The sub-screens are placeholders for now. -----
+                // ----- The Recipes section (docs/PLAN.md §11.8). -----
                 composable<Route.Recipes> {
-                    RecipesScreen(onOpenSettings = { navController.navigate(Route.RecipeSettings) })
+                    RecipesScreen(
+                        onOpenSettings = { navController.navigate(Route.RecipeSettings) },
+                        onOpenRecipe = { id -> navController.navigate(Route.RecipeDetail(id)) },
+                        onAddRecipe = { navController.navigate(Route.AddRecipe()) },
+                    )
                 }
                 composable<Route.Compare> {
-                    CompareScreen()
+                    CompareScreen(onOpenRecipe = { id -> navController.navigate(Route.RecipeDetail(id)) })
                 }
                 composable<Route.Shopping> {
                     ShoppingScreen()
                 }
                 composable<Route.Ingredients> {
-                    IngredientsScreen()
+                    IngredientsScreen(
+                        onAddIngredient = { navController.navigate(Route.IngredientEdit()) },
+                        onOpenIngredient = { id -> navController.navigate(Route.IngredientEdit(id)) },
+                    )
                 }
-                composable<Route.RecipeDetail> {
-                    PlaceholderScreen(title = "Recipe", onBack = { navController.popBackStack() })
+                composable<Route.RecipeDetail> { backStackEntry ->
+                    val args = backStackEntry.toRoute<Route.RecipeDetail>()
+                    RecipeDetailScreen(
+                        recipeId = args.recipeId,
+                        onBack = { navController.popBackStack() },
+                        onCook = { id -> navController.navigate(Route.Cooking(id)) },
+                        onEdit = { id -> navController.navigate(Route.EditRecipe(id)) },
+                    )
                 }
-                composable<Route.Cooking> {
-                    PlaceholderScreen(title = "Cooking", onBack = { navController.popBackStack() })
+                composable<Route.Cooking> { backStackEntry ->
+                    val args = backStackEntry.toRoute<Route.Cooking>()
+                    CookingScreen(recipeId = args.recipeId, onBack = { navController.popBackStack() })
                 }
-                composable<Route.AddRecipe> {
-                    PlaceholderScreen(title = "Add recipe", onBack = { navController.popBackStack() })
+                composable<Route.AddRecipe> { backStackEntry ->
+                    val args = backStackEntry.toRoute<Route.AddRecipe>()
+                    AddRecipeScreen(
+                        textPath = args.textPath,
+                        onBack = { navController.popBackStack() },
+                        // The new recipe replaces the add screen, so Back from it returns to where adding started.
+                        onSaved = { id ->
+                            navController.navigate(Route.RecipeDetail(id)) {
+                                popUpTo<Route.AddRecipe> { inclusive = true }
+                            }
+                        },
+                    )
                 }
-                composable<Route.EditRecipe> {
-                    PlaceholderScreen(title = "Edit recipe", onBack = { navController.popBackStack() })
+                composable<Route.EditRecipe> { backStackEntry ->
+                    val args = backStackEntry.toRoute<Route.EditRecipe>()
+                    EditRecipeScreen(
+                        recipeId = args.recipeId,
+                        onBack = { navController.popBackStack() },
+                        onSaved = { navController.popBackStack() },
+                    )
                 }
-                composable<Route.IngredientEdit> {
-                    PlaceholderScreen(title = "Ingredient", onBack = { navController.popBackStack() })
+                composable<Route.IngredientEdit> { backStackEntry ->
+                    val args = backStackEntry.toRoute<Route.IngredientEdit>()
+                    IngredientEditScreen(
+                        ingredientId = args.ingredientId,
+                        onBack = { navController.popBackStack() },
+                        onOpenRecipe = { id -> navController.navigate(Route.RecipeDetail(id)) },
+                    )
                 }
                 composable<Route.RecipeSettings> {
-                    PlaceholderScreen(title = "Recipe settings", onBack = { navController.popBackStack() })
+                    RecipeSettingsScreen(onBack = { navController.popBackStack() })
                 }
             }
         }

@@ -1261,6 +1261,27 @@ now an overlay); daily worker snapshots before any account exists and its widget
   moved to the back, not destroyed, so the test waits for it to stop being resumed). The Recipes tabs are placeholders
   until their packages land; the test looks only at the bars, the switch, the Recipes tab's "Recipe settings" action
   and a sub-screen's "Back", so it keeps passing when they are replaced. JVM `AppSectionTest` covers parsing.
+- **Recipes screens (2026-10-17)**:
+  - **Device tests** (seeds and helpers in `testing/FoodTestSupport.kt`, among them `tagged(tag, text)` for a tag
+    whose text may be on a child node):
+    - `ui/RecipesViewTest` (`recipes-*`): the starter book added from the empty state with the checkpoint numbers
+      on its cards; the chilli's page with cue boxes, storage and 6 servings; optional extras off on the traybake;
+      a rating and a note kept.
+    - `ui/CookingAndCompareTest` (`cooking-*`, `compare-*`): ticks kept until *Done cooking*, the screen kept on
+      only while cooking, and Compare sorted by cost and by protein.
+    - `ui/AddRecipeTest` (`add-recipe-*`):
+      - the chilli pasted, with the rice and lemon suggestions taken and the water not counted, at £2.54 and
+        897 kcal;
+      - an ingredient created on the review that matches by itself next time;
+      - recipe text shared into the app opening the review, while receipt text still opens the receipt review.
+    - `ui/IngredientsAndShoppingTest` (`ingredients-*`, `shopping-*`): a new onion price changing the stir-fry
+      card, a portion added, an ingredient archived; the list summing two recipes, *I have it*, ticks, free text
+      and *Clear ticked*.
+    - `data/RecipeBundleImportTest`: the JSON import path without the picker.
+  - **JVM tests** (`app/src/test/.../ui/food/`): `FoodMappingsTest` (cards, Compare order and best marks, scaled
+    lines on the starter book), `ReviewRulesTest`, `FoodTextsTest` and `IngredientFormRulesTest`.
+  - **Screens**: the review and the recipe page are plain scrolling columns rather than lazy lists, so every field
+    stays composed (see the import check step's lesson).
 - UI test conventions: tap through `UiTest.tap` (waits for the target to stop moving: screens
   resize for the keyboard), pick dates with `chooseInDatePicker` (Material 3 day cells carry the
   full date as text), reach cards far down a list with `swipeListUp`, and never address a field by
@@ -1754,7 +1775,7 @@ Choosing an ingredient on the review screen learns the alias, so the next recipe
     editor says to check it against the pack.
 - **Manifest and settings**:
   - `android.permission.INTERNET` is added for this one feature. No other code may use the network.
-  - Settings → Recipes explains exactly what is sent (the barcode number only) and when (only when the
+  - Recipe settings (the Recipes tab's settings action) explains exactly what is sent (the barcode number only) and when (only when the
     user scans with the setting on).
 
 ### 11.6 Shopping list (`ShoppingList.build(entries, ingredients, prices)`)
@@ -1800,10 +1821,10 @@ wrong format, a newer version, a line pointing at a missing key, a bad unit.
   chilli's per-ingredient values were written out for the first time.
 - `RecipeBundle.starter()` reads it from the classpath; it ends up in the APK as a Java resource of
   the core jar.
-- It is offered by the Recipes empty state ("Add the starter recipes") and in Settings → Recipes.
+- It is offered by the Recipes empty state ("Add the starter recipes") and in Recipe settings.
   Adding it again asks first.
 
-**Other bundles**: Settings → Data → *Import recipes (JSON)* uses the system file picker
+**Other bundles**: *Import recipes (JSON)* in Recipe settings (the Recipes tab's settings action) uses the system file picker
 (`OpenDocument` with `application/json`, `text/plain` and `application/octet-stream`). It is
 deliberately not a share target: shared files already go to receipts and statements.
 
@@ -1903,7 +1924,7 @@ portion makes the pulses cap give exactly 1.
   either numbered lines or a "Method"/"Steps"/"Instructions" heading, it opens the recipe review in
   the Recipes section instead of the receipt review.
 
-**Settings → Recipes**
+**Recipe settings** (`Route.RecipeSettings`, from the Recipes tab's top bar)
 - *Count optional extras*.
 - *Look up barcodes online*, with the explanation.
 - *Add the starter recipes*.
@@ -1937,7 +1958,7 @@ fixed.
 **F3 app UI**
 - The section switch and Recipes bottom bar.
 - Recipes, Recipe, Cooking, Add recipe → review, Ingredients and the ingredient editor (typed
-  values, portions, product link picker), Compare, Shopping, and Settings → Recipes.
+  values, portions, product link picker), Compare, Shopping, and Recipe settings.
 - Device tests with screenshots: switching sections both ways and Back leaving the app from Recipes;
   adding the starter recipes and reading the stir-fry card (£3.09, 804 kcal); scaling to 3; the
   cooking view ticks; pasting the chilli's text and saving it; compare sorting; building a shopping
