@@ -1203,10 +1203,16 @@ transactions before their import batches (FK failure); app lock rebuilding navig
 now an overlay); daily worker snapshots before any account exists and its widget refresh.
 
 ### Testing (2026-09-29)
-- **Core** (`./gradlew -p core test`): 573 JVM tests (2026-10-16, with the Santander PDF importer and the import
-  checks), including
+- **Core** (`./gradlew -p core test`): 773 JVM tests (2026-10-17: 573 before the Recipes section's core, which adds 200), including
   stress/metamorphic suites and a 20,000-budget soak (`core/src/test/.../stress/`); forecast invariants include
   "expected spending + expected income = expected learned flow".
+- **Recipes core** (`core/src/test/.../recipes/`, 200 tests): the §11.7 checkpoint table on the decoded starter book
+  (`StarterCheckpointsTest`), every starter ingredient line parsed and resolved against its ingredient with the two
+  known exceptions (`IngredientLinesTest`), every starter line name matched among all 40 ingredients
+  (`IngredientMatchingTest`), paste-format round trips of all four recipes and the §11.4 example (`RecipeTextTest`),
+  plus `RecipeMathsTest` (the braise rounding, the pulses cap), `TrafficLightsTest` (every boundary), `PricesTest`,
+  `ShoppingListTest`, `RecipeStepsTest`, `RecipeBundleTest`, `QuantitiesTest`, `RecipeModelsTest` and
+  `RecipeRobustnessTest` (random pastes never throw).
 - **Device tests** (`app/src/androidTest`, run by CI's `device-tests` job on two API 34 emulators
   in parallel shards, merged by `device-report`; report and screenshots on `refs/ci/device-report`): data layer against the real Room database
   (`data/`), end-to-end UI with screenshots (`ui/`, helpers in `testing/UiTestSupport.kt`), and the
