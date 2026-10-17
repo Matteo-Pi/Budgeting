@@ -1,5 +1,6 @@
 package io.github.matteopi.budgeting.ui.food.ingredient
 
+import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,22 +24,27 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -52,6 +58,11 @@ import io.github.matteopi.budgeting.ui.components.ConfirmDialog
 import io.github.matteopi.budgeting.ui.components.EmptyState
 import io.github.matteopi.budgeting.ui.components.OptionalDateField
 import io.github.matteopi.budgeting.ui.components.SectionCard
+import io.github.matteopi.budgeting.ui.food.scan.DraftReviewDialog
+import io.github.matteopi.budgeting.ui.food.scan.LabelReviewDialog
+import io.github.matteopi.budgeting.ui.food.scan.PackPhotoButton
+import io.github.matteopi.budgeting.ui.food.scan.PackScanTags
+import io.github.matteopi.budgeting.ui.food.scan.PackScanViewModel
 
 /** Test tags of the ingredient editor. Portion rows are tagged by their position in the list, counted from 0. */
 object IngredientEditTags {
@@ -85,8 +96,24 @@ fun IngredientEditScreen(
     onBack: () -> Unit,
     onOpenRecipe: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
-    viewModel: IngredientEditViewModel = viewModel(factory = IngredientEditViewModel.factory(ingredientId)),
+    barcode: String? = null,
+    viewModel: IngredientEditViewModel = viewModel(factory = IngredientEditViewModel.factory(ingredientId, barcode)),
+    scanViewModel: PackScanViewModel = viewModel(factory = PackScanViewModel.Factory),
 ) {
+    val scan by scanViewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    // A new ingredient started from a scanned barcode is looked up straight away (when the setting is on).
+    LaunchedEffect(Unit) {
+        if (ingredientId == null && barcode != null) scanViewModel.lookUpNow(context, barcode)
+    }
+    LaunchedEffect(scan.message) {
+        val message = scan.message
+        if (message != null) {
+            snackbarHostState.showSnackbar(message)
+            scanViewModel.messageShown()
+        }
+    }
     val phase by viewModel.phase.collectAsStateWithLifecycle()
     val form by viewModel.form.collectAsStateWithLifecycle()
     val submitted by viewModel.submitted.collectAsStateWithLifecycle()
@@ -100,6 +127,7 @@ fun IngredientEditScreen(
 
     Scaffold(
         modifier = modifier,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(if (ingredientId == null) "Add ingredient" else "Edit ingredient") },
@@ -142,6 +170,11 @@ fun IngredientEditScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                FromThePackCard(
+                    busy = scan.busy,
+                    onLabel = { uri -> scanViewModel.readLabel(context, uri) },
+                    onBarcode = { uri -> scanViewModel.scanBarcode(context, uri) { code -> viewModel.setBarcode(code) } },
+                )
                 BasicsCard(form, errors, submitted, viewModel)
                 PriceCard(form, errors, submitted, viewModel)
                 NutritionCard(form, errors, submitted, viewModel)
@@ -161,6 +194,27 @@ fun IngredientEditScreen(
                 }
             }
         }
+    }
+
+    scan.label?.let { reading ->
+        LabelReviewDialog(
+            reading = reading,
+            onUse = {
+                viewModel.applyLabel(reading)
+                scanViewModel.dismissLabel()
+            },
+            onDismiss = scanViewModel::dismissLabel,
+        )
+    }
+    scan.draft?.let { draft ->
+        DraftReviewDialog(
+            draft = draft,
+            onUse = {
+                viewModel.applyDraft(draft)
+                scanViewModel.dismissDraft()
+            },
+            onDismiss = scanViewModel::dismissDraft,
+        )
     }
 
     if (pickingProduct) {
@@ -539,3 +593,21 @@ private fun ProductPickerSheet(
         }
     }
 }
+
+/** Reading the pack: the nutrition label from a photo, and the barcode (with the online lookup when it is on). */
+@Composable
+private fun FromThePackCard(busy: Boolean, onLabel: (Uri) -> Unit, onBarcode: (Uri) -> Unit) {
+    SectionCard(title = "From the pack") {
+        Text(
+            "Photograph the nutrition table to fill in the values, or the barcode to scan it in.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            PackPhotoButton(label = "Read the label", tag = PackScanTags.READ_LABEL, enabled = !busy, onPhoto = onLabel)
+            PackPhotoButton(label = "Scan the barcode", tag = PackScanTags.SCAN_BARCODE, enabled = !busy, onPhoto = onBarcode)
+        }
+        if (busy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+    }
+}
+

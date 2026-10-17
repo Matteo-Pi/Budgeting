@@ -1282,6 +1282,13 @@ now an overlay); daily worker snapshots before any account exists and its widget
     lines on the starter book), `ReviewRulesTest`, `FoodTextsTest` and `IngredientFormRulesTest`.
   - **Screens**: the review and the recipe page are plain scrolling columns rather than lazy lists, so every field
     stays composed (see the import check step's lesson).
+- **Labels and barcodes (2026-10-17)**:
+  - **Core tests**: `NutritionLabelTest` (per 100 g first or second, kJ and kcal on one or two rows, "<0.5 g",
+    "trace", sodium to salt, no heading, not a label) and `OpenFoodFactsTest` (found, missing values, kJ and
+    sodium conversions, brand not doubled, multipacks, not found and broken answers, barcodes, the request).
+  - **JVM test**: `ScanRulesTest`, putting a reading or a draft into the editor's form.
+  - **Device tests**: none for the photo flows (they need a camera or a photo picker). The scanning code is
+    `ui/food/scan/` (`FoodScan`, `PackScanViewModel`, `PackPhotoButton` and the two review dialogs).
 - UI test conventions: tap through `UiTest.tap` (waits for the target to stop moving: screens
   resize for the keyboard), pick dates with `chooseInDatePicker` (Material 3 day cells carry the
   full date as text), reach cards far down a list with `swipeListUp`, and never address a field by

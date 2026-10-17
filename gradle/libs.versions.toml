@@ -28,6 +28,7 @@ androidx-test-uiautomator = "2.4.0"
 androidx-test-orchestrator = "1.6.1"
 androidx-test-services = "1.6.0"
 mlkit-text-recognition = "16.0.1"
+mlkit-barcode-scanning = "17.3.0"
 pdfbox-android = "2.0.27.0"
 
 [libraries]
@@ -57,6 +58,7 @@ androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref
 androidx-work-testing = { module = "androidx.work:work-testing", version.ref = "androidx-work" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "androidx-work" }
 mlkit-text-recognition = { module = "com.google.mlkit:text-recognition", version.ref = "mlkit-text-recognition" }
+mlkit-barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "mlkit-barcode-scanning" }
 pdfbox-android = { module = "com.tom-roush:pdfbox-android", version.ref = "pdfbox-android" }
 
 compose-ui = { module = "androidx.compose.ui:ui", version.ref = "compose" }

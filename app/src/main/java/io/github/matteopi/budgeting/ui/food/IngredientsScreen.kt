@@ -23,6 +23,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -30,10 +32,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -41,11 +46,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.matteopi.budgeting.data.settings.AppSection
 import io.github.matteopi.budgeting.ui.components.EmptyState
 import io.github.matteopi.budgeting.ui.food.ingredient.IngredientRowUi
+import io.github.matteopi.budgeting.ui.food.scan.PackPhotoButton
 import io.github.matteopi.budgeting.ui.navigation.SectionSwitchButton
+import kotlinx.coroutines.launch
 
 /** Test tags of the Ingredients tab. */
 object IngredientsTags {
     const val SEARCH = "ingredients-search"
+    const val SCAN = "ingredients-scan"
 
     fun row(ingredientId: Long) = "ingredients-row-$ingredientId"
 }
@@ -62,9 +70,13 @@ fun IngredientsScreen(
     onAddIngredient: () -> Unit = {},
     onOpenIngredient: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
+    onNewWithBarcode: (String) -> Unit = {},
     viewModel: IngredientsViewModel = viewModel(factory = IngredientsViewModel.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
     var query by rememberSaveable { mutableStateOf("") }
     LaunchedEffect(query) { viewModel.setQuery(query) }
 
@@ -74,8 +86,26 @@ fun IngredientsScreen(
             TopAppBar(
                 title = { Text("Ingredients") },
                 navigationIcon = { SectionSwitchButton(AppSection.RECIPES) },
+                actions = {
+                    // A known barcode opens its ingredient; an unknown one starts a new ingredient with it filled in.
+                    PackPhotoButton(
+                        label = "Scan barcode",
+                        tag = IngredientsTags.SCAN,
+                        enabled = true,
+                        onPhoto = { uri ->
+                            viewModel.scanBarcode(
+                                context = context,
+                                uri = uri,
+                                onKnown = onOpenIngredient,
+                                onNew = onNewWithBarcode,
+                                onNone = { message -> scope.launch { snackbarHostState.showSnackbar(message) } },
+                            )
+                        },
+                    )
+                },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddIngredient) {
                 Icon(Icons.Default.Add, contentDescription = "Add ingredient")

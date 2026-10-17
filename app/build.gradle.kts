@@ -100,6 +100,8 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     // Receipt OCR: the bundled Latin model, so it works offline and nothing leaves the phone (docs/PLAN.md §10.1).
     implementation(libs.mlkit.text.recognition)
+    // Bundled barcode model (offline) for scanning food packs (docs/PLAN.md §11.5).
+    implementation(libs.mlkit.barcode.scanning)
     // Santander PDF statements: PDFBox reads the text layer with exact positions, no OCR (docs/PLAN.md §5.16). Apache-2.0.
     implementation(libs.pdfbox.android)
 

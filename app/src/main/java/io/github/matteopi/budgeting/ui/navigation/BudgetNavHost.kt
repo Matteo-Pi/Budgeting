@@ -329,6 +329,7 @@ fun BudgetNavHost(
                     IngredientsScreen(
                         onAddIngredient = { navController.navigate(Route.IngredientEdit()) },
                         onOpenIngredient = { id -> navController.navigate(Route.IngredientEdit(id)) },
+                        onNewWithBarcode = { code -> navController.navigate(Route.IngredientEdit(barcode = code)) },
                     )
                 }
                 composable<Route.RecipeDetail> { backStackEntry ->
@@ -369,6 +370,7 @@ fun BudgetNavHost(
                     val args = backStackEntry.toRoute<Route.IngredientEdit>()
                     IngredientEditScreen(
                         ingredientId = args.ingredientId,
+                        barcode = args.barcode,
                         onBack = { navController.popBackStack() },
                         onOpenRecipe = { id -> navController.navigate(Route.RecipeDetail(id)) },
                     )

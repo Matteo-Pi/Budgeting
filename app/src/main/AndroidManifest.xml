@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Only for the opt-in Open Food Facts barcode lookup (docs/PLAN.md §11.5); nothing else uses the network. -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:name=".BudgetApp"

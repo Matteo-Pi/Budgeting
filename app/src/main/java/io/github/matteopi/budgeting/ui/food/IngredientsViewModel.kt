@@ -1,5 +1,7 @@
 package io.github.matteopi.budgeting.ui.food
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
@@ -13,12 +15,15 @@ import io.github.matteopi.budgeting.data.repo.ReceiptRepository
 import io.github.matteopi.budgeting.domain.Clock
 import io.github.matteopi.budgeting.ui.food.ingredient.IngredientSectionUi
 import io.github.matteopi.budgeting.ui.food.ingredient.IngredientsMapping
+import io.github.matteopi.budgeting.ui.food.scan.FoodScan
 import io.github.matteopi.budgeting.ui.receipts.list.ReceiptMapping
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 data class IngredientsUiState(
     val loading: Boolean = true,
@@ -33,7 +38,7 @@ data class IngredientsUiState(
  * (`Prices.resolveAll`, so a price paid on a receipt wins over the typed one), filtered by the search.
  */
 class IngredientsViewModel(
-    ingredientRepository: IngredientRepository,
+    private val ingredientRepository: IngredientRepository,
     receiptRepository: ReceiptRepository,
     private val clock: Clock,
 ) : ViewModel() {
@@ -57,6 +62,28 @@ class IngredientsViewModel(
 
     fun setQuery(text: String) {
         query.value = text
+    }
+
+    /**
+     * Reads the barcode in the photo at [uri] (docs/PLAN.md §11.5): [onKnown] with the ingredient that has it, or
+     * [onNew] with the barcode for a new ingredient; [onNone] when the photo has no barcode.
+     */
+    fun scanBarcode(context: Context, uri: Uri, onKnown: (Long) -> Unit, onNew: (String) -> Unit, onNone: (String) -> Unit) {
+        viewModelScope.launch {
+            val code = try {
+                FoodScan.readBarcode(context, uri)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                null
+            }
+            if (code == null) {
+                onNone("No barcode found in the photo. Try again with the whole barcode in view.")
+                return@launch
+            }
+            val known = ingredientRepository.findByBarcode(code)
+            if (known != null && !known.archived) onKnown(known.id) else onNew(code)
+        }
     }
 
     companion object {

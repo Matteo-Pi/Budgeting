@@ -38,6 +38,8 @@ import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -45,9 +47,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -65,11 +69,14 @@ import io.github.matteopi.budgeting.ui.food.ingredient.FoodNumberField
 import io.github.matteopi.budgeting.ui.food.ingredient.FoodTexts
 import io.github.matteopi.budgeting.ui.food.ingredient.IngredientFormRules
 import io.github.matteopi.budgeting.ui.food.ingredient.ShoppingTexts
+import io.github.matteopi.budgeting.ui.food.scan.PackPhotoButton
 import io.github.matteopi.budgeting.ui.navigation.SectionSwitchButton
+import kotlinx.coroutines.launch
 
 /** Test tags of the Shopping tab. */
 object ShoppingTags {
     const val HEADER = "shopping-header"
+    const val SCAN = "shopping-scan"
     const val MEALS = "shopping-meals"
     const val ADD_ITEM = "shopping-add-item"
     const val ADD_TEXT = "shopping-add-text"
@@ -102,6 +109,9 @@ fun ShoppingScreen(
     viewModel: ShoppingViewModel = viewModel(factory = ShoppingViewModel.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
     var menuOpen by remember { mutableStateOf(false) }
     var confirmClear by remember { mutableStateOf(false) }
     var adding by remember { mutableStateOf(false) }
@@ -114,6 +124,14 @@ fun ShoppingScreen(
                 title = { Text("Shopping list") },
                 navigationIcon = { SectionSwitchButton(AppSection.RECIPES) },
                 actions = {
+                    PackPhotoButton(
+                        label = "Scan to tick",
+                        tag = ShoppingTags.SCAN,
+                        enabled = true,
+                        onPhoto = { uri ->
+                            viewModel.scanToTick(context, uri) { message -> scope.launch { snackbarHostState.showSnackbar(message) } }
+                        },
+                    )
                     Box {
                         IconButton(onClick = { menuOpen = true }) {
                             Icon(Icons.Default.MoreVert, contentDescription = "More options")
@@ -138,6 +156,7 @@ fun ShoppingScreen(
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = { adding = true },

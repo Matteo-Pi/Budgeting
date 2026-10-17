@@ -1,5 +1,7 @@
 package io.github.matteopi.budgeting.ui.food
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -12,6 +14,8 @@ import io.github.matteopi.budgeting.core.recipes.ShoppingList
 import io.github.matteopi.budgeting.core.recipes.ShoppingListResult
 import io.github.matteopi.budgeting.ui.food.components.observeFoodBook
 import io.github.matteopi.budgeting.ui.food.ingredient.ShoppingTexts
+import io.github.matteopi.budgeting.ui.food.scan.FoodScan
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -90,6 +94,36 @@ class ShoppingViewModel(private val container: AppContainer) : ViewModel() {
 
     /** *Clear list*: everything. */
     fun clearList() = launch { shopping.clearList() }
+
+    /**
+     * Scanning a pack in the shop (docs/PLAN.md §11.6): the barcode in the photo at [uri] ticks the line of its
+     * ingredient; [onResult] says what happened.
+     */
+    fun scanToTick(context: Context, uri: Uri, onResult: (String) -> Unit) {
+        viewModelScope.launch {
+            val code = try {
+                FoodScan.readBarcode(context, uri)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                null
+            }
+            if (code == null) {
+                onResult("No barcode found in the photo. Try again with the whole barcode in view.")
+                return@launch
+            }
+            val ingredient = container.ingredientRepository.findByBarcode(code)
+            val line = ingredient?.let { found -> uiState.value.list?.lines?.firstOrNull { it.ingredientId == found.id } }
+            when {
+                ingredient == null -> onResult("No ingredient has this barcode yet. Scan it on the Ingredients tab to add it.")
+                line == null -> onResult("${ingredient.name} isn't on the list.")
+                else -> {
+                    shopping.setChecked(ingredient.id, true)
+                    onResult("Ticked ${ingredient.name}")
+                }
+            }
+        }
+    }
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {

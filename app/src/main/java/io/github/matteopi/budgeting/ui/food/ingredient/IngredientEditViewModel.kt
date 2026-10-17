@@ -10,8 +10,10 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.matteopi.budgeting.BudgetApp
 import io.github.matteopi.budgeting.core.recipes.BaseUnit
 import io.github.matteopi.budgeting.core.recipes.Ingredient
+import io.github.matteopi.budgeting.core.recipes.LabelReading
 import io.github.matteopi.budgeting.core.recipes.Nutrient
 import io.github.matteopi.budgeting.core.recipes.NutritionSource
+import io.github.matteopi.budgeting.core.recipes.OffDraft
 import io.github.matteopi.budgeting.core.recipes.Shelf
 import io.github.matteopi.budgeting.core.recipes.VegKind
 import io.github.matteopi.budgeting.data.repo.IngredientRepository
@@ -46,6 +48,8 @@ enum class EditPhase { LOADING, READY, MISSING }
  */
 class IngredientEditViewModel(
     private val ingredientId: Long?,
+    /** A barcode scanned on the Ingredients tab: a new ingredient starts with it filled in. */
+    startBarcode: String? = null,
     private val ingredientRepository: IngredientRepository,
     recipeRepository: RecipeRepository,
     receiptRepository: ReceiptRepository,
@@ -104,6 +108,7 @@ class IngredientEditViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     init {
+        if (ingredientId == null && startBarcode != null) mutableForm.value = IngredientForm(barcode = startBarcode)
         if (ingredientId != null) {
             viewModelScope.launch {
                 val ingredient = ingredientRepository.get(ingredientId)
@@ -152,6 +157,12 @@ class IngredientEditViewModel(
     fun setNutrition(nutrient: Nutrient, text: String) = change { it.copy(nutrition = it.nutrition + (nutrient to text)) }
 
     fun setNutritionSource(source: NutritionSource) = change { it.copy(nutritionSource = source) }
+
+    /** The values read from a label photo (checked on the review dialog first). */
+    fun applyLabel(reading: LabelReading) = change { ScanRules.applyLabel(it, reading) }
+
+    /** What Open Food Facts gave for the scanned barcode (checked on the review dialog first). */
+    fun applyDraft(draft: OffDraft) = change { ScanRules.applyDraft(it, draft) }
 
     fun setVegKind(kind: VegKind) = change { it.copy(vegKind = kind) }
 
@@ -217,12 +228,13 @@ class IngredientEditViewModel(
     }
 
     companion object {
-        fun factory(ingredientId: Long?): ViewModelProvider.Factory = viewModelFactory {
+        fun factory(ingredientId: Long?, barcode: String? = null): ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val app = this[APPLICATION_KEY] as BudgetApp
                 val container = app.container
                 IngredientEditViewModel(
                     ingredientId = ingredientId,
+                    startBarcode = barcode,
                     ingredientRepository = container.ingredientRepository,
                     recipeRepository = container.recipeRepository,
                     receiptRepository = container.receiptRepository,

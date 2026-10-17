@@ -73,7 +73,8 @@ sealed interface Route {
     /** Add a recipe: paste or type it. [textPath] is a text file in the app's cache holding shared text, read when the screen opens. */
     @Serializable data class AddRecipe(val textPath: String? = null) : Route
     @Serializable data class EditRecipe(val recipeId: Long) : Route
-    @Serializable data class IngredientEdit(val ingredientId: Long? = null) : Route
+    /** [barcode]: a barcode scanned on the Ingredients tab that no ingredient has yet, for a new one. */
+    @Serializable data class IngredientEdit(val ingredientId: Long? = null, val barcode: String? = null) : Route
     @Serializable data object RecipeSettings : Route
 }
 
