@@ -159,4 +159,19 @@ class SettingsStore(context: Context) {
         val CHART_ACCOUNT_VIEW = stringPreferencesKey("chart_account_view")
         val BALANCE_VIEW = stringPreferencesKey("balance_view")
     }
+
+    // ----- App section (docs/PLAN.md §11.8). Not in AppSettings: it is not backed up. -----
+
+    /** The section that opens next time: [AppSection.BUDGETING] until the user switches; unknown text reads as BUDGETING. */
+    val appSection: Flow<AppSection> = dataStore.data.map { prefs ->
+        AppSection.parse(prefs[SectionKeys.APP_SECTION])
+    }
+
+    suspend fun setAppSection(section: AppSection) {
+        dataStore.edit { it[SectionKeys.APP_SECTION] = section.name }
+    }
+
+    private object SectionKeys {
+        val APP_SECTION = stringPreferencesKey("app_section")
+    }
 }

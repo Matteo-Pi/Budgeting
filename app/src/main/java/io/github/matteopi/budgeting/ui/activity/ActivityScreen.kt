@@ -41,7 +41,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.matteopi.budgeting.core.model.Account
 import io.github.matteopi.budgeting.core.model.Category
+import io.github.matteopi.budgeting.data.settings.AppSection
 import io.github.matteopi.budgeting.ui.components.EmptyState
+import io.github.matteopi.budgeting.ui.navigation.SectionSwitchButton
 import io.github.matteopi.budgeting.ui.receipts.ReceiptIcons
 
 /** The Activity tab: all transactions grouped by day, with filters and an edit sheet (WP-U2). */
@@ -63,6 +65,7 @@ fun ActivityScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Activity") },
+                navigationIcon = { SectionSwitchButton(AppSection.BUDGETING) },
                 actions = {
                     IconButton(onClick = onScanReceipt) {
                         Icon(ReceiptIcons.Camera, contentDescription = "Scan receipt")

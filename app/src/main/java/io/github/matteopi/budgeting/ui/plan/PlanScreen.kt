@@ -22,6 +22,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.matteopi.budgeting.data.settings.AppSection
+import io.github.matteopi.budgeting.ui.navigation.SectionSwitchButton
 
 /** The Plan tab: hub linking to money in/out, one-off dates, term dates, funds, estimates (WP-U3). */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,7 +42,12 @@ fun PlanScreen(
 
     Scaffold(
         modifier = modifier,
-        topBar = { TopAppBar(title = { Text("Plan") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Plan") },
+                navigationIcon = { SectionSwitchButton(AppSection.BUDGETING) },
+            )
+        },
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier

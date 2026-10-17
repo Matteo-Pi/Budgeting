@@ -1,5 +1,9 @@
 package io.github.matteopi.budgeting.ui.navigation
 
+import androidx.navigation.NavDestination
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavDestination.Companion.hierarchy
+import kotlin.reflect.KClass
 import kotlinx.serialization.Serializable
 
 /** Type-safe navigation destinations for every screen in docs/PLAN.md §6.5. */
@@ -52,4 +56,44 @@ sealed interface Route {
 
     /** Review a read receipt before saving: [path] is a file in the app's cache, [kind] a `ReceiptInputKind` name. */
     @Serializable data class ReceiptReview(val path: String, val kind: String) : Route
+
+    // ----- The Recipes section (docs/PLAN.md §11.8) -----
+
+    /** The Recipes section's first tab: its recipe list. */
+    @Serializable data object Recipes : Route
+    @Serializable data object Compare : Route
+    @Serializable data object Shopping : Route
+    @Serializable data object Ingredients : Route
+
+    @Serializable data class RecipeDetail(val recipeId: Long) : Route
+
+    /** The cooking view of one recipe: no bottom bar. */
+    @Serializable data class Cooking(val recipeId: Long) : Route
+
+    /** Add a recipe: paste or type it. [textPath] is a text file in the app's cache holding shared text, read when the screen opens. */
+    @Serializable data class AddRecipe(val textPath: String? = null) : Route
+    @Serializable data class EditRecipe(val recipeId: Long) : Route
+    @Serializable data class IngredientEdit(val ingredientId: Long? = null) : Route
+    @Serializable data object RecipeSettings : Route
 }
+
+/**
+ * Every route of the Recipes section: its four tabs and its sub-screens. A destination in this list belongs
+ * to the Recipes section (it shows the Recipes bottom bar); any other destination belongs to Budgeting.
+ */
+val foodRoutes: List<KClass<out Route>> = listOf(
+    Route.Recipes::class,
+    Route.Compare::class,
+    Route.Shopping::class,
+    Route.Ingredients::class,
+    Route.RecipeDetail::class,
+    Route.Cooking::class,
+    Route.AddRecipe::class,
+    Route.EditRecipe::class,
+    Route.IngredientEdit::class,
+    Route.RecipeSettings::class,
+)
+
+/** True if this destination is one of [foodRoutes]. */
+fun NavDestination?.isFoodDestination(): Boolean =
+    this?.hierarchy?.any { destination -> foodRoutes.any { destination.hasRoute(it) } } == true
