@@ -7,7 +7,8 @@ import java.time.LocalDate
  * One saved receipt item that has been matched to a product. Same sign conventions as
  * [DraftItem]: [price] positive (the whole line, before discount), [discount] zero or negative.
  * [unitPrice] is the shelf price of one unit (per kilogram for weighed items) when the receipt
- * said so; otherwise it is derived as [price] / [quantity].
+ * said so; otherwise it is derived as [price] / [quantity]. [weightGrams] is set for weighed items
+ * (the recipes section turns it into a price per gram).
  */
 data class PurchasedItem(
     val productId: Long,
@@ -17,6 +18,7 @@ data class PurchasedItem(
     val unitPrice: Money? = null,
     val price: Money,
     val discount: Money = Money.ZERO,
+    val weightGrams: Int? = null,
 ) {
     /** The price of one unit: [unitPrice], else [price] divided by [quantity] rounded to the nearest penny. */
     val unit: Money
