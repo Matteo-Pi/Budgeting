@@ -1828,7 +1828,7 @@ portion makes the pulses cap give exactly 1.
   list of route classes). It shows no bar in the cooking view or onboarding.
 - **Icons**: `material-icons-core` has none of these, and `material-icons-extended` is too big for an
   unminified APK. `ui/components/AppIcons.kt` therefore defines five `ImageVector`s from Material icon
-  path data (Apache 2.0): Restaurant, AccountBalanceWallet, MenuBook, TableChart and Kitchen.
+  path data (Apache 2.0): `AppIcons.Restaurant`, `Wallet`, `MenuBook`, `TableChart` and `Kitchen` (already written).
   `ShoppingCart` is already in core.
 
 **Recipes tabs**
