@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.github.matteopi.budgeting.backup.AppSettingsCodec
 import io.github.matteopi.budgeting.core.model.BudgetSettings
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.ZeroPoint
@@ -428,5 +429,114 @@ class SettingsStoreTest {
         assertNull(budget().historyStartDate)
         assertNull(app().lastSnapshotDate)
         assertNull(app().lastExportDate)
+    }
+
+    // ---- the Recipes section's settings (docs/PLAN.md §11.3) -------------------------------------
+
+    @Test
+    fun aFreshInstallCountsOptionalExtrasAndDoesNotLookBarcodesUpOnline() = runBlocking<Unit> {
+        assertTrue(store.countOptionalExtras.first())
+        assertFalse(store.lookUpBarcodesOnline.first())
+        assertEquals(emptySet(), store.observeCookingTicks(1L).first())
+    }
+
+    @Test
+    fun countOptionalExtrasRoundTrips() = runBlocking<Unit> {
+        store.setCountOptionalExtras(false)
+        assertFalse(store.countOptionalExtras.first())
+        store.setCountOptionalExtras(true)
+        assertTrue(store.countOptionalExtras.first())
+    }
+
+    @Test
+    fun lookUpBarcodesOnlineRoundTripsAndIsIndependentOfTheOtherSetting() = runBlocking<Unit> {
+        store.setLookUpBarcodesOnline(true)
+        assertTrue(store.lookUpBarcodesOnline.first())
+        assertTrue(store.countOptionalExtras.first(), "the other setting did not move")
+
+        store.setCountOptionalExtras(false)
+        assertTrue(store.lookUpBarcodesOnline.first(), "still on")
+
+        store.setLookUpBarcodesOnline(false)
+        assertFalse(store.lookUpBarcodesOnline.first())
+    }
+
+    @Test
+    fun cookingTicksAreKeptPerRecipe() = runBlocking<Unit> {
+        store.setCookingTicks(1L, setOf("line:0", "line:2", "step:1"))
+        store.setCookingTicks(2L, setOf("step:0"))
+
+        assertEquals(setOf("line:0", "line:2", "step:1"), store.observeCookingTicks(1L).first())
+        assertEquals(setOf("step:0"), store.observeCookingTicks(2L).first())
+        assertEquals(emptySet(), store.observeCookingTicks(3L).first())
+
+        store.setCookingTicks(1L, setOf("step:5"))
+        assertEquals(setOf("step:5"), store.observeCookingTicks(1L).first(), "set replaces the ticks")
+        assertEquals(setOf("step:0"), store.observeCookingTicks(2L).first(), "another recipe is untouched")
+    }
+
+    @Test
+    fun oneTickCanBeToggledAndAnEmptySetClears() = runBlocking<Unit> {
+        store.setCookingTick(4L, "line:1", true)
+        store.setCookingTick(4L, "step:0", true)
+        store.setCookingTick(4L, "line:1", true)
+        assertEquals(setOf("line:1", "step:0"), store.observeCookingTicks(4L).first())
+
+        store.setCookingTick(4L, "line:1", false)
+        assertEquals(setOf("step:0"), store.observeCookingTicks(4L).first())
+
+        store.setCookingTick(4L, "step:0", false)
+        assertEquals(emptySet(), store.observeCookingTicks(4L).first())
+
+        store.setCookingTicks(4L, setOf("a"))
+        store.setCookingTicks(4L, emptySet())
+        assertEquals(emptySet(), store.observeCookingTicks(4L).first())
+    }
+
+    @Test
+    fun doneCookingClearsOnlyThatRecipe() = runBlocking<Unit> {
+        store.setCookingTicks(1L, setOf("line:0"))
+        store.setCookingTicks(2L, setOf("line:1"))
+
+        store.clearCookingTicks(1L)
+
+        assertEquals(emptySet(), store.observeCookingTicks(1L).first())
+        assertEquals(setOf("line:1"), store.observeCookingTicks(2L).first())
+    }
+
+    @Test
+    fun clearingAllCookingTicksLeavesOtherSettingsAlone() = runBlocking<Unit> {
+        store.setCookingTicks(1L, setOf("line:0"))
+        store.setCookingTicks(22L, setOf("line:1"))
+        store.setLookUpBarcodesOnline(true)
+        store.setCountOptionalExtras(false)
+        store.setBuffer(Money.pounds(77))
+
+        store.clearAllCookingTicks()
+
+        assertEquals(emptySet(), store.observeCookingTicks(1L).first())
+        assertEquals(emptySet(), store.observeCookingTicks(22L).first())
+        assertTrue(store.lookUpBarcodesOnline.first())
+        assertFalse(store.countOptionalExtras.first())
+        assertEquals(Money.pounds(77), budget().buffer)
+    }
+
+    @Test
+    fun theRecipesSettingsAreNotPartOfAppSettingsOrBackups() = runBlocking<Unit> {
+        store.setLookUpBarcodesOnline(true)
+        store.setCountOptionalExtras(false)
+        store.setCookingTicks(1L, setOf("line:0"))
+
+        assertEquals(AppSettings(), app())
+        assertEquals(BudgetSettings(), budget())
+        val encoded = AppSettingsCodec.encode(app())
+        assertTrue(
+            encoded.keys.none { key ->
+                key.contains("barcode", ignoreCase = true) ||
+                    key.contains("optional", ignoreCase = true) ||
+                    key.contains("cooking", ignoreCase = true)
+            },
+            "the backup's app settings are $encoded",
+        )
     }
 }

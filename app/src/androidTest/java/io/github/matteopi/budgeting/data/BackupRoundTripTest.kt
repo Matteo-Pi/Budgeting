@@ -40,6 +40,18 @@ import io.github.matteopi.budgeting.core.model.TermPeriod
 import io.github.matteopi.budgeting.core.model.Transaction
 import io.github.matteopi.budgeting.core.model.TxKind
 import io.github.matteopi.budgeting.core.model.ZeroPoint
+import io.github.matteopi.budgeting.core.recipes.BaseUnit
+import io.github.matteopi.budgeting.core.recipes.Ingredient
+import io.github.matteopi.budgeting.core.recipes.Nutrition
+import io.github.matteopi.budgeting.core.recipes.Portion
+import io.github.matteopi.budgeting.core.recipes.Prices
+import io.github.matteopi.budgeting.core.recipes.Recipe
+import io.github.matteopi.budgeting.core.recipes.RecipeBundle
+import io.github.matteopi.budgeting.core.recipes.RecipeLine
+import io.github.matteopi.budgeting.core.recipes.RecipeMaths
+import io.github.matteopi.budgeting.core.recipes.RecipeStep
+import io.github.matteopi.budgeting.core.recipes.Shelf
+import io.github.matteopi.budgeting.core.recipes.StepKind
 import io.github.matteopi.budgeting.data.repo.SelectedImportRow
 import io.github.matteopi.budgeting.data.settings.AccountView
 import io.github.matteopi.budgeting.data.settings.AppTheme
@@ -100,6 +112,54 @@ class BackupRoundTripTest {
             rulesToRemember = rules,
             nowMillis = container.clock.nowMillis(),
         ).id
+    }
+
+    /**
+     * Food data in every food table: the starter recipe book (40 ingredients with portions, 4 recipes
+     * with lines, steps, tips, equipment and storage notes, and a learned alias per ingredient name), an
+     * ingredient linked to the receipts product [productId], an archived extra ingredient with a barcode,
+     * a recipe of my own with a rating and notes, and a shopping list with free text, ticks and marks.
+     */
+    private suspend fun populateFood(productId: Long) {
+        val c = container
+        val imported = c.recipeRepository.importBundle(RecipeBundle.starter())
+        val all = c.ingredientRepository.observeAll().first()
+        val linked = all.first()
+        c.ingredientRepository.setProduct(linked.id, productId)
+        assertTrue(c.ingredientRepository.learnAlias("Posh nosh", linked.id))
+
+        val kitchenRoll = c.ingredientRepository.save(
+            Ingredient(
+                name = "Kitchen roll", unit = BaseUnit.G, packSize = 2.0, packLabel = "2 rolls", barcode = "5012345678900",
+                shelf = Shelf.OTHER, note = "not food", per100 = Nutrition(kcal = 0.0),
+                portions = listOf(Portion("sheet", 0.5), Portion("roll", 1.0)),
+            ),
+        )
+        c.ingredientRepository.setArchived(kitchenRoll, true)
+
+        val toast = c.recipeRepository.save(
+            Recipe(
+                title = "Toast", serves = 1, tags = listOf("quick", "breakfast"), notes = "Butter both sides.",
+                lines = listOf(RecipeLine(text = "2 slices of bread"), RecipeLine(group = "Topping", text = "butter", ingredientId = all.last().id, quantity = 10.0, optional = true)),
+                steps = listOf(
+                    RecipeStep(StepKind.STEP, "Toast it", "~3 min", "Put it in the toaster.\n\nReady when: golden."),
+                    RecipeStep(StepKind.TIP, body = "Use a grill for a crowd."),
+                    RecipeStep(StepKind.STORAGE, body = "Eat now."),
+                ),
+            ),
+        )
+        c.recipeRepository.setRating(toast, 4)
+
+        val stirFry = imported.recipeIds.first()
+        c.shoppingRepository.addRecipe(stirFry, 4)
+        c.shoppingRepository.addRecipe(imported.recipeIds.last(), 8)
+        c.shoppingRepository.addIngredient(linked.id, 250.0)
+        c.shoppingRepository.addIngredient(all.last().id)
+        val binBags = checkNotNull(c.shoppingRepository.addFreeText("Bin bags"))
+        c.shoppingRepository.addFreeText("Washing-up liquid")
+        c.shoppingRepository.setFreeTextChecked(binBags, true)
+        c.shoppingRepository.setChecked(linked.id, true)
+        c.shoppingRepository.setHaveIt(all[1].id, true)
     }
 
     /** Puts something in every table, plus every app setting. */
@@ -294,6 +354,8 @@ class BackupRoundTripTest {
             replaceTransactionId = shop.id,
         )
 
+        populateFood(milkId)
+
         // A statement import: a batch, imported transactions with keys, a moved opening balance, merchant rules.
         val rows = statementRows()
         val importBatchId = importStatement(
@@ -390,6 +452,26 @@ class BackupRoundTripTest {
             "the receipt's two split transactions",
         )
         assertNotEquals(BudgetSettings(), data.settings, "settings away from their defaults")
+        assertEveryFoodTableHasData(data)
+    }
+
+    private fun assertEveryFoodTableHasData(data: BackupData) {
+        assertEquals(41, data.ingredients.size, "the starter ingredients and the kitchen roll")
+        assertTrue(data.ingredients.any { it.portions.size == 2 && it.archived && it.barcode != null }, "an archived ingredient with a barcode and portions")
+        assertTrue(data.ingredients.count { it.portions.isNotEmpty() } > 10, "ingredients with portions")
+        assertTrue(data.ingredients.any { it.productId != null }, "an ingredient linked to a product")
+        assertTrue(data.ingredients.any { it.per100.hasUnknown }, "an ingredient with unknown nutrition")
+        assertTrue(data.ingredientAliases.size > 40, "an alias for each starter name and one more")
+        assertEquals(5, data.recipes.size, "the starter recipes and the toast")
+        assertTrue(data.recipes.all { it.lines.isNotEmpty() && it.steps.isNotEmpty() }, "lines and steps")
+        assertTrue(data.recipes.flatMap { it.steps }.map { it.kind }.toSet() == StepKind.entries.toSet(), "steps of every kind")
+        assertTrue(data.recipes.any { it.rating == 4 && it.notes.isNotEmpty() && it.tags.size == 2 }, "a rated recipe with tags and notes")
+        assertTrue(data.recipes.flatMap { it.lines }.any { it.group != null } && data.recipes.flatMap { it.lines }.any { it.optional }, "grouped and optional lines")
+        assertEquals(4, data.shoppingEntries.count { it.recipeId != null || it.ingredientId != null }, "recipe and ingredient entries")
+        assertEquals(2, data.shoppingEntries.count { it.freeText != null }, "free-text entries")
+        assertTrue(data.shoppingEntries.any { it.freeText != null && it.checked }, "a ticked free-text entry")
+        assertEquals(2, data.shoppingMarks.size, "marks")
+        assertTrue(data.shoppingMarks.any { it.checked } && data.shoppingMarks.any { it.haveIt }, "a tick and an I-have-it")
     }
 
     private fun BackupData.sortedForComparison(): BackupData = copy(
@@ -412,6 +494,11 @@ class BackupRoundTripTest {
         receiptItems = receiptItems.sortedBy { it.id },
         products = products.sortedBy { it.id },
         productAliases = productAliases.sortedBy { it.id },
+        ingredients = ingredients.sortedBy { it.id },
+        ingredientAliases = ingredientAliases.sortedBy { it.id },
+        recipes = recipes.sortedBy { it.id },
+        shoppingEntries = shoppingEntries.sortedBy { it.id },
+        shoppingMarks = shoppingMarks.sortedBy { it.ingredientId },
     )
 
     /** Table by table (so a failure names the table), ignoring row order but not ids. */
@@ -437,6 +524,11 @@ class BackupRoundTripTest {
         assertEquals(e.receiptItems, a.receiptItems, "receipt items")
         assertEquals(e.products, a.products, "products")
         assertEquals(e.productAliases, a.productAliases, "product aliases")
+        assertEquals(e.ingredients, a.ingredients, "ingredients and their portions")
+        assertEquals(e.ingredientAliases, a.ingredientAliases, "ingredient aliases")
+        assertEquals(e.recipes, a.recipes, "recipes with their lines and steps")
+        assertEquals(e.shoppingEntries, a.shoppingEntries, "shopping list entries")
+        assertEquals(e.shoppingMarks, a.shoppingMarks, "shopping list marks")
         assertEquals(e.settings, a.settings, "budget settings")
     }
 
@@ -603,6 +695,8 @@ class BackupRoundTripTest {
         assertTrue(restored.merchantRules.isEmpty())
         assertTrue(restored.receipts.isEmpty() && restored.receiptItems.isEmpty())
         assertTrue(restored.products.isEmpty() && restored.productAliases.isEmpty())
+        assertTrue(restored.ingredients.isEmpty() && restored.ingredientAliases.isEmpty() && restored.recipes.isEmpty())
+        assertTrue(restored.shoppingEntries.isEmpty() && restored.shoppingMarks.isEmpty())
         assertTrue(restored.reconciliations.isEmpty())
         assertTrue(restored.importBatches.isEmpty())
         assertTrue(restored.balanceSnapshots.isEmpty())
@@ -671,6 +765,70 @@ class BackupRoundTripTest {
         assertEquals(settingsBefore.onboardingDone, after.onboardingDone)
         assertEquals(AppTheme.SLATE, after.theme)
         assertEquals(DarkMode.DARK, after.darkMode)
+    }
+
+    @Test
+    fun theRecipeBookAndShoppingListSurviveBackupAndRestoreIntoAnEmptyDatabase() = runBlocking<Unit> {
+        DataTestSupport.awaitCategories()
+        val productId = container.receiptRepository.learnProduct("TESCO", "ts milk", "Milk", null)
+        populateFood(productId)
+        val firstRecipe = container.recipeRepository.observeAll().first().first().id
+        container.settingsStore.setCookingTick(firstRecipe, "step:1", true)
+        val original = container.backupRepository.readAll()
+        assertEveryFoodTableHasData(original)
+        val success = exportAndDecode(original)
+
+        clearDatabase()
+        val empty = container.backupRepository.readAll()
+        assertTrue(empty.ingredients.isEmpty() && empty.ingredientAliases.isEmpty() && empty.recipes.isEmpty())
+        assertTrue(empty.shoppingEntries.isEmpty() && empty.shoppingMarks.isEmpty())
+        container.backupRepository.replaceAll(success.data)
+
+        assertSameBackup(original, container.backupRepository.readAll())
+
+        // Read back through the repositories, the book still works out to the checkpoint numbers.
+        val ingredients = container.ingredientRepository.observeAll().first()
+        val stirFry = container.recipeRepository.observeAll().first().first { it.title.startsWith("Chicken & Vegetable") }
+        val prices = Prices.resolveAll(ingredients, emptyList(), LocalDate.of(2026, 10, 17))
+        val numbers = RecipeMaths.analyse(stirFry, ingredients.associateBy { it.id }, prices, stirFry.serves, true)
+        assertEquals(Money(309), numbers.cost.perPortion)
+        assertEquals(Money(618), numbers.cost.whole)
+
+        // Cooking ticks are kept by recipe id, so a restore forgets them; new rows still get fresh ids.
+        assertEquals(emptySet(), container.settingsStore.observeCookingTicks(firstRecipe).first())
+        val newRecipe = container.recipeRepository.save(Recipe(title = "After restore"))
+        val newIngredient = container.ingredientRepository.save(Ingredient(name = "After restore"))
+        assertTrue(original.recipes.none { it.id == newRecipe }, "a new recipe gets a new id")
+        assertTrue(original.ingredients.none { it.id == newIngredient }, "a new ingredient gets a new id")
+    }
+
+    @Test
+    fun theExportedFileIsVersion3AndCarriesTheFoodLists() = runBlocking<Unit> {
+        populateEverything()
+
+        val json = BackupViewModel(container).buildExportJson()
+
+        assertTrue("\"version\": 3" in json, "the file says it is version 3")
+        for (list in listOf("ingredients", "ingredientPortions", "ingredientAliases", "recipes", "recipeLines", "recipeSteps", "shoppingEntries", "shoppingMarks")) {
+            assertTrue("\"$list\": [" in json, "the file has a \"$list\" list")
+        }
+    }
+
+    @Test
+    fun aVersion2BackupRestoresAndClearsTheFoodData() = runBlocking<Unit> {
+        populateEverything()
+        val small = BackupData(
+            accounts = listOf(Account(id = 1, name = "Old file", type = AccountType.CURRENT)),
+            categories = DefaultCategories.all.mapIndexed { i, category -> category.copy(id = i + 1L) },
+        )
+        val v2 = BackupMapper.toBackup(small, exportedAt = "2026-10-14T12:00:00Z").copy(version = 2)
+
+        container.backupRepository.replaceAll(decodeOrFail(BackupCodec.encode(v2)).data)
+
+        val restored = container.backupRepository.readAll()
+        assertEquals(1, restored.accounts.size)
+        assertTrue(restored.ingredients.isEmpty() && restored.recipes.isEmpty() && restored.ingredientAliases.isEmpty())
+        assertTrue(restored.shoppingEntries.isEmpty() && restored.shoppingMarks.isEmpty())
     }
 
     /** The backup file carries `chartAccountView` and `balanceView`; restoring must write them back too. */

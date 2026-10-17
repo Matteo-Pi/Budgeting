@@ -577,8 +577,14 @@ accountStartDate + 1, else today − 6; never after today.
   accounts, categories, transactions, recurringRules, scheduledItems, termPeriods, predictions,
   sinkingFunds, scenarios (with items), presets, merchantRules, reconciliations, importBatches,
   balanceSnapshots, categoryWeekSnapshots, settings: SettingsDto, appSettings: Map<String,String>)`.
-- **Version 2** (current) adds `receipts`, `receiptItems`, `products`, `productAliases` and
-  `TransactionDto.receiptId`; the class keeps the name `BackupV1` and holds versions 1 and 2. All new
+- **Version 3** (current) adds the eight food lists of §11.3: `ingredients`, `ingredientPortions`,
+  `ingredientAliases`, `recipes`, `recipeLines` and `recipeSteps` (both with a `position`), `shoppingEntries` and
+  `shoppingMarks`. `BackupData` holds them as models (`Ingredient` with its portions, `Recipe` with its lines and
+  steps); `decode` also checks line/portion/alias/entry/mark references, `ingredient.productId`, and the unique
+  keys (ids, barcode, alias name, portion name, one mark per ingredient). Versions 1 and 2 still restore, with no
+  food data; cooking ticks and the Recipes settings are not in backups, and a restore forgets the ticks.
+- **Version 2** adds `receipts`, `receiptItems`, `products`, `productAliases` and
+  `TransactionDto.receiptId`; the class keeps the name `BackupV1` and holds versions 1 to 3. All new
   fields default to empty/null, so a version-1 file still decodes (no receipts); a version above the
   current one is refused. `decode` also checks the new references (items → receipt/product/category,
   aliases → product, products → category, transaction → receipt).
@@ -1203,7 +1209,8 @@ transactions before their import batches (FK failure); app lock rebuilding navig
 now an overlay); daily worker snapshots before any account exists and its widget refresh.
 
 ### Testing (2026-09-29)
-- **Core** (`./gradlew -p core test`): 773 JVM tests (2026-10-17: 573 before the Recipes section's core, which adds 200), including
+- **Core** (`./gradlew -p core test`): 795 JVM tests (2026-10-17: 573 before the Recipes section's core, which adds 200,
+  and the Recipes data package adds 22: backup version 3 and bundle merging), including
   stress/metamorphic suites and a 20,000-budget soak (`core/src/test/.../stress/`); forecast invariants include
   "expected spending + expected income = expected learned flow".
 - **Recipes core** (`core/src/test/.../recipes/`, 200 tests): the §11.7 checkpoint table on the decoded starter book
@@ -1213,6 +1220,15 @@ now an overlay); daily worker snapshots before any account exists and its widget
   plus `RecipeMathsTest` (the braise rounding, the pulses cap), `TrafficLightsTest` (every boundary), `PricesTest`,
   `ShoppingListTest`, `RecipeStepsTest`, `RecipeBundleTest`, `QuantitiesTest`, `RecipeModelsTest` and
   `RecipeRobustnessTest` (random pastes never throw).
+- **Recipes data** (F2, 2026-10-17): core `BackupCodecTest` (food round trips, a version 2 file, every new reference and
+  uniqueness check) and `BundleMergeTest` (which bundle ingredients match existing ones); app JVM `FoodMappersTest`; device
+  `data/FoodRepositoryTest` (the starter book imported through `RecipeRepository.importBundle` into a database that already
+  has ingredients, so real ids differ from the bundle's provisional ones, then read back through the repositories to give the
+  eight §11.7 checkpoint rows; importing again with Use existing adds 4 recipes and no ingredients; Import as new; learned
+  aliases; archived ingredients keep their lines; recipe delete cascades; save/replace; the shopping list's entries, marks, clear
+  ticked and clear list), `data/MigrationTest` 2 → 3 (and 1 → 3, with the foreign keys' ON DELETE actions),
+  `data/BackupRoundTripTest` (food in every table, restore into an empty database, an older file clears the food tables) and
+  `data/SettingsStoreTest` (the new keys and the cooking ticks). The 2 → 3 test needs `3.json`, which the build generates.
 - **Device tests** (`app/src/androidTest`, run by CI's `device-tests` job on two API 34 emulators
   in parallel shards, merged by `device-report`; report and screenshots on `refs/ci/device-report`): data layer against the real Room database
   (`data/`), end-to-end UI with screenshots (`ui/`, helpers in `testing/UiTestSupport.kt`), and the

@@ -7,10 +7,13 @@ import io.github.matteopi.budgeting.data.repo.AccountRepository
 import io.github.matteopi.budgeting.data.repo.BackupRepository
 import io.github.matteopi.budgeting.data.repo.CategoryRepository
 import io.github.matteopi.budgeting.data.repo.ImportRepository
+import io.github.matteopi.budgeting.data.repo.IngredientRepository
 import io.github.matteopi.budgeting.data.repo.PlanRepository
 import io.github.matteopi.budgeting.data.repo.PresetRepository
 import io.github.matteopi.budgeting.data.repo.ReceiptRepository
+import io.github.matteopi.budgeting.data.repo.RecipeRepository
 import io.github.matteopi.budgeting.data.repo.ScenarioRepository
+import io.github.matteopi.budgeting.data.repo.ShoppingRepository
 import io.github.matteopi.budgeting.data.repo.SnapshotRepository
 import io.github.matteopi.budgeting.data.repo.TransactionRepository
 import io.github.matteopi.budgeting.data.settings.SettingsStore
@@ -95,6 +98,22 @@ class AppContainer(context: Context) {
         widgetUpdater = widgetUpdater,
     )
 
+    val ingredientRepository = IngredientRepository(
+        foodDao = database.foodDao(),
+        clock = clock,
+    )
+
+    val recipeRepository = RecipeRepository(
+        database = database,
+        foodDao = database.foodDao(),
+        clock = clock,
+    )
+
+    val shoppingRepository = ShoppingRepository(
+        foodDao = database.foodDao(),
+        clock = clock,
+    )
+
     val snapshotRepository = SnapshotRepository(
         database = database,
         snapshotDao = database.snapshotDao(),
@@ -113,6 +132,7 @@ class AppContainer(context: Context) {
         reconciliationDao = database.reconciliationDao(),
         snapshotDao = database.snapshotDao(),
         receiptDao = database.receiptDao(),
+        foodDao = database.foodDao(),
         settingsStore = settingsStore,
         widgetUpdater = widgetUpdater,
     )

@@ -20,6 +20,11 @@ import io.github.matteopi.budgeting.core.model.ScheduledItem
 import io.github.matteopi.budgeting.core.model.SinkingFund
 import io.github.matteopi.budgeting.core.model.TermPeriod
 import io.github.matteopi.budgeting.core.model.Transaction
+import io.github.matteopi.budgeting.core.recipes.Ingredient
+import io.github.matteopi.budgeting.core.recipes.IngredientAliasRecord
+import io.github.matteopi.budgeting.core.recipes.Recipe
+import io.github.matteopi.budgeting.core.recipes.ShoppingEntry
+import io.github.matteopi.budgeting.core.recipes.ShoppingMark
 
 /** Everything in a backup, as the app's own core models (no DTOs). */
 data class BackupData(
@@ -44,4 +49,12 @@ data class BackupData(
     val receiptItems: List<ReceiptItem> = emptyList(),
     val products: List<Product> = emptyList(),
     val productAliases: List<ProductAliasRecord> = emptyList(),
+    // Backup version 3 (food). Declared last so positional construction of older data keeps working.
+    /** Each with its portions. */
+    val ingredients: List<Ingredient> = emptyList(),
+    val ingredientAliases: List<IngredientAliasRecord> = emptyList(),
+    /** Each with its lines and steps, in order. */
+    val recipes: List<Recipe> = emptyList(),
+    val shoppingEntries: List<ShoppingEntry> = emptyList(),
+    val shoppingMarks: List<ShoppingMark> = emptyList(),
 )

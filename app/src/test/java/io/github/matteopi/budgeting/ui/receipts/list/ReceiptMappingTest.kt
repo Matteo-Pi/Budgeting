@@ -69,6 +69,16 @@ class ReceiptMappingTest {
     }
 
     @Test
+    fun aWeighedItemKeepsItsWeight() {
+        val items = listOf(
+            item(1, productId = 10, price = 100, weightGrams = 452),
+            item(1, productId = 10, price = 150),
+        )
+        val purchased = ReceiptMapping.purchasedItems(listOf(tesco), items)
+        assertEquals(listOf<Int?>(452, null), purchased.map { it.weightGrams })
+    }
+
+    @Test
     fun itemsWithoutAProductOrWithoutAReceiptAreLeftOut() {
         val items = listOf(
             item(1, productId = null, price = 100),

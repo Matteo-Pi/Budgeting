@@ -33,6 +33,21 @@ import io.github.matteopi.budgeting.core.model.TermPeriod
 import io.github.matteopi.budgeting.core.model.Transaction
 import io.github.matteopi.budgeting.core.model.TxKind
 import io.github.matteopi.budgeting.core.model.ZeroPoint
+import io.github.matteopi.budgeting.core.recipes.BaseUnit
+import io.github.matteopi.budgeting.core.recipes.Ingredient
+import io.github.matteopi.budgeting.core.recipes.IngredientAliasRecord
+import io.github.matteopi.budgeting.core.recipes.Nutrition
+import io.github.matteopi.budgeting.core.recipes.NutritionSource
+import io.github.matteopi.budgeting.core.recipes.Portion
+import io.github.matteopi.budgeting.core.recipes.Recipe
+import io.github.matteopi.budgeting.core.recipes.RecipeLine
+import io.github.matteopi.budgeting.core.recipes.RecipeSource
+import io.github.matteopi.budgeting.core.recipes.RecipeStep
+import io.github.matteopi.budgeting.core.recipes.Shelf
+import io.github.matteopi.budgeting.core.recipes.ShoppingEntry
+import io.github.matteopi.budgeting.core.recipes.ShoppingMark
+import io.github.matteopi.budgeting.core.recipes.StepKind
+import io.github.matteopi.budgeting.core.recipes.VegKind
 import java.time.LocalDate
 
 /** Converts between the app's core models ([BackupData]) and the JSON DTOs ([BackupV1]). */
@@ -60,32 +75,75 @@ object BackupMapper {
             receiptItems = data.receiptItems.map { it.toDto() },
             products = data.products.map { it.toDto() },
             productAliases = data.productAliases.map { it.toDto() },
+            ingredients = data.ingredients.map { it.toDto() },
+            ingredientPortions = data.ingredients.flatMap { ingredient ->
+                ingredient.portions.map { IngredientPortionDto(ingredient.id, it.name, it.amount) }
+            },
+            ingredientAliases = data.ingredientAliases.map { IngredientAliasDto(it.id, it.nameKey, it.ingredientId) },
+            recipes = data.recipes.map { it.toDto() },
+            recipeLines = data.recipes.flatMap { recipe ->
+                recipe.lines.mapIndexed { index, line ->
+                    RecipeLineDto(
+                        recipeId = recipe.id,
+                        position = index,
+                        group = line.group,
+                        text = line.text,
+                        ingredientId = line.ingredientId,
+                        quantity = line.quantity,
+                        optional = line.optional,
+                    )
+                }
+            },
+            recipeSteps = data.recipes.flatMap { recipe ->
+                recipe.steps.mapIndexed { index, step ->
+                    RecipeStepDto(recipe.id, index, step.kind.name, step.title, step.time, step.body)
+                }
+            },
+            shoppingEntries = data.shoppingEntries.map { it.toDto() },
+            shoppingMarks = data.shoppingMarks.map { ShoppingMarkDto(it.ingredientId, it.checked, it.haveIt) },
             settings = data.settings.toDto(),
             appSettings = appSettings,
         )
 
-    fun fromBackup(backup: BackupV1): BackupData = BackupData(
-        accounts = backup.accounts.map { it.toModel() },
-        categories = backup.categories.map { it.toModel() },
-        transactions = backup.transactions.map { it.toModel() },
-        recurringRules = backup.recurringRules.map { it.toModel() },
-        scheduledItems = backup.scheduledItems.map { it.toModel() },
-        termPeriods = backup.termPeriods.map { it.toModel() },
-        predictions = backup.predictions.map { it.toModel() },
-        sinkingFunds = backup.sinkingFunds.map { it.toModel() },
-        scenarios = backup.scenarios.map { it.toModel() },
-        presets = backup.presets.map { it.toModel() },
-        merchantRules = backup.merchantRules.map { it.toModel() },
-        reconciliations = backup.reconciliations.map { it.toModel() },
-        importBatches = backup.importBatches.map { it.toModel() },
-        balanceSnapshots = backup.balanceSnapshots.map { it.toModel() },
-        categoryWeekSnapshots = backup.categoryWeekSnapshots.map { it.toModel() },
-        receipts = backup.receipts.map { it.toModel() },
-        receiptItems = backup.receiptItems.map { it.toModel() },
-        products = backup.products.map { it.toModel() },
-        productAliases = backup.productAliases.map { it.toModel() },
-        settings = backup.settings.toModel(),
-    )
+    fun fromBackup(backup: BackupV1): BackupData {
+        val portionsByIngredient = backup.ingredientPortions.groupBy { it.ingredientId }
+        val linesByRecipe = backup.recipeLines.groupBy { it.recipeId }
+        val stepsByRecipe = backup.recipeSteps.groupBy { it.recipeId }
+        return BackupData(
+            accounts = backup.accounts.map { it.toModel() },
+            categories = backup.categories.map { it.toModel() },
+            transactions = backup.transactions.map { it.toModel() },
+            recurringRules = backup.recurringRules.map { it.toModel() },
+            scheduledItems = backup.scheduledItems.map { it.toModel() },
+            termPeriods = backup.termPeriods.map { it.toModel() },
+            predictions = backup.predictions.map { it.toModel() },
+            sinkingFunds = backup.sinkingFunds.map { it.toModel() },
+            scenarios = backup.scenarios.map { it.toModel() },
+            presets = backup.presets.map { it.toModel() },
+            merchantRules = backup.merchantRules.map { it.toModel() },
+            reconciliations = backup.reconciliations.map { it.toModel() },
+            importBatches = backup.importBatches.map { it.toModel() },
+            balanceSnapshots = backup.balanceSnapshots.map { it.toModel() },
+            categoryWeekSnapshots = backup.categoryWeekSnapshots.map { it.toModel() },
+            receipts = backup.receipts.map { it.toModel() },
+            receiptItems = backup.receiptItems.map { it.toModel() },
+            products = backup.products.map { it.toModel() },
+            productAliases = backup.productAliases.map { it.toModel() },
+            ingredients = backup.ingredients.map { dto ->
+                dto.toModel(portionsByIngredient[dto.id].orEmpty().map { Portion(it.name, it.amount) })
+            },
+            ingredientAliases = backup.ingredientAliases.map { IngredientAliasRecord(it.id, it.nameKey, it.ingredientId) },
+            recipes = backup.recipes.map { dto ->
+                dto.toModel(
+                    lines = linesByRecipe[dto.id].orEmpty().sortedBy { it.position }.map { it.toModel() },
+                    steps = stepsByRecipe[dto.id].orEmpty().sortedBy { it.position }.map { it.toModel() },
+                )
+            },
+            shoppingEntries = backup.shoppingEntries.map { it.toModel() },
+            shoppingMarks = backup.shoppingMarks.map { ShoppingMark(it.ingredientId, it.checked, it.haveIt) },
+            settings = backup.settings.toModel(),
+        )
+    }
 }
 
 private fun Account.toDto() = AccountDto(id, name, type.name, overdraftLimit.pence, includeInSafeToSpend, archived, sortOrder)
@@ -336,4 +394,125 @@ private fun SettingsDto.toModel() = BudgetSettings(
     historyStartDate = historyStartDate?.let { LocalDate.parse(it) },
     simulations = simulations,
     forecastHorizonDays = forecastHorizonDays,
+)
+
+private fun Ingredient.toDto() = IngredientDto(
+    id = id,
+    name = name,
+    unit = unit.name,
+    packSize = packSize,
+    packLabel = packLabel,
+    pricePence = price?.pence,
+    priceDate = priceDate?.toString(),
+    store = store,
+    productId = productId,
+    productName = productName,
+    sourceUrl = sourceUrl,
+    barcode = barcode,
+    kcal = per100.kcal,
+    fat = per100.fat,
+    saturates = per100.saturates,
+    carbs = per100.carbs,
+    sugars = per100.sugars,
+    fibre = per100.fibre,
+    protein = per100.protein,
+    salt = per100.salt,
+    nutritionSource = nutritionSource.name,
+    vegKind = vegKind.name,
+    shelf = shelf.name,
+    note = note,
+    archived = archived,
+    createdAtEpochMillis = createdAtEpochMillis,
+)
+private fun IngredientDto.toModel(portions: List<Portion>) = Ingredient(
+    id = id,
+    name = name,
+    unit = BaseUnit.valueOf(unit),
+    packSize = packSize,
+    packLabel = packLabel,
+    price = pricePence?.let { Money(it) },
+    priceDate = priceDate?.let { LocalDate.parse(it) },
+    store = store,
+    productId = productId,
+    productName = productName,
+    sourceUrl = sourceUrl,
+    barcode = barcode,
+    per100 = Nutrition(kcal, fat, saturates, carbs, sugars, fibre, protein, salt),
+    nutritionSource = NutritionSource.valueOf(nutritionSource),
+    vegKind = VegKind.valueOf(vegKind),
+    shelf = Shelf.valueOf(shelf),
+    note = note,
+    archived = archived,
+    createdAtEpochMillis = createdAtEpochMillis,
+    portions = portions,
+)
+
+private fun Recipe.toDto() = RecipeDto(
+    id = id,
+    title = title,
+    shortTitle = shortTitle,
+    tagline = tagline,
+    style = style,
+    serves = serves,
+    prepMins = prepMins,
+    cookMins = cookMins,
+    timeNote = timeNote,
+    servedWith = servedWith,
+    tags = tags,
+    rating = rating,
+    notes = notes,
+    source = source.name,
+    createdAtEpochMillis = createdAtEpochMillis,
+    updatedAtEpochMillis = updatedAtEpochMillis,
+    archived = archived,
+)
+private fun RecipeDto.toModel(lines: List<RecipeLine>, steps: List<RecipeStep>) = Recipe(
+    id = id,
+    title = title,
+    shortTitle = shortTitle,
+    tagline = tagline,
+    style = style,
+    serves = serves,
+    prepMins = prepMins,
+    cookMins = cookMins,
+    timeNote = timeNote,
+    servedWith = servedWith,
+    tags = tags,
+    rating = rating,
+    notes = notes,
+    source = RecipeSource.valueOf(source),
+    createdAtEpochMillis = createdAtEpochMillis,
+    updatedAtEpochMillis = updatedAtEpochMillis,
+    archived = archived,
+    lines = lines,
+    steps = steps,
+)
+
+private fun RecipeLineDto.toModel() = RecipeLine(
+    group = group,
+    text = text,
+    ingredientId = ingredientId,
+    quantity = quantity,
+    optional = optional,
+)
+
+private fun RecipeStepDto.toModel() = RecipeStep(
+    kind = StepKind.valueOf(kind),
+    title = title,
+    time = time,
+    body = body,
+)
+
+private fun ShoppingEntry.toDto() = ShoppingEntryDto(
+    id, recipeId, servings, ingredientId, quantity, freeText, checked, addedAtEpochMillis,
+)
+private fun ShoppingEntryDto.toModel() = ShoppingEntry(
+    id = id,
+    recipeId = recipeId,
+    servings = servings,
+    ingredientId = ingredientId,
+    quantity = quantity,
+    freeText = freeText,
+    checked = checked,
+    addedAtEpochMillis = addedAtEpochMillis,
 )
