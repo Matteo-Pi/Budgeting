@@ -41,6 +41,7 @@ import io.github.matteopi.budgeting.core.model.Transaction
 import io.github.matteopi.budgeting.core.model.TxKind
 import io.github.matteopi.budgeting.core.model.ZeroPoint
 import io.github.matteopi.budgeting.core.recipes.BaseUnit
+import io.github.matteopi.budgeting.core.recipes.FoodGroup
 import io.github.matteopi.budgeting.core.recipes.Ingredient
 import io.github.matteopi.budgeting.core.recipes.Nutrition
 import io.github.matteopi.budgeting.core.recipes.Portion
@@ -131,8 +132,8 @@ class BackupRoundTripTest {
         val kitchenRoll = c.ingredientRepository.save(
             Ingredient(
                 name = "Kitchen roll", unit = BaseUnit.G, packSize = 2.0, packLabel = "2 rolls", barcode = "5012345678900",
-                shelf = Shelf.OTHER, note = "not food", per100 = Nutrition(kcal = 0.0),
-                portions = listOf(Portion("sheet", 0.5), Portion("roll", 1.0)),
+                shelf = Shelf.OTHER, note = "not food", per100 = Nutrition(kcal = 0.0, addedSugars = 0.0),
+                portions = listOf(Portion("sheet", 0.5), Portion("roll", 1.0)), foodGroup = FoodGroup.NONE,
             ),
         )
         c.ingredientRepository.setArchived(kitchenRoll, true)
@@ -160,6 +161,10 @@ class BackupRoundTripTest {
         c.shoppingRepository.setFreeTextChecked(binBags, true)
         c.shoppingRepository.setChecked(linked.id, true)
         c.shoppingRepository.setHaveIt(all[1].id, true)
+
+        // What the kitchen has (backup version 4): one measured, one not.
+        c.ingredientRepository.setOwned(all[2].id, 1_000.0)
+        c.ingredientRepository.setOwned(all[3].id, null)
     }
 
     /** Puts something in every table, plus every app setting. */
@@ -472,6 +477,9 @@ class BackupRoundTripTest {
         assertTrue(data.shoppingEntries.any { it.freeText != null && it.checked }, "a ticked free-text entry")
         assertEquals(2, data.shoppingMarks.size, "marks")
         assertTrue(data.shoppingMarks.any { it.checked } && data.shoppingMarks.any { it.haveIt }, "a tick and an I-have-it")
+        assertEquals(2, data.ownedItems.size, "what the kitchen has")
+        assertTrue(data.ownedItems.any { it.quantity == null } && data.ownedItems.any { it.quantity == 1_000.0 }, "measured and not")
+        assertTrue(data.ingredients.any { it.foodGroup == FoodGroup.NONE && it.per100.addedSugars == 0.0 }, "a food group and added sugars")
     }
 
     private fun BackupData.sortedForComparison(): BackupData = copy(
@@ -499,6 +507,7 @@ class BackupRoundTripTest {
         recipes = recipes.sortedBy { it.id },
         shoppingEntries = shoppingEntries.sortedBy { it.id },
         shoppingMarks = shoppingMarks.sortedBy { it.ingredientId },
+        ownedItems = ownedItems.sortedBy { it.ingredientId },
     )
 
     /** Table by table (so a failure names the table), ignoring row order but not ids. */
@@ -529,6 +538,7 @@ class BackupRoundTripTest {
         assertEquals(e.recipes, a.recipes, "recipes with their lines and steps")
         assertEquals(e.shoppingEntries, a.shoppingEntries, "shopping list entries")
         assertEquals(e.shoppingMarks, a.shoppingMarks, "shopping list marks")
+        assertEquals(e.ownedItems, a.ownedItems, "what the kitchen has")
         assertEquals(e.settings, a.settings, "budget settings")
     }
 
@@ -803,13 +813,16 @@ class BackupRoundTripTest {
     }
 
     @Test
-    fun theExportedFileIsVersion3AndCarriesTheFoodLists() = runBlocking<Unit> {
+    fun theExportedFileIsVersion4AndCarriesTheFoodLists() = runBlocking<Unit> {
         populateEverything()
 
         val json = BackupViewModel(container).buildExportJson()
 
-        assertTrue("\"version\": 3" in json, "the file says it is version 3")
-        for (list in listOf("ingredients", "ingredientPortions", "ingredientAliases", "recipes", "recipeLines", "recipeSteps", "shoppingEntries", "shoppingMarks")) {
+        assertTrue("\"version\": 4" in json, "the file says it is version 4")
+        for (list in listOf(
+            "ingredients", "ingredientPortions", "ingredientAliases", "recipes", "recipeLines", "recipeSteps", "shoppingEntries",
+            "shoppingMarks", "ownedItems",
+        )) {
             assertTrue("\"$list\": [" in json, "the file has a \"$list\" list")
         }
     }
@@ -828,7 +841,7 @@ class BackupRoundTripTest {
         val restored = container.backupRepository.readAll()
         assertEquals(1, restored.accounts.size)
         assertTrue(restored.ingredients.isEmpty() && restored.recipes.isEmpty() && restored.ingredientAliases.isEmpty())
-        assertTrue(restored.shoppingEntries.isEmpty() && restored.shoppingMarks.isEmpty())
+        assertTrue(restored.shoppingEntries.isEmpty() && restored.shoppingMarks.isEmpty() && restored.ownedItems.isEmpty())
     }
 
     /** The backup file carries `chartAccountView` and `balanceView`; restoring must write them back too. */
