@@ -14,11 +14,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -70,15 +70,28 @@ object RecipesTags {
     const val SEARCH = "recipes-search"
     const val EMPTY = "recipes-empty"
     const val SORT = "recipes-sort"
+    const val FILTER_PROTEIN = "recipes-filter-protein"
+    const val FILTER_CARB = "recipes-filter-carb"
+    const val FILTER_METHOD = "recipes-filter-method"
+    const val FILTER_TIME = "recipes-filter-time"
+    const val FILTER_HAVE = "recipes-filter-have"
+    const val FILTER_TAGS = "recipes-filter-tags"
+    const val CLEAR_FILTERS = "recipes-clear-filters"
 
     fun card(recipeId: Long) = "recipe-card-$recipeId"
+
+    /**
+     * A choice in a filter menu: `protein-BEEF`, `protein-any`, `protein-no-meat`, `carb-RICE`, `method-OVEN`,
+     * `time-45`, `have-EVERYTHING`, `tag-<name>`.
+     */
+    fun option(key: String) = "recipes-option-$key"
 }
 
 /**
- * The Recipes tab, the Recipes section's first screen (docs/PLAN.md §11.8): search, tag chips and a sort menu
- * above a card per recipe (cost per portion, kcal, protein, salt with its colour, veg, time and rating at the
- * recipe's own servings). A tap opens the recipe; the button adds one. With no recipes it offers the starter
- * recipes and pasting one.
+ * The Recipes tab, the Recipes section's first screen (docs/PLAN.md §11.8): search, then filter menus (protein, carb,
+ * cooking method, time, what I have, tags; §11.11) and a sort menu above a card per recipe (cost per portion, kcal,
+ * protein, salt with its colour, veg, time and rating at the recipe's own servings). A tap opens the recipe; the
+ * button adds one. With no recipes it offers the starter recipes and pasting one.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -133,10 +146,7 @@ fun RecipesScreen(
                 )
                 else -> RecipeList(
                     state = state,
-                    onQuery = viewModel::setQuery,
-                    onToggleTag = viewModel::toggleTag,
-                    onSort = viewModel::setSort,
-                    onClearFilters = viewModel::clearFilters,
+                    viewModel = viewModel,
                     onOpenRecipe = onOpenRecipe,
                 )
             }
@@ -173,12 +183,11 @@ private fun NoRecipesYet(onAddStarter: () -> Unit, onPaste: () -> Unit) {
 @Composable
 private fun RecipeList(
     state: RecipesUiState,
-    onQuery: (String) -> Unit,
-    onToggleTag: (String) -> Unit,
-    onSort: (RecipeSort) -> Unit,
-    onClearFilters: () -> Unit,
+    viewModel: RecipesViewModel,
     onOpenRecipe: (Long) -> Unit,
 ) {
+    val onQuery: (String) -> Unit = viewModel::setQuery
+    val onClearFilters: () -> Unit = viewModel::clearFilters
     var query by rememberSaveable { mutableStateOf(state.query) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -192,10 +201,12 @@ private fun RecipeList(
                     query = it
                     onQuery(it)
                 },
-                tags = state.tags,
-                sort = state.sort,
-                onToggleTag = onToggleTag,
-                onSort = onSort,
+                state = state,
+                viewModel = viewModel,
+                onClear = {
+                    query = ""
+                    onClearFilters()
+                },
             )
         }
         if (state.cards.isEmpty()) {
@@ -210,25 +221,26 @@ private fun RecipeList(
                             query = ""
                             onClearFilters()
                         },
-                    ) { Text("Clear search and tags") }
+                    ) { Text("Clear search and filters") }
                 }
             }
         }
         items(state.cards, key = { it.id }) { card ->
-            RecipeCardView(card = card, onClick = { onOpenRecipe(card.id) })
+            RecipeCardView(card = card, showHave = state.hasOwned, onClick = { onOpenRecipe(card.id) })
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun RecipeControls(
     query: String,
     onQuery: (String) -> Unit,
-    tags: List<TagChip>,
-    sort: RecipeSort,
-    onToggleTag: (String) -> Unit,
-    onSort: (RecipeSort) -> Unit,
+    state: RecipesUiState,
+    viewModel: RecipesViewModel,
+    onClear: () -> Unit,
 ) {
+    val filters = state.filters
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(
             value = query,
@@ -247,13 +259,120 @@ private fun RecipeControls(
             },
             modifier = Modifier.fillMaxWidth().testTag(RecipesTags.SEARCH),
         )
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            item(key = "sort") { SortChip(sort = sort, onSort = onSort) }
-            items(tags, key = { "tag-" + it.name }) { tag ->
-                FilterChip(
-                    selected = tag.selected,
-                    onClick = { onToggleTag(tag.name) },
-                    label = { Text(tag.name) },
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterMenu(
+                name = "Protein",
+                value = filters.protein?.label ?: if (filters.meatFree) "No meat or fish" else null,
+                tag = RecipesTags.FILTER_PROTEIN,
+                choices = buildList {
+                    add(MenuChoice("protein-any", "Any protein", filters.protein == null && !filters.meatFree) { viewModel.setProtein(null) })
+                    state.proteinChoices.forEach { (group, count) ->
+                        add(MenuChoice("protein-${group.name}", "${group.label} ($count)", filters.protein == group) { viewModel.setProtein(group) })
+                    }
+                    if (state.meatFreeCount > 0) {
+                        add(
+                            MenuChoice("protein-no-meat", "No meat or fish (${state.meatFreeCount})", filters.meatFree) {
+                                viewModel.setProtein(null, meatFree = true)
+                            },
+                        )
+                    }
+                },
+            )
+            FilterMenu(
+                name = "Carb",
+                value = filters.carb?.label,
+                tag = RecipesTags.FILTER_CARB,
+                choices = listOf(MenuChoice("carb-any", "Any carb", filters.carb == null) { viewModel.setCarb(null) }) +
+                    state.carbChoices.map { (group, count) ->
+                        MenuChoice("carb-${group.name}", "${group.label} ($count)", filters.carb == group) { viewModel.setCarb(group) }
+                    },
+            )
+            FilterMenu(
+                name = "Method",
+                value = filters.method?.label,
+                tag = RecipesTags.FILTER_METHOD,
+                choices = listOf(MenuChoice("method-any", "Any method", filters.method == null) { viewModel.setMethod(null) }) +
+                    state.methodChoices.map { (method, count) ->
+                        MenuChoice("method-${method.name}", "${method.label} ($count)", filters.method == method) { viewModel.setMethod(method) }
+                    },
+            )
+            FilterMenu(
+                name = "Time",
+                value = filters.maxMins?.let { "${FoodFormat.minutes(it)} or less" },
+                tag = RecipesTags.FILTER_TIME,
+                choices = listOf(MenuChoice("time-any", "Any time", filters.maxMins == null) { viewModel.setMaxMins(null) }) +
+                    state.timeChoices.map { (mins, count) ->
+                        MenuChoice("time-$mins", "${FoodFormat.minutes(mins)} or less ($count)", filters.maxMins == mins) {
+                            viewModel.setMaxMins(mins)
+                        }
+                    },
+            )
+            if (state.hasOwned) {
+                FilterMenu(
+                    name = "What I have",
+                    value = filters.have.takeIf { it != HaveFilter.ANY }?.label,
+                    tag = RecipesTags.FILTER_HAVE,
+                    choices = HaveFilter.entries.map { have ->
+                        val label = if (have == HaveFilter.ANY) "Any" else "${have.label} (${state.haveCounts[have] ?: 0})"
+                        MenuChoice("have-${have.name}", label, filters.have == have) { viewModel.setHave(have) }
+                    },
+                )
+            }
+            if (state.tags.isNotEmpty()) {
+                FilterMenu(
+                    name = "Tags",
+                    value = filters.tags.takeIf { it.isNotEmpty() }?.joinToString(", "),
+                    tag = RecipesTags.FILTER_TAGS,
+                    keepOpen = true,
+                    choices = state.tags.map { tag -> MenuChoice("tag-${tag.name}", tag.name, tag.selected) { viewModel.toggleTag(tag.name) } },
+                )
+            }
+            SortChip(sort = state.sort, onSort = viewModel::setSort)
+            if (filters.active) {
+                AssistChip(
+                    onClick = onClear,
+                    label = { Text("Clear filters") },
+                    leadingIcon = { Icon(Icons.Default.Close, contentDescription = null) },
+                    modifier = Modifier.testTag(RecipesTags.CLEAR_FILTERS),
+                )
+            }
+        }
+    }
+}
+
+/** One choice of a filter menu: [key] names its test tag ([RecipesTags.option]). */
+private class MenuChoice(val key: String, val label: String, val selected: Boolean, val onPick: () -> Unit)
+
+/**
+ * A filter as a chip that opens its menu. The chip shows [value] (and is selected) while the filter narrows the list,
+ * else [name]. [keepOpen] keeps the menu open after a pick, for choosing several tags.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FilterMenu(name: String, value: String?, tag: String, choices: List<MenuChoice>, keepOpen: Boolean = false) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        FilterChip(
+            selected = value != null,
+            onClick = { expanded = true },
+            label = { Text(value ?: name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
+            modifier = Modifier.testTag(tag),
+        )
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            choices.forEach { choice ->
+                DropdownMenuItem(
+                    text = { Text(choice.label) },
+                    onClick = {
+                        choice.onPick()
+                        if (!keepOpen) expanded = false
+                    },
+                    leadingIcon = if (choice.selected) {
+                        { Icon(Icons.Default.Check, contentDescription = "Chosen") }
+                    } else {
+                        null
+                    },
+                    modifier = Modifier.testTag(RecipesTags.option(choice.key)),
                 )
             }
         }
@@ -287,7 +406,7 @@ private fun SortChip(sort: RecipeSort, onSort: (RecipeSort) -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-private fun RecipeCardView(card: RecipeCard, onClick: () -> Unit) {
+private fun RecipeCardView(card: RecipeCard, showHave: Boolean, onClick: () -> Unit) {
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth().testTag(RecipesTags.card(card.id))) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.Top) {
@@ -306,6 +425,13 @@ private fun RecipeCardView(card: RecipeCard, onClick: () -> Unit) {
                             card.tags.joinToString(" · "),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    if (showHave && card.ingredientCount > 0) {
+                        Text(
+                            card.haveText,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (card.missingCount == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }

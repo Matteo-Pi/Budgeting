@@ -68,6 +68,7 @@ class BackupRepository(
             recipes = foodDao.getRecipes().map { it.toModel() },
             shoppingEntries = foodDao.getShoppingEntries().map { it.toModel() },
             shoppingMarks = foodDao.getShoppingMarks().map { it.toModel() },
+            ownedItems = foodDao.getOwnedItems().map { it.toModel() },
         )
     }
 
@@ -76,6 +77,7 @@ class BackupRepository(
         database.withTransaction {
             // The food tables first (shopping list, recipes, then ingredients and their aliases and
             // portions): ingredients point at products, so they must go before the products below.
+            foodDao.deleteAllOwnedItems()
             foodDao.deleteAllShoppingMarks()
             foodDao.deleteAllShoppingEntries()
             foodDao.deleteAllRecipeLines()
@@ -141,6 +143,7 @@ class BackupRepository(
             foodDao.insertRecipeSteps(data.recipes.flatMap { it.toStepEntities() })
             foodDao.insertShoppingEntries(data.shoppingEntries.map { it.toEntity() })
             foodDao.insertShoppingMarks(data.shoppingMarks.map { it.toEntity() })
+            foodDao.insertOwnedItems(data.ownedItems.map { it.toEntity() })
             snapshotDao.insertBalanceSnapshots(data.balanceSnapshots.map { it.toEntity() })
             snapshotDao.insertCategorySnapshots(data.categoryWeekSnapshots.map { it.toEntity() })
         }

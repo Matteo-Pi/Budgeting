@@ -2,10 +2,12 @@ package io.github.matteopi.budgeting.data.repo
 
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.recipes.BaseUnit
+import io.github.matteopi.budgeting.core.recipes.FoodGroup
 import io.github.matteopi.budgeting.core.recipes.Ingredient
 import io.github.matteopi.budgeting.core.recipes.IngredientAliasRecord
 import io.github.matteopi.budgeting.core.recipes.Nutrition
 import io.github.matteopi.budgeting.core.recipes.NutritionSource
+import io.github.matteopi.budgeting.core.recipes.OwnedItem
 import io.github.matteopi.budgeting.core.recipes.Portion
 import io.github.matteopi.budgeting.core.recipes.Recipe
 import io.github.matteopi.budgeting.core.recipes.RecipeLine
@@ -88,6 +90,19 @@ class FoodMappersTest {
         assertNull(entity.salt)
         assertEquals(bare, entity.toModel())
         assertEquals(Nutrition(), entity.toModel().per100)
+    }
+
+    @Test
+    fun addedSugarsTheFoodGroupAndWhatIsOwnedRoundTrip() {
+        val honey = onion.copy(per100 = onion.per100.copy(addedSugars = 82.4), foodGroup = FoodGroup.NONE)
+        val entity = honey.toEntity()
+        assertEquals(82.4, entity.addedSugars)
+        assertEquals("NONE", entity.foodGroup)
+        assertEquals(honey, entity.toModel(honey.toPortionEntities().mapIndexed { index, row -> row.copy(id = index + 1L) }))
+        assertNull(entity.copy(foodGroup = "MYSTERY").toModel().foodGroup, "a group this version doesn't know is guessed")
+        val owned = OwnedItem(ingredientId = 7, quantity = 450.0, updatedAtEpochMillis = 123L)
+        assertEquals(owned, owned.toEntity().toModel())
+        assertEquals(OwnedItem(7, null, 5L), OwnedItem(7, null, 5L).toEntity().toModel())
     }
 
     @Test

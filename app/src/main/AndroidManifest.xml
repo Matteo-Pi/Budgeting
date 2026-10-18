@@ -4,6 +4,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Only for the opt-in Open Food Facts barcode lookup (docs/PLAN.md §11.5); nothing else uses the network. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Recipe timers also start a timer on the phone's clock app (docs/PLAN.md §11.11). A normal permission. -->
+    <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
 
     <application
         android:name=".BudgetApp"

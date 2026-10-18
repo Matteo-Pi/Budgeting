@@ -10,7 +10,8 @@ import androidx.room.PrimaryKey
  * An ingredient (docs/PLAN.md §11.3). Quantities and nutrition are REAL, in the ingredient's base
  * unit (`unit` is `G` or `ML`); nutrition is per 100 base units and null means unknown. `price` is
  * the typed pack price in pence and `price_date` an epoch day. The product link is cleared if the
- * product is deleted.
+ * product is deleted. Version 4 (§11.11) adds `added_sugars` (per 100, null = unknown) and
+ * `food_group` (a `FoodGroup` name; null = guessed from the name, `NONE` = neither).
  */
 @Entity(
     tableName = "ingredients",
@@ -54,4 +55,6 @@ data class IngredientEntity(
     val note: String,
     val archived: Boolean,
     @ColumnInfo(name = "created_at") val createdAt: Long,
+    @ColumnInfo(name = "added_sugars") val addedSugars: Double? = null,
+    @ColumnInfo(name = "food_group") val foodGroup: String? = null,
 )

@@ -9,6 +9,7 @@ import androidx.room.Update
 import io.github.matteopi.budgeting.data.db.entities.IngredientAliasEntity
 import io.github.matteopi.budgeting.data.db.entities.IngredientEntity
 import io.github.matteopi.budgeting.data.db.entities.IngredientPortionEntity
+import io.github.matteopi.budgeting.data.db.entities.OwnedItemEntity
 import io.github.matteopi.budgeting.data.db.entities.RecipeEntity
 import io.github.matteopi.budgeting.data.db.entities.RecipeLineEntity
 import io.github.matteopi.budgeting.data.db.entities.RecipeStepEntity
@@ -326,4 +327,25 @@ abstract class FoodDao {
         deleteAllShoppingEntries()
         deleteAllShoppingMarks()
     }
+
+    // ---- What the kitchen has (docs/PLAN.md §11.11) ------------------------------------------
+
+    @Query("SELECT * FROM owned_items ORDER BY ingredient_id")
+    abstract fun observeOwnedItems(): Flow<List<OwnedItemEntity>>
+
+    @Query("SELECT * FROM owned_items ORDER BY ingredient_id")
+    abstract suspend fun getOwnedItems(): List<OwnedItemEntity>
+
+    /** Adds the ingredient's row, or replaces it. */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    abstract suspend fun upsertOwnedItem(item: OwnedItemEntity)
+
+    @Insert
+    abstract suspend fun insertOwnedItems(items: List<OwnedItemEntity>)
+
+    @Query("DELETE FROM owned_items WHERE ingredient_id = :ingredientId")
+    abstract suspend fun deleteOwnedItem(ingredientId: Long)
+
+    @Query("DELETE FROM owned_items")
+    abstract suspend fun deleteAllOwnedItems()
 }

@@ -196,6 +196,13 @@ class SettingsStore(context: Context) {
         dataStore.edit { it[FoodKeys.LOOK_UP_BARCODES_ONLINE] = lookUp }
     }
 
+    /** Whether starting a recipe timer also starts one on the phone's clock app (docs/PLAN.md §11.11). Default true. */
+    val phoneTimers: Flow<Boolean> = dataStore.data.map { prefs -> prefs[FoodKeys.PHONE_TIMERS] ?: true }
+
+    suspend fun setPhoneTimers(on: Boolean) {
+        dataStore.edit { it[FoodKeys.PHONE_TIMERS] = on }
+    }
+
     /**
      * What is ticked off in the cooking view of [recipeId]: ingredient lines and steps, as the
      * screen names them (any strings). Empty until something is ticked.
@@ -243,6 +250,7 @@ class SettingsStore(context: Context) {
         const val COOKING_TICKS_PREFIX = "cooking_ticks_"
         val COUNT_OPTIONAL_EXTRAS = booleanPreferencesKey("count_optional_extras")
         val LOOK_UP_BARCODES_ONLINE = booleanPreferencesKey("look_up_barcodes_online")
+        val PHONE_TIMERS = booleanPreferencesKey("phone_timers")
 
         fun cookingTicks(recipeId: Long) = stringSetPreferencesKey("$COOKING_TICKS_PREFIX$recipeId")
     }

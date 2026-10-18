@@ -130,6 +130,7 @@ class IngredientFormRulesTest {
         assertEquals("0.99", IngredientFormRules.priceInput(Money(99)))
         assertEquals("1.50", IngredientFormRules.priceInput(Money(150)))
         assertEquals("12.00", IngredientFormRules.priceInput(Money(1200)))
-        assertEquals(8, IngredientFormRules.NUTRIENT_ORDER.size)
+        assertEquals(9, IngredientFormRules.NUTRIENT_ORDER.size)
+        assertEquals(Nutrient.ADDED_SUGARS, IngredientFormRules.NUTRIENT_ORDER[5], "added sugars come after the sugars")
     }
 }

@@ -25,6 +25,7 @@ enum class CompareColumn(val label: String, val bestIsHigh: Boolean?, val nutrie
     SATURATES("Saturates", false, Nutrient.SATURATES),
     CARBS("Carbs", null, Nutrient.CARBS),
     SUGARS("Sugars", false, Nutrient.SUGARS),
+    ADDED_SUGARS("Added sugars", false, Nutrient.ADDED_SUGARS),
     FIBRE("Fibre", true, Nutrient.FIBRE),
     SALT("Salt", false, Nutrient.SALT),
     VEG("Veg", true),

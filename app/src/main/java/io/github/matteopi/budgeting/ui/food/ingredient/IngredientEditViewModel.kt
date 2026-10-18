@@ -9,6 +9,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.matteopi.budgeting.BudgetApp
 import io.github.matteopi.budgeting.core.recipes.BaseUnit
+import io.github.matteopi.budgeting.core.recipes.FoodGroup
 import io.github.matteopi.budgeting.core.recipes.Ingredient
 import io.github.matteopi.budgeting.core.recipes.LabelReading
 import io.github.matteopi.budgeting.core.recipes.Nutrient
@@ -167,6 +168,9 @@ class IngredientEditViewModel(
     fun setVegKind(kind: VegKind) = change { it.copy(vegKind = kind) }
 
     fun setShelf(shelf: Shelf) = change { it.copy(shelf = shelf) }
+
+    /** *Counts as*: null to guess from the name, else the person's choice (`NONE` for neither). */
+    fun setFoodGroup(group: FoodGroup?) = change { it.copy(foodGroup = group) }
 
     fun setNote(text: String) = change { it.copy(note = text) }
 

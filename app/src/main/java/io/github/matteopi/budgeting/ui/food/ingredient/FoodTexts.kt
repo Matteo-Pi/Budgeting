@@ -3,6 +3,8 @@ package io.github.matteopi.budgeting.ui.food.ingredient
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.receipts.PurchasedItem
 import io.github.matteopi.budgeting.core.recipes.BaseUnit
+import io.github.matteopi.budgeting.core.recipes.FoodGroup
+import io.github.matteopi.budgeting.core.recipes.FoodGroupKind
 import io.github.matteopi.budgeting.core.recipes.Ingredient
 import io.github.matteopi.budgeting.core.recipes.NutritionSource
 import io.github.matteopi.budgeting.core.recipes.PriceSource
@@ -39,6 +41,13 @@ object FoodTexts {
         VegKind.NONE -> "Doesn't count"
         VegKind.VEG -> "Vegetable or fruit"
         VegKind.PULSE -> "Beans or lentils"
+    }
+
+    /** *Counts as*: a group's name, or "Automatic (Chicken)" / "Automatic (neither)" with the guess for [group] null. */
+    fun foodGroupName(group: FoodGroup?, guessed: FoodGroup?): String = when (group) {
+        null -> "Automatic (${guessed?.label ?: "neither a protein nor a carb"})"
+        FoodGroup.NONE -> "Neither a protein nor a carb"
+        else -> "${group.label} (${if (group.kind == FoodGroupKind.CARB) "carb" else "protein"})"
     }
 
     fun nutritionSourceName(source: NutritionSource): String = when (source) {

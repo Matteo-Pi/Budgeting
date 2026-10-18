@@ -68,6 +68,10 @@ object FoodFormat {
     fun missingNutrition(n: Int): String =
         if (n == 1) "At least: 1 ingredient has no nutrition" else "At least: $n ingredients have no nutrition"
 
+    /** "Added sugars are at least this: 1 ingredient doesn't say how much it has". */
+    fun missingAddedSugars(n: Int): String =
+        "Added sugars are at least this: " + if (n == 1) "1 ingredient doesn't say how much it has" else "$n ingredients don't say how much they have"
+
     /**
      * What the snackbar says after a bundle import: "Added 4 recipes and 40 new ingredients", or with ingredients that
      * were matched to ones the user already had, "Added 4 recipes with 37 new ingredients (and 3 you already had)".

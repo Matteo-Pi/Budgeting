@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,8 +45,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.matteopi.budgeting.data.settings.AppSection
+import io.github.matteopi.budgeting.ui.components.AppIcons
 import io.github.matteopi.budgeting.ui.components.EmptyState
 import io.github.matteopi.budgeting.ui.food.ingredient.IngredientRowUi
+import io.github.matteopi.budgeting.ui.food.ingredient.OwnedDialog
+import io.github.matteopi.budgeting.ui.food.ingredient.OwnedFilter
 import io.github.matteopi.budgeting.ui.food.scan.PackPhotoButton
 import io.github.matteopi.budgeting.ui.navigation.SectionSwitchButton
 import kotlinx.coroutines.launch
@@ -56,6 +60,11 @@ object IngredientsTags {
     const val SCAN = "ingredients-scan"
 
     fun row(ingredientId: Long) = "ingredients-row-$ingredientId"
+
+    /** The *How much I have* button of a row. */
+    fun owned(ingredientId: Long) = "ingredients-owned-$ingredientId"
+
+    fun filter(filter: OwnedFilter) = "ingredients-filter-${filter.name.lowercase()}"
 }
 
 /**
@@ -79,6 +88,7 @@ fun IngredientsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var query by rememberSaveable { mutableStateOf("") }
     LaunchedEffect(query) { viewModel.setQuery(query) }
+    var ownedFor by rememberSaveable { mutableStateOf<Long?>(null) }
 
     Scaffold(
         modifier = modifier,
@@ -131,6 +141,18 @@ fun IngredientsScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp)
                     .testTag(IngredientsTags.SEARCH),
             )
+            if (state.hasAny) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
+                    OwnedFilter.entries.forEach { option ->
+                        FilterChip(
+                            selected = state.filter == option,
+                            onClick = { viewModel.setFilter(option) },
+                            label = { Text(if (option == OwnedFilter.OWNED) "${option.label} (${state.ownedCount})" else option.label) },
+                            modifier = Modifier.testTag(IngredientsTags.filter(option)),
+                        )
+                    }
+                }
+            }
             when {
                 state.loading -> Column(
                     modifier = Modifier.fillMaxSize(),
@@ -140,7 +162,12 @@ fun IngredientsScreen(
                 !state.hasAny -> EmptyState(
                     "No ingredients yet — tap + to add one, or add the starter recipes from the Recipes tab.",
                 )
-                state.sections.isEmpty() -> EmptyState("No ingredients match \"${query.trim()}\".")
+                state.sections.isEmpty() && state.filter == OwnedFilter.OWNED && query.isBlank() -> EmptyState(
+                    "Nothing here yet. Tap the fridge on an ingredient to say how much of it you have.",
+                )
+                state.sections.isEmpty() -> EmptyState(
+                    if (query.isBlank()) "No ingredients here." else "No ingredients match \"${query.trim()}\".",
+                )
                 else -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 88.dp),
@@ -155,26 +182,60 @@ fun IngredientsScreen(
                             )
                         }
                         items(section.rows, key = { it.id }) { row ->
-                            IngredientRow(row = row, onClick = { onOpenIngredient(row.id) })
+                            IngredientRow(row = row, onClick = { onOpenIngredient(row.id) }, onOwned = { ownedFor = row.id })
                         }
                     }
                 }
             }
         }
     }
+
+    val ownedId = ownedFor
+    val ownedIngredient = ownedId?.let { state.ingredients[it] }
+    if (ownedId != null && ownedIngredient != null) {
+        OwnedDialog(
+            ingredient = ownedIngredient,
+            current = state.owned[ownedId],
+            onSave = { quantity ->
+                viewModel.setOwned(ownedId, quantity)
+                ownedFor = null
+            },
+            onDismiss = { ownedFor = null },
+        )
+    }
 }
 
 @Composable
-private fun IngredientRow(row: IngredientRowUi, onClick: () -> Unit) {
+private fun IngredientRow(row: IngredientRowUi, onClick: () -> Unit, onOwned: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        IngredientRowText(row = row, onClick = onClick, modifier = Modifier.weight(1f))
+        IconButton(onClick = onOwned, modifier = Modifier.testTag(IngredientsTags.owned(row.id))) {
+            Icon(
+                AppIcons.Kitchen,
+                contentDescription = "How much ${row.name} I have",
+                tint = if (row.ownedText != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun IngredientRowText(row: IngredientRowUi, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
             .heightIn(min = 56.dp)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp)
             .testTag(IngredientsTags.row(row.id)),
     ) {
         Text(row.name, style = MaterialTheme.typography.bodyLarge)
+        if (row.ownedText != null) {
+            Text(
+                text = row.ownedText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
         if (row.priceLine != null) {
             Text(
                 text = row.priceLine,

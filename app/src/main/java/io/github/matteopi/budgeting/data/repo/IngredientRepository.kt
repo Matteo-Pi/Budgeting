@@ -3,6 +3,7 @@ package io.github.matteopi.budgeting.data.repo
 import io.github.matteopi.budgeting.core.recipes.Ingredient
 import io.github.matteopi.budgeting.core.recipes.IngredientAliasRecord
 import io.github.matteopi.budgeting.core.recipes.IngredientMatching
+import io.github.matteopi.budgeting.core.recipes.OwnedItem
 import io.github.matteopi.budgeting.core.recipes.Portion
 import io.github.matteopi.budgeting.data.db.dao.FoodDao
 import io.github.matteopi.budgeting.data.db.entities.IngredientAliasEntity
@@ -84,6 +85,29 @@ class IngredientRepository(
      * recipe line points at it. Returns false (and changes nothing) when one does: archive it instead.
      */
     suspend fun deleteIfUnused(id: Long): Boolean = foodDao.deleteIngredientIfUnused(id)
+
+    // ---- What the kitchen has (docs/PLAN.md §11.11) ------------------------------------------
+
+    /** Everything the kitchen has, by ingredient id. */
+    fun observeOwned(): Flow<Map<Long, OwnedItem>> =
+        foodDao.observeOwnedItems().map { list -> list.associate { it.ingredientId to it.toModel() } }
+
+    /**
+     * Records that the kitchen has [quantity] (base units) of the ingredient, or some that wasn't measured
+     * (null), dated now. A quantity of zero or less means none is left: the row is deleted.
+     */
+    suspend fun setOwned(ingredientId: Long, quantity: Double?) {
+        if (quantity != null && !(quantity > 0.0)) {
+            foodDao.deleteOwnedItem(ingredientId)
+        } else {
+            foodDao.upsertOwnedItem(OwnedItem(ingredientId, quantity, clock.nowMillis()).toEntity())
+        }
+    }
+
+    /** None left: forgets that the kitchen has the ingredient. */
+    suspend fun clearOwned(ingredientId: Long) {
+        foodDao.deleteOwnedItem(ingredientId)
+    }
 
     /** Links the ingredient to a receipts product (so its price comes from what was paid), or unlinks it with null. */
     suspend fun setProduct(ingredientId: Long, productId: Long?) {

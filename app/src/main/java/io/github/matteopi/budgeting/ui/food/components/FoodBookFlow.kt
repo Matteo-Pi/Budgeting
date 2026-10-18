@@ -10,16 +10,17 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 
 /**
- * The [FoodBook], emitting again whenever a recipe, an ingredient, a receipt or the setting changes or the
- * date does (a price can become old). Built off the main thread.
+ * The [FoodBook], emitting again whenever a recipe, an ingredient, what the kitchen has, a receipt or the setting
+ * changes or the date does (a price can become old). Built off the main thread.
  */
 fun AppContainer.observeFoodBook(): Flow<FoodBook> = combine(
-    recipeRepository.observeAll(),
-    ingredientRepository.observeAll(),
+    combine(recipeRepository.observeAll(), ingredientRepository.observeAll(), ingredientRepository.observeOwned()) { recipes, ingredients, owned ->
+        Triple(recipes, ingredients, owned)
+    },
     receiptRepository.observeSnapshot(),
     settingsStore.countOptionalExtras,
     clock.todayFlow,
-) { recipes, ingredients, receipts, countOptional, today ->
+) { (recipes, ingredients, owned), receipts, countOptional, today ->
     val purchases = ReceiptMapping.purchasedItems(receipts.receipts, receipts.items)
     FoodBook(
         recipes = recipes,
@@ -27,5 +28,6 @@ fun AppContainer.observeFoodBook(): Flow<FoodBook> = combine(
         prices = Prices.resolveAll(ingredients, purchases, today),
         countOptionalExtras = countOptional,
         today = today,
+        owned = owned,
     )
 }.flowOn(Dispatchers.Default)

@@ -57,6 +57,7 @@ class ShoppingViewModel(private val container: AppContainer) : ViewModel() {
             ingredients = book.ingredients.values.toList(),
             prices = book.prices,
             countOptional = book.countOptionalExtras,
+            owned = book.owned,
         )
         ShoppingUiState(
             loading = false,

@@ -1284,6 +1284,17 @@ now an overlay); daily worker snapshots before any account exists and its widget
     lines on the starter book), `ReviewRulesTest`, `FoodTextsTest` and `IngredientFormRulesTest`.
   - **Screens**: the review and the recipe page are plain scrolling columns rather than lazy lists, so every field
     stays composed (see the import check step's lesson).
+- **Recipe additions (2026-10-18, §11.11)**:
+  - **Core tests**: `VegAndSugarsTest` (the chilli's 6.69 in total and 5.88 towards 5 a day, added sugars per
+    portion, the unknown rules), `StepTimersTest`, `RecipeFacetsTest` (guessed groups, methods, the starter facets),
+    `PantryTest`, the owned case of `ShoppingListTest`, chat-style pastes in `RecipeTextTest`, and backup version 4.
+  - **JVM tests**: `ui/food/RecipeAdditionsTest` (filter menus and counts, owned rows, shopping wording, the editor's
+    new fields) and the new fields in `FoodMappersTest`.
+  - **Device tests**: `ui/RecipeAdditionsTest` (`additions-*`): veg and added sugars on the page; a step timer started
+    before *Cook*, running on in the cooking view and saying "Time's up"; 1 kg of rice owned, the *I have* filter and
+    the shopping list covered; filtering by Beef, Oven and 45 minutes, and the mince counted as pork; a chat recipe
+    pasted in one tap; *Copy recipe* pasted back. `MigrationTest` gains 3 → 4 and 1 → 4. `seedRecipesSection` turns
+    *Start timers on the phone's clock* off, so no test hands a timer to the emulator's clock app.
 - **Labels and barcodes (2026-10-17)**:
   - **Core tests**: `NutritionLabelTest` (per 100 g first or second, kJ and kcal on one or two rows, "<0.5 g",
     "trace", sodium to salt, no heading, not a label) and `OpenFoodFactsTest` (found, missing values, kJ and
@@ -2170,6 +2181,16 @@ Six changes the user asked for once the section was built. Room goes to **versio
 - **Tests**: `RecipeTextTest` gains chat-style fixtures written the way Claude answers. Each must read to
   the right title, servings, times, groups, lines and steps, with every starter recipe's paste-format
   round trip unchanged.
+
+**Checkpoints** (core tests, starter book, optional extras on):
+- **Veg in total / towards 5 a day**: chilli 6.69 / 5.88 (pulses 1.81 counted as 1); the other three have no
+  pulses, so the two numbers are the same.
+- **Added sugars per portion**: stir-fry 7.5 g (5.9 g without the extras), traybake 0.0 g, braise 0.2 g, chilli 0.1 g.
+- **Facets**:
+  - stir-fry: Chicken · Rice · Hob
+  - traybake: Chicken · Potatoes · Oven
+  - braise: Chicken and Pork · Rice · Hob
+  - chilli: Beef and Beans & lentils · Rice · Hob
 
 **Order of work (F6)**
 - **Core first, tested locally**:

@@ -23,20 +23,28 @@ object ShoppingTexts {
         else -> "${header.unpricedItems} items have no price"
     }
 
-    /** "640 g · 2 packs of 320 g"; "300 g · you have it" once marked. */
+    /**
+     * "640 g · 2 packs of 320 g"; "300 g · you have it" once marked; with what the kitchen has (docs/PLAN.md §11.11),
+     * "800 g · you have 400 g · 1 pack of 500 g", "1 kg · you have 1.2 kg, enough" or "300 g · you have some · 1 pack of 1 kg".
+     */
     fun quantityLine(line: ShoppingLine): String {
         val needed = Quantities.format(line.quantity, line.unit)
         val packSize = Quantities.format(line.packSize, line.unit)
-        return if (line.haveIt) {
-            "$needed · you have it"
-        } else {
-            "$needed · ${FoodTexts.packs(line.packs)} of $packSize"
+        val owned = line.owned
+        return when {
+            line.haveIt -> "$needed · you have it"
+            line.haveEnough -> "$needed · you have ${Quantities.format(requireNotNull(owned?.quantity), line.unit)}, enough"
+            owned != null -> {
+                val have = owned.quantity?.let { Quantities.format(it, line.unit) } ?: "some"
+                "$needed · you have $have · ${FoodTexts.packs(line.packs)} of $packSize"
+            }
+            else -> "$needed · ${FoodTexts.packs(line.packs)} of $packSize"
         }
     }
 
-    /** The estimated cost of the line, "No price" when it has none, nothing once marked "I have it". */
+    /** The estimated cost of the line, "No price" when it has none, nothing once marked "I have it" or when what is owned covers it. */
     fun costText(line: ShoppingLine): String? = when {
-        line.haveIt -> null
+        line.haveIt || line.haveEnough -> null
         else -> line.cost?.format() ?: "No price"
     }
 

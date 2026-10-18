@@ -68,6 +68,7 @@ import kotlinx.coroutines.withContext
 object RecipeSettingsTags {
     const val COUNT_OPTIONAL = "recipe-settings-count-optional"
     const val LOOK_UP_BARCODES = "recipe-settings-look-up-barcodes"
+    const val PHONE_TIMERS = "recipe-settings-phone-timers"
     const val ADD_STARTER = "recipe-settings-add-starter"
     const val IMPORT_JSON = "recipe-settings-import-json"
 }
@@ -75,20 +76,22 @@ object RecipeSettingsTags {
 data class RecipeSettingsUiState(
     val countOptionalExtras: Boolean = true,
     val lookUpBarcodesOnline: Boolean = false,
+    val phoneTimers: Boolean = true,
     /** How many recipes there are (not archived): adding the starter book asks first when there are some. */
     val recipeCount: Int = 0,
 )
 
-/** The recipe settings (docs/PLAN.md §11.8): the two switches, the starter book and importing a recipe file. */
+/** The recipe settings (docs/PLAN.md §11.8, §11.11): the switches, the starter book and importing a recipe file. */
 class RecipeSettingsViewModel(private val container: AppContainer) : ViewModel() {
     val importer = BundleImporter(container.recipeRepository, container.appScope)
 
     val uiState: StateFlow<RecipeSettingsUiState> = combine(
         container.settingsStore.countOptionalExtras,
         container.settingsStore.lookUpBarcodesOnline,
+        container.settingsStore.phoneTimers,
         container.recipeRepository.observeAll(),
-    ) { count, lookUp, recipes ->
-        RecipeSettingsUiState(count, lookUp, recipes.count { !it.archived })
+    ) { count, lookUp, phoneTimers, recipes ->
+        RecipeSettingsUiState(count, lookUp, phoneTimers, recipes.count { !it.archived })
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RecipeSettingsUiState())
 
     fun setCountOptionalExtras(count: Boolean) {
@@ -97,6 +100,10 @@ class RecipeSettingsViewModel(private val container: AppContainer) : ViewModel()
 
     fun setLookUpBarcodesOnline(lookUp: Boolean) {
         container.appScope.launch { container.settingsStore.setLookUpBarcodesOnline(lookUp) }
+    }
+
+    fun setPhoneTimers(on: Boolean) {
+        container.appScope.launch { container.settingsStore.setPhoneTimers(on) }
     }
 
     fun addStarterRecipes() = importer.offerStarter()
@@ -176,6 +183,16 @@ fun RecipeSettingsScreen(
                         checked = state.countOptionalExtras,
                         onChange = viewModel::setCountOptionalExtras,
                         tag = RecipeSettingsTags.COUNT_OPTIONAL,
+                    )
+                }
+                SectionCard(title = "Timers") {
+                    SwitchRow(
+                        label = "Start timers on the phone's clock",
+                        detail = "A recipe timer also starts a timer in your clock app, so it rings even if this app " +
+                            "is closed. Cancelling here doesn't stop the clock app's timer.",
+                        checked = state.phoneTimers,
+                        onChange = viewModel::setPhoneTimers,
+                        tag = RecipeSettingsTags.PHONE_TIMERS,
                     )
                 }
                 SectionCard(title = "Barcodes") {

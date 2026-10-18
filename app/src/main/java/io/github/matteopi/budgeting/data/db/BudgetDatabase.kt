@@ -23,6 +23,7 @@ import io.github.matteopi.budgeting.data.db.entities.IngredientAliasEntity
 import io.github.matteopi.budgeting.data.db.entities.IngredientEntity
 import io.github.matteopi.budgeting.data.db.entities.IngredientPortionEntity
 import io.github.matteopi.budgeting.data.db.entities.MerchantRuleEntity
+import io.github.matteopi.budgeting.data.db.entities.OwnedItemEntity
 import io.github.matteopi.budgeting.data.db.entities.PredictionEntity
 import io.github.matteopi.budgeting.data.db.entities.PresetEntity
 import io.github.matteopi.budgeting.data.db.entities.ProductAliasEntity
@@ -73,15 +74,18 @@ import io.github.matteopi.budgeting.data.db.entities.TransactionEntity
         RecipeStepEntity::class,
         ShoppingEntryEntity::class,
         ShoppingMarkEntity::class,
+        OwnedItemEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
     // Version 2 only adds tables and one nullable column (`transactions.receipt_id`); version 3 (the
-    // Recipes section, docs/PLAN.md §11.3) only adds the eight food tables. Room can migrate both
+    // Recipes section, docs/PLAN.md §11.3) only adds the eight food tables; version 4 (§11.11) only
+    // adds `owned_items` and two nullable columns on `ingredients`. Room can migrate all three
     // without a spec. Never replace these with a destructive migration.
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
         AutoMigration(from = 2, to = 3),
+        AutoMigration(from = 3, to = 4),
     ],
 )
 abstract class BudgetDatabase : RoomDatabase() {

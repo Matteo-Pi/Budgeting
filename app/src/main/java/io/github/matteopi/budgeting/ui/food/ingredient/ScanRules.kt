@@ -15,7 +15,7 @@ object ScanRules {
     /** The label's order, for the review dialog. */
     val ORDER = listOf(
         Nutrient.KCAL, Nutrient.FAT, Nutrient.SATURATES, Nutrient.CARBS,
-        Nutrient.SUGARS, Nutrient.FIBRE, Nutrient.PROTEIN, Nutrient.SALT,
+        Nutrient.SUGARS, Nutrient.ADDED_SUGARS, Nutrient.FIBRE, Nutrient.PROTEIN, Nutrient.SALT,
     )
 
     private fun text(value: Double): String = Quantities.plain(value, 2)

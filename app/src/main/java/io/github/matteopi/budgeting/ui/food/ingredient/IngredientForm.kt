@@ -2,6 +2,7 @@ package io.github.matteopi.budgeting.ui.food.ingredient
 
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.recipes.BaseUnit
+import io.github.matteopi.budgeting.core.recipes.FoodGroup
 import io.github.matteopi.budgeting.core.recipes.Ingredient
 import io.github.matteopi.budgeting.core.recipes.Nutrient
 import io.github.matteopi.budgeting.core.recipes.Nutrition
@@ -32,7 +33,7 @@ data class IngredientForm(
     val productName: String = "",
     val sourceUrl: String = "",
     val barcode: String = "",
-    /** The eight per-100 values as typed; a missing or blank entry means unknown. */
+    /** The per-100 values as typed (added sugars too); a missing or blank entry means unknown. */
     val nutrition: Map<Nutrient, String> = emptyMap(),
     val nutritionSource: NutritionSource = NutritionSource.TYPED,
     val vegKind: VegKind = VegKind.NONE,
@@ -42,6 +43,8 @@ data class IngredientForm(
     /** The receipts product this ingredient is linked to. */
     val productId: Long? = null,
     val nextKey: Long = 1,
+    /** What the recipe filters count it as; null guesses from the name (docs/PLAN.md §11.11). */
+    val foodGroup: FoodGroup? = null,
 )
 
 /** What is wrong with an [IngredientForm], field by field. */
@@ -73,7 +76,7 @@ object IngredientFormRules {
     /** The order the nutrition fields are shown in. */
     val NUTRIENT_ORDER: List<Nutrient> = listOf(
         Nutrient.KCAL, Nutrient.FAT, Nutrient.SATURATES, Nutrient.CARBS,
-        Nutrient.SUGARS, Nutrient.FIBRE, Nutrient.PROTEIN, Nutrient.SALT,
+        Nutrient.SUGARS, Nutrient.ADDED_SUGARS, Nutrient.FIBRE, Nutrient.PROTEIN, Nutrient.SALT,
     )
 
     fun nutrientLabel(nutrient: Nutrient): String = when (nutrient) {
@@ -82,6 +85,7 @@ object IngredientFormRules {
         Nutrient.SATURATES -> "Saturates (g)"
         Nutrient.CARBS -> "Carbohydrate (g)"
         Nutrient.SUGARS -> "Sugars (g)"
+        Nutrient.ADDED_SUGARS -> "Added sugars (g)"
         Nutrient.FIBRE -> "Fibre (g)"
         Nutrient.PROTEIN -> "Protein (g)"
         Nutrient.SALT -> "Salt (g)"
@@ -131,6 +135,7 @@ object IngredientFormRules {
             fibre = value(Nutrient.FIBRE),
             protein = value(Nutrient.PROTEIN),
             salt = value(Nutrient.SALT),
+            addedSugars = value(Nutrient.ADDED_SUGARS),
         )
         val portions = form.portions
             .filter { !(it.name.isBlank() && it.amountText.isBlank()) }
@@ -153,6 +158,7 @@ object IngredientFormRules {
             shelf = form.shelf,
             note = form.note.trim(),
             portions = portions,
+            foodGroup = form.foodGroup,
         )
     }
 
@@ -181,6 +187,7 @@ object IngredientFormRules {
                 Nutrient.FIBRE to text(per100.fibre),
                 Nutrient.PROTEIN to text(per100.protein),
                 Nutrient.SALT to text(per100.salt),
+                Nutrient.ADDED_SUGARS to text(per100.addedSugars),
             ),
             nutritionSource = ingredient.nutritionSource,
             vegKind = ingredient.vegKind,
@@ -191,6 +198,7 @@ object IngredientFormRules {
             },
             productId = ingredient.productId,
             nextKey = ingredient.portions.size + 1L,
+            foodGroup = ingredient.foodGroup,
         )
     }
 

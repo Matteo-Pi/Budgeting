@@ -51,6 +51,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.matteopi.budgeting.core.recipes.BaseUnit
+import io.github.matteopi.budgeting.core.recipes.FoodGroup
+import io.github.matteopi.budgeting.core.recipes.FoodGroups
+import io.github.matteopi.budgeting.core.recipes.Ingredient
 import io.github.matteopi.budgeting.core.recipes.NutritionSource
 import io.github.matteopi.budgeting.core.recipes.Shelf
 import io.github.matteopi.budgeting.core.recipes.VegKind
@@ -72,6 +75,7 @@ object IngredientEditTags {
     const val LINK_CHOOSE = "ingredient-link-choose"
     const val LINK_REMOVE = "ingredient-link-remove"
     const val PRODUCT_SEARCH = "ingredient-product-search"
+    const val FOOD_GROUP = "ingredient-food-group"
 
     fun portionName(position: Int) = "ingredient-portion-$position-name"
 
@@ -314,6 +318,15 @@ private fun BasicsCard(
                 onSelect = viewModel::setVegKind,
                 modifier = Modifier.fillMaxWidth(),
             )
+            val guessed = FoodGroups.guess(Ingredient(name = form.name, vegKind = form.vegKind))
+            OptionPicker(
+                label = "Counts as (for the recipe filters)",
+                selected = form.foodGroup,
+                options = listOf<FoodGroup?>(null) + FoodGroup.entries,
+                optionName = { group -> FoodTexts.foodGroupName(group, guessed) },
+                onSelect = viewModel::setFoodGroup,
+                modifier = Modifier.fillMaxWidth().testTag(IngredientEditTags.FOOD_GROUP),
+            )
             OutlinedTextField(
                 value = form.note,
                 onValueChange = viewModel::setNote,
@@ -397,7 +410,9 @@ private fun NutritionCard(
     SectionCard(title = "Nutrition per 100 ${FoodTexts.unitSymbol(form.unit)}") {
         Column(modifier = Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
-                text = "Leave a box empty when you don't know the value; the recipe then says its numbers are \"at least\".",
+                text = "Leave a box empty when you don't know the value; the recipe then says its numbers are \"at least\". " +
+                    "Added sugars (sugar, honey, syrups) aren't on UK labels: use the sugars if the ingredients list has " +
+                    "sugar, 0 if it has none.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

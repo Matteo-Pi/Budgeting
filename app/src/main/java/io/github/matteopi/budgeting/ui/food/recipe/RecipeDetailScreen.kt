@@ -2,6 +2,8 @@
 
 package io.github.matteopi.budgeting.ui.food.recipe
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -74,6 +76,8 @@ import io.github.matteopi.budgeting.core.recipes.RecipeNumbers
 import io.github.matteopi.budgeting.core.recipes.RecipeStep
 import io.github.matteopi.budgeting.core.recipes.RecipeSteps
 import io.github.matteopi.budgeting.core.recipes.TrafficLights
+import io.github.matteopi.budgeting.core.recipes.VegKind
+import io.github.matteopi.budgeting.core.recipes.VegSummary
 import io.github.matteopi.budgeting.ui.components.ConfirmDialog
 import io.github.matteopi.budgeting.ui.components.EmptyState
 import io.github.matteopi.budgeting.ui.components.SectionCard
@@ -83,6 +87,11 @@ import io.github.matteopi.budgeting.ui.food.components.NumberChip
 import io.github.matteopi.budgeting.ui.food.components.RatingPicker
 import io.github.matteopi.budgeting.ui.food.components.ServingsStepper
 import io.github.matteopi.budgeting.ui.food.components.VegDots
+import io.github.matteopi.budgeting.ui.food.timers.CustomTimerButton
+import io.github.matteopi.budgeting.ui.food.timers.StepTimerChips
+import io.github.matteopi.budgeting.ui.food.timers.TimerStarter
+import io.github.matteopi.budgeting.ui.food.timers.TimersBar
+import io.github.matteopi.budgeting.ui.food.timers.rememberTimerStarter
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -96,6 +105,10 @@ object RecipeDetailTags {
     const val OPTIONAL_SWITCH = "recipe-optional-switch"
     const val PER_100 = "recipe-per-100"
     const val MENU = "recipe-menu"
+    const val COPY = "recipe-copy"
+    const val VEG_TOTAL = "recipe-veg-total"
+    const val VEG_EFFECTIVE = "recipe-veg-effective"
+    const val ADDED_SUGARS = "recipe-added-sugars"
 
     fun line(index: Int) = "recipe-line-$index"
 
@@ -124,6 +137,8 @@ fun RecipeDetailScreen(
     var confirmArchive by remember { mutableStateOf(false) }
     var addingToList by remember { mutableStateOf(false) }
     val recipe = state.recipe
+    val say: (String) -> Unit = { message -> scope.launch { snackbarHostState.showSnackbar(message) } }
+    val startTimer = rememberTimerStarter(recipeId, recipe?.shortTitle ?: recipe?.title ?: "Recipe", say)
 
     Scaffold(
         modifier = modifier,
@@ -146,6 +161,17 @@ fun RecipeDetailScreen(
                                         menuOpen = false
                                         onEdit(recipe.id)
                                     },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Copy recipe") },
+                                    onClick = {
+                                        menuOpen = false
+                                        val text = viewModel.shareText() ?: return@DropdownMenuItem
+                                        val clipboard = context.getSystemService(ClipboardManager::class.java)
+                                        clipboard?.setPrimaryClip(ClipData.newPlainText(recipe.title, text))
+                                        say("Recipe copied. Paste it into Add recipe, or into a chat.")
+                                    },
+                                    modifier = Modifier.testTag(RecipeDetailTags.COPY),
                                 )
                                 DropdownMenuItem(
                                     text = { Text("Share as text") },
@@ -173,6 +199,7 @@ fun RecipeDetailScreen(
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        bottomBar = { TimersBar(onMessage = say) },
     ) { innerPadding ->
         val numbers = state.numbers
         when {
@@ -188,6 +215,7 @@ fun RecipeDetailScreen(
                 viewModel = viewModel,
                 onCook = { onCook(recipe.id) },
                 onAddToList = { addingToList = true },
+                onStartTimer = startTimer,
                 modifier = Modifier.padding(innerPadding).fillMaxSize(),
             )
         }
@@ -227,6 +255,7 @@ private fun RecipeBody(
     viewModel: RecipeDetailViewModel,
     onCook: () -> Unit,
     onAddToList: () -> Unit,
+    onStartTimer: TimerStarter,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -243,13 +272,13 @@ private fun RecipeBody(
         }
         OptionalSwitch(checked = state.countOptionalExtras, onChange = viewModel::setCountOptionalExtras)
         IngredientsCard(state = state, onServings = viewModel::setServings)
-        MethodCard(recipe.method)
+        MethodCard(recipe.method, onStartTimer)
         TextListCard("Kit", recipe.equipment)
         TextListCard("Tips", recipe.tips)
         TextListCard("Freezing and storing", recipe.storage)
         CostCard(numbers)
         NutritionCard(numbers)
-        VegCard(numbers.veg, state.hasPulses)
+        VegCard(numbers.vegSummary, state.ingredients)
         BreakdownCard(numbers, state.ingredients)
         RatingAndNotes(recipe = recipe, onRate = viewModel::setRating, onNotes = viewModel::setNotes)
         Spacer(Modifier.height(24.dp))
@@ -349,18 +378,30 @@ private fun IngredientsCard(state: RecipeDetailUiState, onServings: (Int) -> Uni
 }
 
 @Composable
-private fun MethodCard(steps: List<RecipeStep>) {
+private fun MethodCard(steps: List<RecipeStep>, onStartTimer: TimerStarter) {
     if (steps.isEmpty()) return
     SectionCard(title = "Method") {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            steps.forEachIndexed { index, step -> StepView(index = index, step = step, large = false) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "Tap a time to start a timer.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                CustomTimerButton(onStart = onStartTimer)
+            }
+            steps.forEachIndexed { index, step -> StepView(index = index, step = step, large = false, onStartTimer = onStartTimer) }
         }
     }
 }
 
-/** One method step: number, title, time chip and its paragraphs, cues and rescues in coloured boxes. */
+/**
+ * One method step: number, title, time chip, its timers ([StepTimerChips], when [onStartTimer] is given) and its
+ * paragraphs, cues and rescues in coloured boxes.
+ */
 @Composable
-internal fun StepView(index: Int, step: RecipeStep, large: Boolean, done: Boolean = false) {
+internal fun StepView(index: Int, step: RecipeStep, large: Boolean, done: Boolean = false, onStartTimer: TimerStarter? = null) {
     val bodyStyle = if (large) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyLarge
     val faded = if (done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
     Column(modifier = Modifier.testTag(RecipeDetailTags.step(index)), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -382,6 +423,7 @@ internal fun StepView(index: Int, step: RecipeStep, large: Boolean, done: Boolea
                 )
             }
         }
+        if (onStartTimer != null) StepTimerChips(index = index, step = step, onStart = onStartTimer)
         RecipeSteps.paragraphs(step.body).forEach { paragraph ->
             when (paragraph.kind) {
                 ParagraphKind.PLAIN -> Text(paragraph.text, style = bodyStyle, color = faded)
@@ -474,6 +516,7 @@ private val LABEL_ROWS = listOf(
     Nutrient.SATURATES to "of which saturates",
     Nutrient.CARBS to "Carbohydrate",
     Nutrient.SUGARS to "of which sugars",
+    Nutrient.ADDED_SUGARS to "of which added sugars",
     Nutrient.FIBRE to "Fibre",
     Nutrient.PROTEIN to "Protein",
     Nutrient.SALT to "Salt",
@@ -502,25 +545,40 @@ private fun NutritionCard(numbers: RecipeNumbers) {
             } else {
                 FoodFormat.grams(value)
             }
+            val addedUnknown = nutrient == Nutrient.ADDED_SUGARS && nutrition.addedSugarsUnknown.isNotEmpty()
             val percent = if (per100) {
                 null
             } else if (nutrient == Nutrient.FIBRE) {
                 "${FoodFormat.percent(nutrition.percentRi(nutrient))} of 30 g a day"
+            } else if (nutrient == Nutrient.ADDED_SUGARS) {
+                "${FoodFormat.percent(nutrition.percentRi(nutrient))} of the 30 g a day limit"
             } else {
                 "${FoodFormat.percent(nutrition.percentRi(nutrient))} RI"
             }
-            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 3.dp)
+                    .then(if (nutrient == Nutrient.ADDED_SUGARS) Modifier.testTag(RecipeDetailTags.ADDED_SUGARS) else Modifier),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
                     label,
                     style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.weight(1f).padding(start = if (label.startsWith("of which")) 12.dp else 0.dp),
+                    modifier = Modifier.weight(1f).padding(
+                        start = when {
+                            nutrient == Nutrient.ADDED_SUGARS -> 24.dp
+                            label.startsWith("of which") -> 12.dp
+                            else -> 0.dp
+                        },
+                    ),
                 )
                 if (nutrient in TrafficLights.coloured) {
                     LightBadge(nutrition.lights[nutrient] ?: Light.GREEN)
                     Spacer(Modifier.width(10.dp))
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text(amount, style = MaterialTheme.typography.bodyLarge)
+                    Text(if (addedUnknown) "at least $amount" else amount, style = MaterialTheme.typography.bodyLarge)
                     percent?.let {
                         Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -536,6 +594,12 @@ private fun NutritionCard(numbers: RecipeNumbers) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        Text(
+            "Added sugars: sugar, honey and syrups put into a food. UK labels don't list them, so set them on an " +
+                "ingredient to count them.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         if (nutrition.atLeast) {
             Text(
                 FoodFormat.missingNutrition(nutrition.unknownIngredients.size),
@@ -543,24 +607,72 @@ private fun NutritionCard(numbers: RecipeNumbers) {
                 color = MaterialTheme.colorScheme.error,
             )
         }
-    }
-}
-
-@Composable
-private fun VegCard(veg: Double, hasPulses: Boolean) {
-    SectionCard(title = "5 a day") {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            VegDots(veg, dotSize = 14.dp)
-            Spacer(Modifier.width(10.dp))
-            Text("${FoodFormat.veg(veg)} portions of veg a portion", style = MaterialTheme.typography.bodyLarge)
-        }
-        if (hasPulses) {
+        if (nutrition.addedSugarsUnknown.isNotEmpty()) {
             Text(
-                "Beans and lentils count as one portion at most, however much there is.",
+                FoodFormat.missingAddedSugars(nutrition.addedSugarsUnknown.size),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+/**
+ * 5 a day per portion (docs/PLAN.md §11.11): what counts towards it (beans and lentils once at most) and the total,
+ * then each ingredient's portions, the pulses together when the cap takes some off.
+ */
+@Composable
+private fun VegCard(veg: VegSummary, ingredients: Map<Long, Ingredient>) {
+    SectionCard(title = "5 a day") {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag(RecipeDetailTags.VEG_EFFECTIVE)) {
+            VegDots(veg.effective, dotSize = 14.dp)
+            Spacer(Modifier.width(10.dp))
+            Text(
+                "${FoodFormat.veg(veg.effective)} towards your 5 a day",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+            )
+        }
+        Text(
+            "${FoodFormat.veg(veg.total)} portions of veg and pulses in total",
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(top = 4.dp).testTag(RecipeDetailTags.VEG_TOTAL),
+        )
+        Text(
+            "Per portion of the recipe; one portion of 5 a day is 80 g.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (veg.items.isNotEmpty()) Spacer(Modifier.height(6.dp))
+        val pulses = veg.items.filter { it.kind == VegKind.PULSE }
+        val rows = if (veg.capped) veg.items.filter { it.kind != VegKind.PULSE } else veg.items
+        rows.forEach { item ->
+            VegRow(ingredients[item.ingredientId]?.name ?: "Ingredient", FoodFormat.veg(item.portions))
+        }
+        if (veg.capped) {
+            val names = pulses.mapNotNull { ingredients[it.ingredientId]?.name }.joinToString(", ")
+            VegRow(
+                "Beans and lentils ($names)",
+                "${FoodFormat.veg(veg.pulses)}, counted as ${FoodFormat.veg(veg.pulsesCounted)}",
+            )
+        }
+        if (pulses.isNotEmpty()) {
+            Text(
+                "Beans and lentils count as one portion at most, however much there is.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun VegRow(name: String, portions: String) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+        Text(name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        Spacer(Modifier.width(8.dp))
+        Text(portions, style = MaterialTheme.typography.bodyMedium)
     }
 }
 

@@ -24,12 +24,16 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -51,6 +55,9 @@ import io.github.matteopi.budgeting.ui.components.EmptyState
 import io.github.matteopi.budgeting.ui.food.components.ServingsStepper
 import io.github.matteopi.budgeting.ui.food.components.findHostActivity
 import io.github.matteopi.budgeting.ui.food.components.observeFoodBook
+import io.github.matteopi.budgeting.ui.food.timers.CustomTimerButton
+import io.github.matteopi.budgeting.ui.food.timers.TimersBar
+import io.github.matteopi.budgeting.ui.food.timers.rememberTimerStarter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -133,7 +140,8 @@ class CookingViewModel(private val container: AppContainer, private val recipeId
 
 /**
  * The cooking view (docs/PLAN.md §11.8): the recipe in large text with the screen kept on while it is open, its own
- * servings stepper, and every ingredient and step ticked off with a tap. Ticks are kept until *Done cooking*.
+ * servings stepper, and every ingredient and step ticked off with a tap. Ticks are kept until *Done cooking*. Each
+ * step's times start timers (§11.11), which count down at the bottom.
  */
 @Composable
 fun CookingScreen(
@@ -144,6 +152,10 @@ fun CookingScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val say: (String) -> Unit = { message -> scope.launch { snackbarHostState.showSnackbar(message) } }
+    val startTimer = rememberTimerStarter(recipeId, state.recipe?.let { it.shortTitle ?: it.title } ?: "Recipe", say)
 
     // The screen stays on while the cooking view is open, and only then.
     DisposableEffect(Unit) {
@@ -171,6 +183,8 @@ fun CookingScreen(
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        bottomBar = { TimersBar(onMessage = say) },
     ) { innerPadding ->
         val recipe = state.recipe
         when {
@@ -206,7 +220,10 @@ fun CookingScreen(
                     }
                 }
                 item(key = "method-heading") {
-                    Text("Method", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 16.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
+                        Text("Method", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
+                        CustomTimerButton(onStart = startTimer)
+                    }
                 }
                 itemsIndexed(recipe.method, key = { index, _ -> "step-$index" }) { index, step ->
                     val tick = CookingTags.stepTick(index)
@@ -214,7 +231,7 @@ fun CookingScreen(
                         ticked = tick in state.ticks,
                         onToggle = { viewModel.toggle(tick) },
                         modifier = Modifier.testTag(CookingTags.step(index)),
-                    ) { done -> StepView(index = index, step = step, large = true, done = done) }
+                    ) { done -> StepView(index = index, step = step, large = true, done = done, onStartTimer = startTimer) }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 }
                 item(key = "done") {

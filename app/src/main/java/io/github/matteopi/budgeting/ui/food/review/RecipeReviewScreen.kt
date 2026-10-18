@@ -199,7 +199,10 @@ private fun RecipeReviewScreen(
     }
 }
 
-/** The paste step: a large text field, *Paste* from the clipboard, *Read recipe* and *Type it instead*. */
+/**
+ * The paste step: a large text field, *Paste* from the clipboard (which reads it straight away, so a recipe copied
+ * with a chat's copy button is one tap; docs/PLAN.md §11.11), *Read recipe* for typed text, and *Type it instead*.
+ */
 @Composable
 private fun PasteStep(viewModel: RecipeReviewViewModel, modifier: Modifier = Modifier) {
     val text by viewModel.pasteText.collectAsStateWithLifecycle()
@@ -213,8 +216,8 @@ private fun PasteStep(viewModel: RecipeReviewViewModel, modifier: Modifier = Mod
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            text = "Paste a recipe, or type one: a title, an Ingredients list and a Method. Recipes in the paste " +
-                "format work best, and plain recipes are read too. You can fix everything on the next screen.",
+            text = "Copy a recipe (from a chat with Claude, a website or this app's Copy recipe) and press Paste. " +
+                "Or type one: a title, an Ingredients list and a Method. You can fix everything on the next screen.",
             style = MaterialTheme.typography.bodyMedium,
         )
         OutlinedTextField(
@@ -232,6 +235,7 @@ private fun PasteStep(viewModel: RecipeReviewViewModel, modifier: Modifier = Mod
                         Toast.makeText(context.applicationContext, "There's no text on the clipboard", Toast.LENGTH_SHORT).show()
                     } else {
                         viewModel.setPasteText(pasted)
+                        viewModel.readRecipe()
                     }
                 },
                 modifier = Modifier.testTag(ReviewTags.PASTE),

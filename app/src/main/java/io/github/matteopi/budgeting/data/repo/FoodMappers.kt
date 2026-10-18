@@ -2,10 +2,12 @@ package io.github.matteopi.budgeting.data.repo
 
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.recipes.BaseUnit
+import io.github.matteopi.budgeting.core.recipes.FoodGroup
 import io.github.matteopi.budgeting.core.recipes.Ingredient
 import io.github.matteopi.budgeting.core.recipes.IngredientAliasRecord
 import io.github.matteopi.budgeting.core.recipes.Nutrition
 import io.github.matteopi.budgeting.core.recipes.NutritionSource
+import io.github.matteopi.budgeting.core.recipes.OwnedItem
 import io.github.matteopi.budgeting.core.recipes.Portion
 import io.github.matteopi.budgeting.core.recipes.Recipe
 import io.github.matteopi.budgeting.core.recipes.RecipeLine
@@ -21,6 +23,7 @@ import io.github.matteopi.budgeting.data.db.dao.RecipeWithParts
 import io.github.matteopi.budgeting.data.db.entities.IngredientAliasEntity
 import io.github.matteopi.budgeting.data.db.entities.IngredientEntity
 import io.github.matteopi.budgeting.data.db.entities.IngredientPortionEntity
+import io.github.matteopi.budgeting.data.db.entities.OwnedItemEntity
 import io.github.matteopi.budgeting.data.db.entities.RecipeEntity
 import io.github.matteopi.budgeting.data.db.entities.RecipeLineEntity
 import io.github.matteopi.budgeting.data.db.entities.RecipeStepEntity
@@ -63,6 +66,7 @@ fun IngredientEntity.toModel(portions: List<IngredientPortionEntity> = emptyList
         fibre = fibre,
         protein = protein,
         salt = salt,
+        addedSugars = addedSugars,
     ),
     nutritionSource = enumOrDefault(nutritionSource, NutritionSource.TYPED),
     vegKind = enumOrDefault(vegKind, VegKind.NONE),
@@ -71,6 +75,8 @@ fun IngredientEntity.toModel(portions: List<IngredientPortionEntity> = emptyList
     archived = archived,
     createdAtEpochMillis = createdAt,
     portions = portions.sortedBy { it.id }.map { Portion(it.name, it.amount) },
+    // An unknown group name (from a newer version) reads as "guess it", like a missing one.
+    foodGroup = foodGroup?.let { name -> FoodGroup.entries.firstOrNull { it.name == name } },
 )
 
 fun IngredientWithPortions.toModel(): Ingredient = ingredient.toModel(portions)
@@ -102,6 +108,8 @@ fun Ingredient.toEntity(): IngredientEntity = IngredientEntity(
     note = note,
     archived = archived,
     createdAt = createdAtEpochMillis,
+    addedSugars = per100.addedSugars,
+    foodGroup = foodGroup?.name,
 )
 
 /** The portions as rows for ingredient [ingredientId] (0 for one that isn't saved yet; `saveIngredient` sets it). */
@@ -233,6 +241,10 @@ fun ShoppingEntry.toEntity(): ShoppingEntryEntity = ShoppingEntryEntity(
     checked = checked,
     addedAt = addedAtEpochMillis,
 )
+
+fun OwnedItemEntity.toModel(): OwnedItem = OwnedItem(ingredientId = ingredientId, quantity = quantity, updatedAtEpochMillis = updatedAt)
+
+fun OwnedItem.toEntity(): OwnedItemEntity = OwnedItemEntity(ingredientId = ingredientId, quantity = quantity, updatedAt = updatedAtEpochMillis)
 
 fun ShoppingMarkEntity.toModel(): ShoppingMark = ShoppingMark(ingredientId = ingredientId, checked = checked, haveIt = haveIt)
 

@@ -20,6 +20,7 @@ import io.github.matteopi.budgeting.data.settings.SettingsStore
 import io.github.matteopi.budgeting.domain.Clock
 import io.github.matteopi.budgeting.domain.ForecastService
 import io.github.matteopi.budgeting.domain.PostingService
+import io.github.matteopi.budgeting.ui.food.timers.CookingTimers
 import io.github.matteopi.budgeting.widget.WidgetUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,6 +41,9 @@ class AppContainer(context: Context) {
 
     val settingsStore = SettingsStore(context.applicationContext)
     val clock = Clock()
+
+    /** The recipe timers (docs/PLAN.md §11.11), app-wide so they keep running between screens. */
+    val cookingTimers = CookingTimers(appScope)
     val widgetUpdater = WidgetUpdater(context.applicationContext, appScope)
 
     val accountRepository = AccountRepository(

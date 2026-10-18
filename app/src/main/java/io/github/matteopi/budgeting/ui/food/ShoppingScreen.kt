@@ -296,7 +296,7 @@ fun ShoppingScreen(
 @Composable
 private fun LineRow(line: ShoppingLine, neededFor: String?, onChecked: (Boolean) -> Unit, onHaveIt: (Boolean) -> Unit) {
     var menuOpen by remember { mutableStateOf(false) }
-    val done = line.checked || line.haveIt
+    val done = line.checked || line.haveIt || line.haveEnough
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag(ShoppingTags.line(line.ingredientId)),
         verticalAlignment = Alignment.CenterVertically,

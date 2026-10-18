@@ -1,11 +1,14 @@
 package io.github.matteopi.budgeting.testing
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.performTextReplacement
+import androidx.test.platform.app.InstrumentationRegistry
 import io.github.matteopi.budgeting.core.recipes.Ingredient
 import io.github.matteopi.budgeting.core.recipes.Recipe
 import io.github.matteopi.budgeting.core.recipes.RecipeBundle
@@ -21,8 +24,28 @@ import kotlinx.coroutines.flow.first
 /** Imports the starter recipe book through the repository, as *Add the starter recipes* does. */
 fun seedStarterBook(): List<Long> = blocking { appContainer.recipeRepository.importBundle(RecipeBundle.starter()).recipeIds }
 
-/** The app opens in the Recipes section, as if the user had last been there. */
-fun seedRecipesSection() = blocking { appContainer.settingsStore.setAppSection(AppSection.RECIPES) }
+/**
+ * The app opens in the Recipes section, as if the user had last been there. Recipe timers stay inside the app: a
+ * test must not hand timers to the emulator's clock app (docs/PLAN.md §11.11).
+ */
+fun seedRecipesSection() = blocking {
+    appContainer.settingsStore.setAppSection(AppSection.RECIPES)
+    appContainer.settingsStore.setPhoneTimers(false)
+}
+
+/** Puts [text] on the clipboard, as a copy button in another app would. */
+fun setClipboard(text: String) = InstrumentationRegistry.getInstrumentation().runOnMainSync {
+    testApp.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("recipe", text))
+}
+
+/** The text on the clipboard (read while the app is in front, as Android requires). */
+fun clipboardText(): String? {
+    var text: String? = null
+    InstrumentationRegistry.getInstrumentation().runOnMainSync {
+        text = testApp.getSystemService(ClipboardManager::class.java).primaryClip?.getItemAt(0)?.text?.toString()
+    }
+    return text
+}
 
 fun allRecipes(): List<Recipe> = blocking { appContainer.recipeRepository.observeAll().first() }
 

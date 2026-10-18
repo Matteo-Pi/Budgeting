@@ -34,6 +34,7 @@ import io.github.matteopi.budgeting.ui.food.recipe.CookingScreen
 import io.github.matteopi.budgeting.ui.food.recipe.RecipeDetailScreen
 import io.github.matteopi.budgeting.ui.food.review.AddRecipeScreen
 import io.github.matteopi.budgeting.ui.food.review.EditRecipeScreen
+import io.github.matteopi.budgeting.ui.food.timers.TimerAlerts
 import io.github.matteopi.budgeting.ui.forecast.AccuracyScreen
 import io.github.matteopi.budgeting.ui.forecast.ForecastScreen
 import io.github.matteopi.budgeting.ui.forecast.PredictionsScreen
@@ -380,5 +381,7 @@ fun BudgetNavHost(
                 }
             }
         }
+        // A recipe timer that ends says so on whatever screen is showing (docs/PLAN.md §11.11).
+        TimerAlerts()
     }
 }
