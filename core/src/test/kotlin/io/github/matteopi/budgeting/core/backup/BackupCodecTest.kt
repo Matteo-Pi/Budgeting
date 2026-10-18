@@ -35,10 +35,12 @@ import io.github.matteopi.budgeting.core.model.Transaction
 import io.github.matteopi.budgeting.core.model.TxKind
 import io.github.matteopi.budgeting.core.model.ZeroPoint
 import io.github.matteopi.budgeting.core.recipes.BaseUnit
+import io.github.matteopi.budgeting.core.recipes.FoodGroup
 import io.github.matteopi.budgeting.core.recipes.Ingredient
 import io.github.matteopi.budgeting.core.recipes.IngredientAliasRecord
 import io.github.matteopi.budgeting.core.recipes.Nutrition
 import io.github.matteopi.budgeting.core.recipes.NutritionSource
+import io.github.matteopi.budgeting.core.recipes.OwnedItem
 import io.github.matteopi.budgeting.core.recipes.Portion
 import io.github.matteopi.budgeting.core.recipes.Recipe
 import io.github.matteopi.budgeting.core.recipes.RecipeBundle
@@ -54,6 +56,7 @@ import java.time.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class BackupCodecTest {
@@ -65,14 +68,17 @@ class BackupCodecTest {
             price = Money(95), priceDate = LocalDate.of(2026, 10, 15), store = "Tesco", productId = 1,
             productName = "Tesco Brown Onions 1kg", sourceUrl = "https://example.invalid/onions",
             barcode = "5000000000001",
-            per100 = Nutrition(kcal = 36.0, fat = 0.1, saturates = 0.0, carbs = 7.9, sugars = 5.6, fibre = 1.4, protein = 0.9, salt = 0.01),
+            per100 = Nutrition(
+                kcal = 36.0, fat = 0.1, saturates = 0.0, carbs = 7.9, sugars = 5.6, fibre = 1.4, protein = 0.9, salt = 0.01,
+                addedSugars = 0.0,
+            ),
             nutritionSource = NutritionSource.LABEL, vegKind = VegKind.VEG, shelf = Shelf.FRUIT_VEG, note = "Brown",
             createdAtEpochMillis = 111L, portions = listOf(Portion("each", 150.0), Portion("small", 90.5)),
         )
         val stock = Ingredient(
             id = 2, name = "Stock cube", unit = BaseUnit.ML, packSize = 12.0, packLabel = "12 cubes",
             per100 = Nutrition(kcal = 250.0), nutritionSource = NutritionSource.ESTIMATE,
-            shelf = Shelf.CUPBOARD, archived = true, createdAtEpochMillis = 222L,
+            shelf = Shelf.CUPBOARD, archived = true, createdAtEpochMillis = 222L, foodGroup = FoodGroup.NONE,
         )
         val soup = Recipe(
             id = 1, title = "Onion soup", shortTitle = "Soup", tagline = "Cheap and warm", style = "Hob · one pot",
@@ -110,6 +116,7 @@ class BackupCodecTest {
                 ShoppingMark(ingredientId = 1, checked = true, haveIt = false),
                 ShoppingMark(ingredientId = 2, checked = false, haveIt = true),
             ),
+            ownedItems = listOf(OwnedItem(1, 450.0, 777L), OwnedItem(2, null, 778L)),
         )
     }
 
@@ -308,9 +315,9 @@ class BackupCodecTest {
     }
 
     @Test
-    fun `current version is 3`() {
-        assertEquals(3, BackupV1.CURRENT_VERSION)
-        assertEquals(3, BackupMapper.toBackup(BackupData(), exportedAt = "now").version)
+    fun `current version is 4`() {
+        assertEquals(4, BackupV1.CURRENT_VERSION)
+        assertEquals(4, BackupMapper.toBackup(BackupData(), exportedAt = "now").version)
     }
 
     @Test
@@ -501,7 +508,7 @@ class BackupCodecTest {
         val json = BackupCodec.encode(BackupMapper.toBackup(foodData(), exportedAt = "now"))
         for (name in listOf(
             "ingredients", "ingredientPortions", "ingredientAliases", "recipes", "recipeLines", "recipeSteps",
-            "shoppingEntries", "shoppingMarks",
+            "shoppingEntries", "shoppingMarks", "ownedItems",
         )) {
             assertTrue("\"$name\"" in json, "the file has a \"$name\" list")
         }
@@ -605,6 +612,51 @@ class BackupCodecTest {
                 ),
             ).any { it.contains("marks") },
         )
+    }
+
+    // ---- Version 4: what the kitchen has, added sugars, food groups ---------------------------
+
+    @Test
+    fun `owned items, added sugars and food groups round trip`() {
+        val back = roundTrip(foodData())
+        assertEquals(listOf(OwnedItem(1, 450.0, 777L), OwnedItem(2, null, 778L)), back.ownedItems)
+        assertEquals(0.0, back.ingredients.first().per100.addedSugars)
+        assertEquals(FoodGroup.NONE, back.ingredients.last().foodGroup)
+        assertNull(back.ingredients.first().foodGroup)
+    }
+
+    @Test
+    fun `a version 3 ingredient has no added sugars, no group and nothing owned`() {
+        val json = """
+            {"format":"budgeting-backup","version":3,"exportedAt":"now",
+             "ingredients":[{"id":1,"name":"Onion","unit":"G","packSize":1000.0,"packLabel":"1 kg","pricePence":95,
+               "priceDate":null,"store":null,"productId":null,"productName":null,"sourceUrl":null,"barcode":null,
+               "kcal":36.0,"fat":null,"saturates":null,"carbs":null,"sugars":5.6,"fibre":null,"protein":null,"salt":null,
+               "nutritionSource":"TYPED","vegKind":"VEG","shelf":"FRUIT_VEG","note":"","archived":false,"createdAtEpochMillis":1}],
+             "settings":{"zeroPoint":"ACCOUNT_BALANCE","bufferPence":0,"defaultAccountId":null,"historyStartDate":null,"simulations":500,"forecastHorizonDays":90}}
+        """.trimIndent()
+        val data = assertIs<BackupDecodeResult.Success>(BackupCodec.decode(json)).data
+        val onion = data.ingredients.single()
+        assertNull(onion.per100.addedSugars)
+        assertNull(onion.foodGroup)
+        assertEquals(5.6, onion.per100.sugars)
+        assertTrue(data.ownedItems.isEmpty())
+    }
+
+    @Test
+    fun `decode rejects owned items that point at a missing ingredient, repeat one or are below zero`() {
+        val data = foodData()
+        assertTrue(failureOf(data.copy(ownedItems = listOf(OwnedItem(9, 1.0, 1L)))).any { it.contains("missing ingredient 9") })
+        assertTrue(failureOf(data.copy(ownedItems = listOf(OwnedItem(1, 1.0, 1L), OwnedItem(1, 2.0, 2L)))).any { it.contains("twice") })
+        assertTrue(failureOf(data.copy(ownedItems = listOf(OwnedItem(1, -1.0, 1L)))).any { it.contains("below zero") })
+    }
+
+    @Test
+    fun `an unknown food group reads as guessed instead of failing`() {
+        val json = BackupCodec.encode(BackupMapper.toBackup(foodData(), exportedAt = "now"))
+            .replace(Regex(""""foodGroup":\s*"NONE""""), """"foodGroup": "MYSTERY"""")
+        val data = assertIs<BackupDecodeResult.Success>(BackupCodec.decode(json)).data
+        assertNull(data.ingredients.last().foodGroup)
     }
 
     @Test

@@ -281,6 +281,10 @@ data class IngredientDto(
     val note: String,
     val archived: Boolean,
     val createdAtEpochMillis: Long,
+    /** Version 4 (docs/PLAN.md §11.11); absent in older files. */
+    val addedSugars: Double? = null,
+    /** Version 4: a `FoodGroup` name, or null to guess it from the name. */
+    val foodGroup: String? = null,
 )
 
 @Serializable
@@ -358,4 +362,14 @@ data class ShoppingMarkDto(
     val ingredientId: Long,
     val checked: Boolean,
     val haveIt: Boolean,
+)
+
+// ---- Version 4: what the kitchen has (docs/PLAN.md §11.11) ------------------------------------
+
+@Serializable
+data class OwnedItemDto(
+    val ingredientId: Long,
+    /** In the ingredient's base unit; null for "some, not measured". */
+    val quantity: Double?,
+    val updatedAtEpochMillis: Long,
 )

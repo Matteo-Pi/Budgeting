@@ -26,8 +26,18 @@ enum class RecipeSource { MINE, CLAUDE, IMPORTED }
 /** Steps, tips, equipment and storage notes are all stored as steps of a recipe, told apart by this. */
 enum class StepKind { STEP, TIP, EQUIPMENT, STORAGE }
 
-/** The eight nutrients a recipe shows. */
-enum class Nutrient { KCAL, FAT, SATURATES, CARBS, SUGARS, FIBRE, PROTEIN, SALT }
+/**
+ * The nutrients a recipe shows: the eight of a UK label ([LABEL]) and added sugars, which labels don't list
+ * (docs/PLAN.md §11.11).
+ */
+enum class Nutrient {
+    KCAL, FAT, SATURATES, CARBS, SUGARS, ADDED_SUGARS, FIBRE, PROTEIN, SALT;
+
+    companion object {
+        /** The eight values on a UK label, in its order: every nutrient but [ADDED_SUGARS]. */
+        val LABEL: List<Nutrient> = listOf(KCAL, FAT, SATURATES, CARBS, SUGARS, FIBRE, PROTEIN, SALT)
+    }
+}
 
 /** Nutrition per 100 g or 100 ml of an ingredient; null means unknown (not zero). */
 data class Nutrition(
@@ -39,6 +49,8 @@ data class Nutrition(
     val fibre: Double? = null,
     val protein: Double? = null,
     val salt: Double? = null,
+    /** Sugar, honey and syrups put into the food. Declared last so positional construction keeps working. */
+    val addedSugars: Double? = null,
 ) {
     operator fun get(nutrient: Nutrient): Double? = when (nutrient) {
         Nutrient.KCAL -> kcal
@@ -46,6 +58,7 @@ data class Nutrition(
         Nutrient.SATURATES -> saturates
         Nutrient.CARBS -> carbs
         Nutrient.SUGARS -> sugars
+        Nutrient.ADDED_SUGARS -> addedSugars
         Nutrient.FIBRE -> fibre
         Nutrient.PROTEIN -> protein
         Nutrient.SALT -> salt
@@ -54,8 +67,8 @@ data class Nutrition(
     /** True when every value is unknown. */
     val isEmpty: Boolean get() = Nutrient.entries.all { get(it) == null }
 
-    /** True when at least one value is unknown. */
-    val hasUnknown: Boolean get() = Nutrient.entries.any { get(it) == null }
+    /** True when at least one of the eight label values is unknown (added sugars, which labels don't list, aside). */
+    val hasUnknown: Boolean get() = Nutrient.LABEL.any { get(it) == null }
 }
 
 /** A named weight or volume, such as `each` = 150 g for an onion or `clove` = 5 g for garlic. */
@@ -86,6 +99,49 @@ data class Ingredient(
     val archived: Boolean = false,
     val createdAtEpochMillis: Long = 0,
     val portions: List<Portion> = emptyList(),
+    /** What the recipe filters count it as (docs/PLAN.md §11.11): null guesses from the name ([FoodGroups]). */
+    val foodGroup: FoodGroup? = null,
+)
+
+/** Whether a food group is a recipe's protein or its carb. */
+enum class FoodGroupKind { PROTEIN, CARB }
+
+/**
+ * What an ingredient counts as in the recipe filters (docs/PLAN.md §11.11). [NONE] is the person's "Neither";
+ * an ingredient with no group set is guessed by [FoodGroups].
+ */
+enum class FoodGroup(val label: String, val kind: FoodGroupKind?) {
+    CHICKEN("Chicken", FoodGroupKind.PROTEIN),
+    TURKEY("Turkey", FoodGroupKind.PROTEIN),
+    BEEF("Beef", FoodGroupKind.PROTEIN),
+    PORK("Pork, bacon & ham", FoodGroupKind.PROTEIN),
+    LAMB("Lamb", FoodGroupKind.PROTEIN),
+    FISH("Fish", FoodGroupKind.PROTEIN),
+    SEAFOOD("Prawns & seafood", FoodGroupKind.PROTEIN),
+    EGGS("Eggs", FoodGroupKind.PROTEIN),
+    BEANS_LENTILS("Beans & lentils", FoodGroupKind.PROTEIN),
+    MEAT_FREE("Meat-free (tofu, Quorn…)", FoodGroupKind.PROTEIN),
+    RICE("Rice", FoodGroupKind.CARB),
+    PASTA("Pasta", FoodGroupKind.CARB),
+    NOODLES("Noodles", FoodGroupKind.CARB),
+    POTATOES("Potatoes", FoodGroupKind.CARB),
+    BREAD("Bread & wraps", FoodGroupKind.CARB),
+    GRAINS("Couscous & grains", FoodGroupKind.CARB),
+    NONE("Neither", null),
+    ;
+
+    /** True for the meats and fish (not eggs, pulses or meat-free). */
+    val isMeatOrFish: Boolean get() = this in setOf(CHICKEN, TURKEY, BEEF, PORK, LAMB, FISH, SEAFOOD)
+}
+
+/**
+ * Something the person has in the kitchen (the `owned_items` table, docs/PLAN.md §11.11). [quantity] is in the
+ * ingredient's base unit; null means "some, not measured".
+ */
+data class OwnedItem(
+    val ingredientId: Long,
+    val quantity: Double? = null,
+    val updatedAtEpochMillis: Long = 0,
 )
 
 /**

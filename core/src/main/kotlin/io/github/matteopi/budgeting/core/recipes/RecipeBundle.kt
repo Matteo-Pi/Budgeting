@@ -32,6 +32,8 @@ data class BundlePer100(
     val fibre: Double? = null,
     val protein: Double? = null,
     val salt: Double? = null,
+    /** Sugar, honey and syrups put into the food (docs/PLAN.md §11.11). */
+    val addedSugars: Double? = null,
 )
 
 @Serializable
@@ -54,6 +56,8 @@ data class BundleIngredient(
     val veg: String = "NONE",
     val portions: List<BundlePortion> = emptyList(),
     val note: String = "",
+    /** What the recipe filters count it as (a [FoodGroup] name, `NONE` for neither); left out, it is guessed. */
+    val group: String? = null,
 )
 
 @Serializable
@@ -157,12 +161,14 @@ data class RecipeBundle(
                     fibre = source.per100.fibre,
                     protein = source.per100.protein,
                     salt = source.per100.salt,
+                    addedSugars = source.per100.addedSugars,
                 ),
                 nutritionSource = enumOf<NutritionSource>(source.nutritionSource) ?: NutritionSource.TYPED,
                 vegKind = enumOf<VegKind>(source.veg) ?: VegKind.NONE,
                 shelf = enumOf<Shelf>(source.shelf) ?: Shelf.OTHER,
                 note = source.note,
                 portions = source.portions.map { Portion(it.name, it.amount) },
+                foodGroup = source.group?.let { enumOf<FoodGroup>(it) },
             )
         }
 
@@ -293,6 +299,9 @@ data class RecipeBundle(
                 if (enumOf<Shelf>(ingredient.shelf) == null) problems += "$label has an unknown shelf \"${ingredient.shelf}\"."
                 if (enumOf<VegKind>(ingredient.veg) == null) {
                     problems += "$label has an unknown veg kind \"${ingredient.veg}\"; it must be NONE, VEG or PULSE."
+                }
+                ingredient.group?.let {
+                    if (enumOf<FoodGroup>(it) == null) problems += "$label has an unknown group \"$it\"."
                 }
                 if (enumOf<NutritionSource>(ingredient.nutritionSource) == null) {
                     problems += "$label has an unknown nutrition source \"${ingredient.nutritionSource}\"."

@@ -22,6 +22,7 @@ import io.github.matteopi.budgeting.core.model.TermPeriod
 import io.github.matteopi.budgeting.core.model.Transaction
 import io.github.matteopi.budgeting.core.recipes.Ingredient
 import io.github.matteopi.budgeting.core.recipes.IngredientAliasRecord
+import io.github.matteopi.budgeting.core.recipes.OwnedItem
 import io.github.matteopi.budgeting.core.recipes.Recipe
 import io.github.matteopi.budgeting.core.recipes.ShoppingEntry
 import io.github.matteopi.budgeting.core.recipes.ShoppingMark
@@ -57,4 +58,6 @@ data class BackupData(
     val recipes: List<Recipe> = emptyList(),
     val shoppingEntries: List<ShoppingEntry> = emptyList(),
     val shoppingMarks: List<ShoppingMark> = emptyList(),
+    // Backup version 4. Declared last so positional construction of older data keeps working.
+    val ownedItems: List<OwnedItem> = emptyList(),
 )

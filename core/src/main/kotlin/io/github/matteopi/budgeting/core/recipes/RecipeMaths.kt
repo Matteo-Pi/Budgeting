@@ -16,13 +16,17 @@ object ReferenceIntakes {
     /** Not an RI: the 30 g a day guideline, which the screen words that way. */
     const val FIBRE_GUIDELINE = 30.0
 
-    /** The reference amount for [nutrient]: kcal for energy, grams otherwise (fibre: the guideline). */
+    /** Not an RI: the NHS limit of 30 g of added (free) sugars a day for adults, worded that way (docs/PLAN.md §11.11). */
+    const val ADDED_SUGARS_LIMIT = 30.0
+
+    /** The reference amount for [nutrient]: kcal for energy, grams otherwise (fibre and added sugars: their guidelines). */
     fun of(nutrient: Nutrient): Double = when (nutrient) {
         Nutrient.KCAL -> KCAL
         Nutrient.FAT -> FAT
         Nutrient.SATURATES -> SATURATES
         Nutrient.CARBS -> CARBS
         Nutrient.SUGARS -> SUGARS
+        Nutrient.ADDED_SUGARS -> ADDED_SUGARS_LIMIT
         Nutrient.FIBRE -> FIBRE_GUIDELINE
         Nutrient.PROTEIN -> PROTEIN
         Nutrient.SALT -> SALT
@@ -32,7 +36,7 @@ object ReferenceIntakes {
     fun percent(nutrient: Nutrient, amount: Double): Double = amount / of(nutrient) * 100
 }
 
-/** Eight nutrient amounts: kcal, and grams of the rest. */
+/** The nutrient amounts: kcal, and grams of the rest. */
 data class NutrientTotals(
     val kcal: Double = 0.0,
     val fat: Double = 0.0,
@@ -42,6 +46,8 @@ data class NutrientTotals(
     val fibre: Double = 0.0,
     val protein: Double = 0.0,
     val salt: Double = 0.0,
+    /** Declared last so positional construction keeps working. */
+    val addedSugars: Double = 0.0,
 ) {
     operator fun get(nutrient: Nutrient): Double = when (nutrient) {
         Nutrient.KCAL -> kcal
@@ -49,6 +55,7 @@ data class NutrientTotals(
         Nutrient.SATURATES -> saturates
         Nutrient.CARBS -> carbs
         Nutrient.SUGARS -> sugars
+        Nutrient.ADDED_SUGARS -> addedSugars
         Nutrient.FIBRE -> fibre
         Nutrient.PROTEIN -> protein
         Nutrient.SALT -> salt
@@ -59,15 +66,17 @@ data class NutrientTotals(
 
     operator fun times(factor: Double) = NutrientTotals(
         kcal * factor, fat * factor, saturates * factor, carbs * factor, sugars * factor, fibre * factor, protein * factor, salt * factor,
+        addedSugars * factor,
     )
 
     operator fun div(divisor: Double) = NutrientTotals(
         kcal / divisor, fat / divisor, saturates / divisor, carbs / divisor, sugars / divisor, fibre / divisor, protein / divisor, salt / divisor,
+        addedSugars / divisor,
     )
 
     operator fun plus(other: NutrientTotals) = NutrientTotals(
         kcal + other.kcal, fat + other.fat, saturates + other.saturates, carbs + other.carbs, sugars + other.sugars,
-        fibre + other.fibre, protein + other.protein, salt + other.salt,
+        fibre + other.fibre, protein + other.protein, salt + other.salt, addedSugars + other.addedSugars,
     )
 }
 
@@ -122,18 +131,39 @@ data class NutritionSummary(
     val per100: NutrientTotals,
     /** The traffic light of fat, saturates, sugars and salt. */
     val lights: Map<Nutrient, Light>,
-    /** Counted ingredients with at least one unknown nutrition value: the totals are "at least". */
+    /** Counted ingredients with at least one unknown label value: the totals are "at least". Added sugars aside. */
     val unknownIngredients: List<Long>,
-    /** The nutrients that at least one counted ingredient doesn't know. */
+    /** The nutrients that at least one counted ingredient doesn't know (added sugars included). */
     val unknownNutrients: Set<Nutrient>,
+    /** Counted ingredients whose added sugars are unknown (see [RecipeMaths.addedSugarsPer100]): that row is "at least". */
+    val addedSugarsUnknown: List<Long> = emptyList(),
 ) {
     val atLeast: Boolean get() = unknownIngredients.isNotEmpty()
 
     /** Energy per portion in kJ. */
     val kj: Double get() = perPortion.kj
 
-    /** [nutrient] per portion as a percentage of the reference intake (fibre: of the 30 g guideline). */
+    /** [nutrient] per portion as a percentage of the reference intake (fibre and added sugars: of their 30 g guidelines). */
     fun percentRi(nutrient: Nutrient): Double = ReferenceIntakes.percent(nutrient, perPortion[nutrient])
+}
+
+/** One counted veg or pulse ingredient's 5 a day portions, per portion of the recipe. */
+data class VegItem(val ingredientId: Long, val kind: VegKind, val portions: Double)
+
+/**
+ * 5 a day per portion (docs/PLAN.md §11.11). [total] counts every veg and pulse gram; [effective] counts the
+ * pulses once at most ([pulsesCounted] = min(1, [pulses])). [items] are the ingredients, largest first.
+ */
+data class VegSummary(
+    val total: Double,
+    val effective: Double,
+    val veg: Double,
+    val pulses: Double,
+    val pulsesCounted: Double,
+    val items: List<VegItem>,
+) {
+    /** True when the pulses cap takes something off. */
+    val capped: Boolean get() = pulses > pulsesCounted
 }
 
 /** Everything the recipe screen shows about a recipe at some number of servings. */
@@ -144,12 +174,14 @@ data class RecipeNumbers(
     val countOptional: Boolean,
     val cost: CostSummary,
     val nutrition: NutritionSummary,
-    /** 5 a day portions of 80 g per portion, pulses capped at one. */
+    /** 5 a day portions of 80 g per portion, pulses capped at one: [VegSummary.effective]. */
     val veg: Double,
     /** Grams of counted ingredients per portion, ml counted as g. */
     val rawGramsPerPortion: Double,
     val lines: List<LineNumbers>,
     val breakdowns: Map<BreakdownMetric, Breakdown>,
+    /** The veg with and without the pulses cap, and by ingredient. */
+    val vegSummary: VegSummary = VegSummary(veg, veg, veg, 0.0, 0.0, emptyList()),
 )
 
 /** Cost, nutrition, veg and scaling for one recipe (docs/PLAN.md §11.2). */
@@ -160,6 +192,15 @@ object RecipeMaths {
 
     private const val TOP_SHARES = 5
     private const val PACK_EPSILON = 1e-9
+
+    /**
+     * An ingredient's added sugars per 100: its own value, else 0 when its sugars are 0 or it is on the Fruit & veg
+     * shelf (fresh produce has none added), else null (unknown). docs/PLAN.md §11.11.
+     */
+    fun addedSugarsPer100(ingredient: Ingredient): Double? {
+        ingredient.per100.addedSugars?.let { return it }
+        return if (ingredient.per100.sugars == 0.0 || ingredient.shelf == Shelf.FRUIT_VEG) 0.0 else null
+    }
 
     /** What every quantity is multiplied by to cook for [servings] instead of the recipe's own. */
     fun scaleFactor(recipe: Recipe, servings: Int): Double = servings.toDouble() / recipe.serves.coerceAtLeast(1)
@@ -195,6 +236,8 @@ object RecipeMaths {
         var pulseGrams = 0.0
         val unknownIngredients = LinkedHashSet<Long>()
         val unknownNutrients = LinkedHashSet<Nutrient>()
+        val addedSugarsUnknown = LinkedHashSet<Long>()
+        val vegByIngredient = LinkedHashMap<Long, Double>()
         val missing = LinkedHashSet<Long>()
         val shares = BreakdownMetric.entries.associateWith { LinkedHashMap<Long, Double>() }
 
@@ -222,6 +265,7 @@ object RecipeMaths {
                 VegKind.PULSE -> pulseGrams += quantity
                 VegKind.NONE -> Unit
             }
+            if (ingredient.vegKind != VegKind.NONE) vegByIngredient.merge(id, quantity, Double::plus)
 
             val per100 = ingredient.per100
             fun amount(nutrient: Nutrient): Double {
@@ -242,6 +286,11 @@ object RecipeMaths {
                 fibre = amount(Nutrient.FIBRE),
                 protein = amount(Nutrient.PROTEIN),
                 salt = amount(Nutrient.SALT),
+                addedSugars = addedSugarsPer100(ingredient)?.let { quantity / 100.0 * it } ?: run {
+                    addedSugarsUnknown += id
+                    unknownNutrients += Nutrient.ADDED_SUGARS
+                    0.0
+                },
             )
             nutrients += added
             shares.getValue(BreakdownMetric.KCAL).merge(id, added.kcal / portions, Double::plus)
@@ -255,7 +304,13 @@ object RecipeMaths {
         val lights = TrafficLights.coloured.associateWith {
             TrafficLights.colour(it, per100[it], perPortion[it]) ?: Light.GREEN
         }
-        val veg = vegGrams / portions / VEG_PORTION_GRAMS + minOf(1.0, pulseGrams / portions / VEG_PORTION_GRAMS)
+        val vegPortions = vegGrams / portions / VEG_PORTION_GRAMS
+        val pulsePortions = pulseGrams / portions / VEG_PORTION_GRAMS
+        val pulsesCounted = minOf(1.0, pulsePortions)
+        val veg = vegPortions + pulsesCounted
+        val vegItems = vegByIngredient.entries
+            .map { (id, grams) -> VegItem(id, ingredients.getValue(id).vegKind, grams / portions / VEG_PORTION_GRAMS) }
+            .sortedWith(compareByDescending<VegItem> { it.portions }.thenBy { it.ingredientId })
 
         val old = LinkedHashSet<Long>()
         for (id in quantityByIngredient.keys) if (prices[id]?.old == true) old += id
@@ -280,11 +335,20 @@ object RecipeMaths {
                 lights = lights,
                 unknownIngredients = unknownIngredients.toList(),
                 unknownNutrients = unknownNutrients,
+                addedSugarsUnknown = addedSugarsUnknown.toList(),
             ),
             veg = veg,
             rawGramsPerPortion = rawPerPortion,
             lines = counted,
             breakdowns = BreakdownMetric.entries.associateWith { breakdown(it, shares.getValue(it)) },
+            vegSummary = VegSummary(
+                total = vegPortions + pulsePortions,
+                effective = veg,
+                veg = vegPortions,
+                pulses = pulsePortions,
+                pulsesCounted = pulsesCounted,
+                items = vegItems,
+            ),
         )
     }
 

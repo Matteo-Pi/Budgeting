@@ -1505,7 +1505,7 @@ nothing has to be copied across by hand.
 | Open Food Facts contact | Their User-Agent asks for a contact. The app sends the project page (`https://github.com/matteo-pi/budgeting`), never an email address. |
 | Budget link | None in v1. The shopping list's estimate never reaches the forecast, which already learns grocery spend. |
 | Extras in v1 | Works offline, shopping list, scale servings, barcode scanning, cooking view (screen kept on, ingredients and steps ticked off). |
-| Not in v1 | Meal planner calendar, pantry stock tracking, importing from recipe websites, AI parsing, nutrition targets or tracking what was eaten. |
+| Not in v1 | Meal planner calendar, importing from recipe websites, AI parsing, nutrition targets or tracking what was eaten. What the user has in the kitchen was added later (§11.11), set by hand. |
 
 ### 11.2 Units, quantities and maths (`core/.../recipes/`, pure Kotlin, fully unit-tested)
 
@@ -1989,3 +1989,204 @@ fixed.
 1. **Navigation**: a top-left switch between Budgeting and Recipes; Recipes has its own bottom tabs.
 2. **Open Food Facts contact**: the project page, never an email address.
 3. **Budget link**: none in v1.
+
+### 11.11 Additions (asked for 2026-10-18)
+Six changes the user asked for once the section was built. Room goes to **version 4** with
+`@AutoMigration(3, 4)`: two nullable columns on `ingredients` and one new table, nothing else. Backups go to
+**version 4**; versions 1 to 3 still restore.
+
+**1. Veg: total and effective portions** (`RecipeMaths`, `VegSummary`)
+- The recipe's *5 a day* card shows two numbers per portion:
+  - **In total**: every `VEG` and `PULSE` gram ÷ servings ÷ 80, with no cap.
+  - **Towards your 5 a day**: the same, but beans and lentils count once at most (the rule in §11.2). This
+    is the number the cards, Compare and the checkpoints already use (`RecipeNumbers.veg`).
+- Under them, one row per counted veg or pulse ingredient with its portions, largest first. The pulses
+  are summed in one row ("Beans and lentils: 1.5 portions, counted as 1") when they pass the cap.
+- `RecipeNumbers.vegSummary = VegSummary(total, effective, veg, pulses, pulsesCounted, items)`, where
+  `items` is `VegItem(ingredientId, kind, portions)`. `RecipeNumbers.veg` stays as it is.
+
+**2. Sugars and added sugars** (`Nutrient.ADDED_SUGARS`)
+- A ninth nutrient, **added sugars** per 100 g or ml: sugar, honey and syrups put into a food. It is
+  shown under "of which sugars" as "of which added sugars", against the NHS limit for adults of **30 g a
+  day** (worded like fibre: "12% of the 30 g a day limit"). It has no traffic light; the FSA colours stay
+  on total sugars.
+- **Unknown values**: UK labels don't list added sugars, so most ingredients won't have one.
+  - An ingredient whose added sugars are unknown counts as 0 when its sugars are 0, or when it is on the
+    Fruit & veg shelf.
+  - Otherwise it is unknown, and only the added-sugars row says "at least". The "at least" note for the
+    other eight nutrients ignores added sugars.
+  - `NutritionSummary.addedSugarsUnknown` lists those ingredients.
+- **Where it is set**:
+  - The ingredient editor has an *Added sugars* field after *Sugars*.
+  - A label photo reads an "added sugars" or "free sugars" row if there is one; it is matched before
+    "sugars".
+  - The Open Food Facts lookup reads `added-sugars_100g`.
+  - The bundle's `per100` has `addedSugars`.
+- **Starter book**: added sugars are written out for all 40 ingredients.
+  - Honey 82.4, oyster sauce 22, light soy sauce 10, stock cubes 3, streaky bacon 0.2.
+  - Every other ingredient is 0: their sugars are natural (tomatoes, onions, spices).
+  - The sauces' values are their label sugars, because sugar is in their ingredients list. So they are
+    upper bounds.
+- **Compare** gets an *Added sugars* column. The Recipes sort is unchanged.
+- **Data**: column `ingredients.added_sugars REAL` (null = unknown); `Nutrition.addedSugars`;
+  `NutrientTotals.addedSugars`; `ReferenceIntakes.ADDED_SUGARS_LIMIT = 30.0`.
+
+**3. Timers** (`StepTimers` in core; `CookingTimers` in the app)
+- **Durations in a step**: `StepTimers.of(step)` finds every duration in the step's time text and body.
+  - Accepted forms: "30 sec", "2 min", "10–12 min", "about 20 minutes", "1 hr 15 min", "1½ hours".
+  - A range starts at its **lower** end, because the step's "Ready when:" cue decides when it is done.
+    The chip still shows the range as written.
+  - "every 5 min" is skipped: it is a reminder, not a timer.
+  - The step's own time comes first, then the body's durations in reading order. A duration equal to
+    one already listed is dropped.
+  - Each timer is `StepTimer(label, seconds, maxSeconds)`.
+- **On the recipe screen (before *Cook*) and in the cooking view (after it)**:
+  - Each step shows its timers as chips with a timer icon. A tap starts that timer.
+  - A custom *Timer* button asks for minutes.
+  - Running timers show in a bar at the bottom of both screens: the step title, the time left counting
+    down, and *Cancel*.
+- **When a timer ends**:
+  - On any screen of the app, a dialog says "Time's up: Simmer (Beef, Bean & Lentil Chilli)" with
+    *Dismiss* and *1 more minute*.
+  - The phone's alarm sound plays if the phone's clock isn't also timing it.
+- **On the phone's clock too**: with *Start timers on the phone's clock* on (Recipe settings, on by
+  default), starting a timer also sends `AlarmClock.ACTION_SET_TIMER`:
+  - extras: `EXTRA_LENGTH` (seconds), `EXTRA_MESSAGE` ("Simmer · Chilli") and `EXTRA_SKIP_UI = true`.
+  - The Clock app then rings even if this app is closed.
+  - It needs `com.android.alarm.permission.SET_ALARM`, a normal permission that is granted on install.
+  - Limits:
+    - The phone's timer can't be cancelled from here. The app says so when *Cancel* is pressed on a
+      timer the phone also has.
+    - If no app handles the intent, the app says so and its own timer still runs.
+- **App timers**:
+  - They live in `CookingTimers` (in `AppContainer`, app scope), so they keep running between the
+    recipe screen, the cooking view and other tabs.
+  - They are measured with `SystemClock.elapsedRealtime`. They are not saved, so they are lost if
+    Android stops the app. That is what the phone's timer is for.
+
+**4. What I have** (`owned_items`, `Pantry`)
+- **Table** `owned_items`: `ingredient_id` (primary key) → `ingredients` CASCADE, `quantity` REAL, and
+  `updated_at`.
+  - A row means "I have this".
+  - `quantity` is in the ingredient's base unit. Null means "some, not measured" (salt, oil, spices).
+  - Core model: `OwnedItem(ingredientId, quantity, updatedAtEpochMillis)`.
+- **Setting it**:
+  - Each Ingredients row has a *How much I have* button. It opens a dialog with a number and a unit:
+    g or ml, kg or l, packs (of the pack size), and each of the ingredient's portions ("each" = 150 g).
+  - The dialog also has *Some (not measured)* and *None left* (which deletes the row).
+  - `Pantry.units(ingredient)` gives those units and their factors.
+- **The Ingredients tab**:
+  - A filter row: *All*, *I have (N)* and *I don't have*.
+  - Owned rows show "Have 450 g · about 3", or "Have some", and the date it was last set.
+  - *I have* lists only those, still grouped by shelf and searchable.
+- **Recipes**:
+  - With anything owned, each recipe card says "You have 8 of 10 ingredients".
+  - The Recipes filters (below) have *What I have*: *Any*, *I have everything* and *Missing 1 or 2*.
+  - `Pantry.coverage(recipe, ingredients, owned, countOptional)` counts each distinct counted
+    ingredient once. It is covered when it is owned with at least the recipe's quantity at its own
+    servings, or owned with no quantity.
+- **Shopping list** (`ShoppingList.build(…, owned)`):
+  - Packs needed = ⌈max(0, need − owned quantity) ÷ pack size − 1e-9⌉.
+  - The line says "you have 300 g". When that covers it, the line shows *Have enough* and costs nothing.
+  - Owned with no quantity changes nothing but says "you have some".
+  - *I have it* still works as before.
+- **Not done**: taking what a recipe used off what is owned after cooking. Quantities change only when
+  the user sets them.
+
+**5. Recipe filters** (`RecipeFacets` in core)
+- **The controls**: under the search box, a row of dropdown chips.
+  - *Protein*, *Carb*, *Method*, *Time*, *What I have*, *Tags* and *Sort*.
+  - A chip shows its choice ("Chicken ✕") while it filters, and *Clear filters* resets them all.
+  - Options list only what the recipes have, each with its count.
+  - Tags are a multi-choice list. The others choose one.
+  - The tag chips row is gone, replaced by the *Tags* dropdown.
+- **Protein and carb** come from the recipe's counted, non-optional lines through each ingredient's
+  **food group**. `FoodGroups.of(ingredient)` is the ingredient's own choice, else a guess from its name:
+  - **Groups**:
+    - Protein: Chicken, Turkey, Beef, Pork (bacon, ham, sausages, chorizo), Lamb, Fish, Prawns &
+      seafood, Eggs, Beans & lentils, and Meat-free (tofu, Quorn, tempeh, seitan, paneer, halloumi).
+    - Carb: Rice, Pasta, Noodles, Potatoes (sweet potatoes too), Bread & wraps, and Couscous & grains.
+  - **Guessing**: the name, without brackets, as lower-case singular words. The first match wins:
+    1. "stock", "cube", "gravy", "bouillon", "sauce", "paste", "powder", "seasoning", "oil",
+       "vinegar", "wine", "flour", "starch" or "extract" → none.
+    2. A meat-free word (or "vegetarian", "vegan", "plant") → Meat-free.
+    3. The carbs: noodles before rice ("rice noodles"), then pasta shapes, potatoes, bread and wraps,
+       grains.
+    4. Fish and seafood.
+    5. Chicken, turkey, lamb, beef (beef, steak, brisket), pork (pork, bacon, ham, gammon, sausage,
+       chorizo, pancetta, lardons, salami). Then plain "mince", "meatballs" or "burgers" → Beef.
+    6. "egg" → Eggs.
+    7. A `PULSE` ingredient → Beans & lentils.
+  - **Override**: the ingredient editor's *Counts as* menu: *Automatic (Chicken)*, any group, or
+    *Neither*. Column `ingredients.food_group TEXT`: null = automatic, `NONE` = neither.
+  - **Extra protein choice**: *No meat or fish*. A recipe qualifies when no line is on the Meat shelf,
+    no line's group is a meat or fish, and no line's name says chicken, beef, pork, lamb, turkey, fish,
+    anchovy or prawn ("chicken stock" counts as meat here).
+- **Method** (`CookMethod`): Hob, Oven, Air fryer, Slow cooker, Pressure cooker, Microwave, Grill and
+  No cook.
+  - **From the Style line first** ("Hob · one pot", "Oven · traybake"), which the user can edit.
+  - **Only if the style names none**, from the kit and the step text:
+    - Oven: "oven", "traybake", "roast", "bake", "gas mark", "°C".
+    - Hob: "hob", "pan", "wok", "saucepan", "simmer", "boil", "fry" (not "air fry"), "sauté", "sear".
+    - The others by their own names.
+  - A recipe can have several methods.
+- **Time**: total time (prep + cook) of at most 20, 30, 45, 60, 90 or 120 minutes. Recipes with no time
+  don't match a time filter.
+- **Combining**: all chosen filters must match, as well as the search.
+  - `RecipeCard` gains `proteins`, `carbs`, `methods`, `meatFree`, `ingredientCount` and `missingCount`.
+  - `RecipeFilters` holds the choices. `RecipeListMapping.filter(cards, query, filters)` applies them.
+
+**6. Pasting a recipe copied from a Claude chat** (`RecipeText.parse`)
+- **The flow**: the user presses Claude's copy button under a recipe, then *Add recipe* → *Paste*. The
+  clipboard holds that answer as Markdown.
+  - *Paste* now reads it straight away and opens the review.
+  - *Read recipe* stays, for typed text.
+  - Text shared from the Claude app goes the same way (`looksLikeRecipe`).
+- **What the reader now accepts** (Markdown as Claude writes it in chat):
+  - **Chatter**: an opening line such as "Here's a…" or "Sure!" before the title is skipped. Closing
+    lines such as "Enjoy!" or "Let me know if…" are skipped too.
+  - **Title**: a heading of any level before the first section, or a line that is all bold. It replaces a
+    plain first line.
+  - **Tagline**: the first plain sentence after the title becomes the tagline (*About*), if there is none.
+    A "**Label:** value" line it doesn't know is skipped.
+  - **Section headings**: at any level, bold (`**Ingredients**`), or a short line ending with ":". They
+    can carry extra words or emoji: "Ingredients (serves 4)", "🥘 Method", "Instructions:",
+    "How to make it", "Tips & variations", "Storing and reheating", "Make ahead". "Nutrition" and "Cost"
+    sections are skipped.
+  - **Markdown inside lines**: `**bold**`, `*italic*`, `` `code` ``, `[links](…)` and "- [ ]" check
+    boxes become plain text. A line of `---`, `***` or `___` ends the section it is in.
+  - **Ingredient groups**: "**For the sauce:**", "### For the sauce" or "For the sauce:" inside
+    Ingredients.
+  - **Ingredient tables**: a Markdown table row (`| Beef mince | 500 g |`) becomes "500 g Beef mince",
+    the cell with the amount first. Header and `|---|` rows are skipped.
+  - **Steps**: "1. **Brown the mince (10 min):** body", "1. **Brown the mince.** body", "**Step 1: Brown
+    the mince**" followed by its paragraphs, and bullets under Method. A step that is all bold is its
+    title. Nested bullets are paragraphs of their step.
+  - **Header facts**: "**Serves:** 4 | **Prep time:** 15 minutes | **Cook time:** 30 minutes",
+    "Servings: 4", "Yield: 4 servings" and "Makes 12". Unknown parts of such a line ("Difficulty: easy")
+    are ignored.
+- **Copy**: the recipe screen's menu also has *Copy recipe*. It puts the paste format on the clipboard,
+  so the recipe can be pasted into *Add recipe* (as a copy to change) or into a chat.
+- **Tests**: `RecipeTextTest` gains chat-style fixtures written the way Claude answers. Each must read to
+  the right title, servings, times, groups, lines and steps, with every starter recipe's paste-format
+  round trip unchanged.
+
+**Order of work (F6)**
+- **Core first, tested locally**:
+  - `VegSummary`, `ADDED_SUGARS`, `StepTimers`, `FoodGroups`, `CookMethods`, `RecipeFacets`, `Pantry`.
+  - The `ShoppingList` owned quantities and the `RecipeText` reader.
+  - Bundle `addedSugars` and the starter book's values; backup version 4.
+- **Then the app**:
+  - Room 4: the entity columns, `OwnedItemEntity` and the DAO, and the repositories' `owned` calls.
+  - The screens above, and the settings key `phoneTimers` (default true; device tests turn it off).
+- **Device tests with screenshots**:
+  - The veg card's two numbers on the chilli.
+  - The added-sugars row on the stir-fry.
+  - Starting the stir-fry's 30-second "Aromatics" timer and seeing it end.
+  - Setting 1 kg of rice owned and filtering the Ingredients tab to *I have*.
+  - The shopping list covering the rice.
+  - Filtering the recipes by Beef, by Oven and by 45 minutes or less.
+  - Pasting a chat-style recipe from the clipboard.
+  - *Copy recipe* then pasting it back.
+  - `MigrationTest` 3 → 4.
+- **After the first green build**, commit `4.json` from `refs/ci/room-schemas`.

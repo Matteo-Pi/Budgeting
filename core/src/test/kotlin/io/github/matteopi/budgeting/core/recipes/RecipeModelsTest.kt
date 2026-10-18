@@ -23,7 +23,9 @@ class RecipeModelsTest {
         assertEquals(listOf("LABEL", "BARCODE", "TYPED", "ESTIMATE"), NutritionSource.entries.map { it.name })
         assertEquals(listOf("MINE", "CLAUDE", "IMPORTED"), RecipeSource.entries.map { it.name })
         assertEquals(listOf("STEP", "TIP", "EQUIPMENT", "STORAGE"), StepKind.entries.map { it.name })
-        assertEquals(8, Nutrient.entries.size)
+        assertEquals(9, Nutrient.entries.size)
+        assertEquals(Nutrient.entries - Nutrient.ADDED_SUGARS, Nutrient.LABEL)
+        assertEquals("NONE", FoodGroup.entries.last().name)
     }
 
     @Test

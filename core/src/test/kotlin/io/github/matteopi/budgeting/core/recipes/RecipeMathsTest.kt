@@ -270,7 +270,13 @@ class RecipeMathsTest {
         assertEquals(listOf(2L), partly.unknownIngredients)
         assertEquals(380.0 + 100.0, n.perPortion.kcal, 1e-9)
         assertFalse(analyse(recipe(1, line(1, 100.0)), listOf(known)).nutrition.atLeast)
-        assertTrue(analyse(recipe(1, line(1, 100.0)), listOf(known)).nutrition.unknownNutrients.isEmpty())
+        // Added sugars aren't on UK labels, so not knowing them leaves only that row open.
+        val labelOnly = analyse(recipe(1, line(1, 100.0)), listOf(known)).nutrition
+        assertEquals(setOf(Nutrient.ADDED_SUGARS), labelOnly.unknownNutrients)
+        assertEquals(listOf(1L), labelOnly.addedSugarsUnknown)
+        val all = analyse(recipe(1, line(1, 100.0)), listOf(ing(1, per100 = oats.copy(addedSugars = 0.0)))).nutrition
+        assertTrue(all.unknownNutrients.isEmpty())
+        assertTrue(all.addedSugarsUnknown.isEmpty())
     }
 
     @Test

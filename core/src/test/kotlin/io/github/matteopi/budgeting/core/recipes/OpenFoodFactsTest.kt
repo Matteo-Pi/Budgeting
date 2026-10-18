@@ -86,4 +86,13 @@ class OpenFoodFactsTest {
         )
         assertEquals("Budgeting/0.1.0 (build 60) (https://github.com/matteo-pi/budgeting)", OpenFoodFacts.userAgent("0.1.0 (build 60)"))
     }
+
+    @Test
+    fun addedSugarsAreReadWhenGiven() {
+        val body = """{"status":1,"product":{"product_name":"Ketchup","nutriments":{"sugars_100g":22.8,"added-sugars_100g":21.5}}}"""
+        val draft = assertIs<OffResult.Found>(OpenFoodFacts.toResult(200, body, "5000157024671")).draft
+        assertEquals(21.5, draft.per100.addedSugars)
+        assertEquals(22.8, draft.per100.sugars)
+        assertNull(assertIs<OffResult.Found>(OpenFoodFacts.toResult(200, tomatoes, "5000436589458")).draft.per100.addedSugars)
+    }
 }

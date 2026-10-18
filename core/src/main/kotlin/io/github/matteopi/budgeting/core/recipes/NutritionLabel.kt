@@ -28,6 +28,7 @@ data class LabelReading(
         fibre = values[Nutrient.FIBRE]?.value,
         protein = values[Nutrient.PROTEIN]?.value,
         salt = values[Nutrient.SALT]?.value,
+        addedSugars = values[Nutrient.ADDED_SUGARS]?.value,
     )
 }
 
@@ -38,7 +39,8 @@ data class LabelReading(
  *   the "per …" columns before it ("Per serving (30g) Per 100g" puts it second). With no heading the first value
  *   column is assumed and every value's confidence is lowered.
  * - A nutrient row is found by its name (energy, fat, of which saturates, carbohydrate, of which sugars, fibre,
- *   protein, salt; sodium × 2.5 when there is no salt row). Mono- and polyunsaturates, starch and polyols are
+ *   protein, salt; sodium × 2.5 when there is no salt row). An "added sugars" or "free sugars" row, which few UK
+ *   labels have, is read as added sugars (docs/PLAN.md §11.11). Mono- and polyunsaturates, starch and polyols are
  *   ignored. "%" values (reference intakes) are never read as amounts.
  * - Energy is read in kcal; a column with only kJ is converted (÷ 4.184), and kcal on the row after an energy row
  *   that only has kJ are used.
@@ -115,6 +117,7 @@ object NutritionLabel {
         return when {
             line.contains("energy") -> Nutrient.KCAL
             line.contains("saturat") -> Nutrient.SATURATES
+            Regex("""\b(added|free)\s+sugar""").containsMatchIn(line) -> Nutrient.ADDED_SUGARS
             line.contains("sugar") -> Nutrient.SUGARS
             line.contains("fibre") || line.contains("fiber") -> Nutrient.FIBRE
             line.contains("protein") -> Nutrient.PROTEIN

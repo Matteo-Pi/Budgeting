@@ -108,6 +108,7 @@ object OpenFoodFacts {
                 fibre = number(n["fiber_100g"]),
                 protein = number(n["proteins_100g"]),
                 salt = salt,
+                addedSugars = number(n["added-sugars_100g"]),
             ),
         )
     }

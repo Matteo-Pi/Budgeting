@@ -264,4 +264,28 @@ class ShoppingListTest {
         assertEquals(Money(1383), list.header.mealsCost)
         assertTrue(list.header.estimated.pence > list.header.mealsCost.pence, "whole packs cost more than what goes in the meals")
     }
+
+    @Test
+    fun `what the kitchen has comes off the packs to buy`() {
+        val owned = mapOf(
+            1L to OwnedItem(1, 1000.0),
+            2L to OwnedItem(2, 400.0),
+            5L to OwnedItem(5, null),
+        )
+        val list = ShoppingList.build(listOf(recipeEntry(10, 4), recipeEntry(11, 4)), emptyList(), recipes, all, prices, owned = owned)
+        val onions = list.lines.first { it.ingredientId == 1L }
+        assertEquals(0, onions.packs, "1 kg owned covers the 1 kg needed")
+        assertTrue(onions.haveEnough)
+        assertEquals(Money(0), onions.cost)
+        val chickenLine = list.lines.first { it.ingredientId == 2L }
+        assertEquals(1, chickenLine.packs, "800 g needed, 400 g owned: one 500 g pack")
+        assertFalse(chickenLine.haveEnough)
+        assertEquals(OwnedItem(2, 400.0), chickenLine.owned)
+        val riceLine = list.lines.first { it.ingredientId == 5L }
+        assertEquals(1, riceLine.packs, "owned with no amount takes nothing off")
+        assertFalse(riceLine.haveEnough)
+        assertNull(list.lines.first { it.ingredientId == 4L }.owned)
+        val without = build(listOf(recipeEntry(10, 4), recipeEntry(11, 4)))
+        assertEquals(without.header.items - 1, list.header.items, "the onions are no longer to buy")
+    }
 }

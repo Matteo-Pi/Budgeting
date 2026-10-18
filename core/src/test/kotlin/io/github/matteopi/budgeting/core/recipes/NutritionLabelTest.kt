@@ -145,4 +145,25 @@ class NutritionLabelTest {
     fun textWithNoLabelGivesNothing() {
         assertTrue(read("Tesco\nMilk 1.20\nTOTAL 1.20").isEmpty)
     }
+
+    @Test
+    fun anAddedSugarsRowIsReadApartFromTheSugars() {
+        val reading = read(
+            """
+            Nutrition Per 100g
+            Energy 1500kJ/360kcal
+            Carbohydrate 60g
+            of which sugars 30g
+            of which added sugars 25g
+            Salt 0.5g
+            """,
+        )
+        assertEquals(30.0, reading.value(Nutrient.SUGARS))
+        assertEquals(25.0, reading.value(Nutrient.ADDED_SUGARS))
+        assertEquals(25.0, reading.toNutrition().addedSugars)
+        val free = read("Per 100g\nSugars 12g\nFree sugars 10g\n")
+        assertEquals(12.0, free.value(Nutrient.SUGARS))
+        assertEquals(10.0, free.value(Nutrient.ADDED_SUGARS))
+        assertNull(read("Per 100g\nSugars 12g\n").value(Nutrient.ADDED_SUGARS))
+    }
 }

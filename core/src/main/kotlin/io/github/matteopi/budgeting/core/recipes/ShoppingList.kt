@@ -12,7 +12,7 @@ data class ShoppingLine(
     val quantity: Double,
     val packSize: Double,
     val packLabel: String,
-    /** Whole packs to buy: ⌈quantity ÷ pack size⌉, or 0 when [haveIt]. */
+    /** Whole packs to buy: ⌈(quantity − what is [owned]) ÷ pack size⌉, or 0 when [haveIt]. */
     val packs: Int,
     val price: ResolvedPrice?,
     /** [packs] × the pack price; null when there is no price. */
@@ -23,7 +23,12 @@ data class ShoppingLine(
     val recipeIds: List<Long>,
     /** True when an extra item (not a recipe) asked for it too. */
     val isExtra: Boolean,
-)
+    /** What the kitchen has of it (docs/PLAN.md §11.11), if anything. */
+    val owned: OwnedItem? = null,
+) {
+    /** True when what is owned (measured) covers the whole [quantity]. */
+    val haveEnough: Boolean get() = owned?.quantity?.let { it >= quantity - 1e-6 } == true
+}
 
 /** An extra item typed as text. */
 data class ShoppingFreeLine(val entryId: Long, val text: String, val checked: Boolean)
@@ -79,8 +84,9 @@ object ShoppingList {
      *   servings ([countOptional] decides whether optional lines count). An extra item adds its
      *   quantity (a whole pack when it has none). Entries whose recipe or ingredient isn't in the
      *   given lists are skipped; recipe lines with no ingredient are not listed.
-     * - Packs = ⌈total ÷ pack size − 1e-9⌉, or 0 when the ingredient is marked "I have it" in [marks].
-     *   Cost = packs × the resolved pack price from [prices].
+     * - Packs = ⌈(total − the quantity in [owned]) ÷ pack size − 1e-9⌉ (never below 0), or 0 when the ingredient is
+     *   marked "I have it" in [marks]. Owned with no quantity takes nothing off. Cost = packs × the resolved pack
+     *   price from [prices].
      * - Shelves are in shop order, ingredients by name within a shelf. Free-text entries come last.
      */
     fun build(
@@ -90,6 +96,7 @@ object ShoppingList {
         ingredients: List<Ingredient>,
         prices: Map<Long, ResolvedPrice>,
         countOptional: Boolean = true,
+        owned: Map<Long, OwnedItem> = emptyMap(),
     ): ShoppingListResult {
         val recipeById = recipes.associateBy { it.id }
         val ingredientById = ingredients.associateBy { it.id }
@@ -133,10 +140,12 @@ object ShoppingList {
             val ingredient = need.ingredient
             val mark = markById[ingredient.id]
             val haveIt = mark?.haveIt ?: false
+            val ownedItem = owned[ingredient.id]
+            val toBuy = (need.quantity - (ownedItem?.quantity ?: 0.0)).coerceAtLeast(0.0)
             val packs = if (haveIt || ingredient.packSize <= 0.0) {
                 0
             } else {
-                Math.ceil(need.quantity / ingredient.packSize - PACK_EPSILON).toInt().coerceAtLeast(0)
+                Math.ceil(toBuy / ingredient.packSize - PACK_EPSILON).toInt().coerceAtLeast(0)
             }
             val price = prices[ingredient.id]
             ShoppingLine(
@@ -154,6 +163,7 @@ object ShoppingList {
                 haveIt = haveIt,
                 recipeIds = need.recipeIds.toList(),
                 isExtra = need.extra,
+                owned = ownedItem,
             )
         }
 

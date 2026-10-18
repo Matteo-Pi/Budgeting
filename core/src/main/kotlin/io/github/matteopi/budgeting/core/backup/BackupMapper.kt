@@ -34,10 +34,12 @@ import io.github.matteopi.budgeting.core.model.Transaction
 import io.github.matteopi.budgeting.core.model.TxKind
 import io.github.matteopi.budgeting.core.model.ZeroPoint
 import io.github.matteopi.budgeting.core.recipes.BaseUnit
+import io.github.matteopi.budgeting.core.recipes.FoodGroup
 import io.github.matteopi.budgeting.core.recipes.Ingredient
 import io.github.matteopi.budgeting.core.recipes.IngredientAliasRecord
 import io.github.matteopi.budgeting.core.recipes.Nutrition
 import io.github.matteopi.budgeting.core.recipes.NutritionSource
+import io.github.matteopi.budgeting.core.recipes.OwnedItem
 import io.github.matteopi.budgeting.core.recipes.Portion
 import io.github.matteopi.budgeting.core.recipes.Recipe
 import io.github.matteopi.budgeting.core.recipes.RecipeLine
@@ -101,6 +103,7 @@ object BackupMapper {
             },
             shoppingEntries = data.shoppingEntries.map { it.toDto() },
             shoppingMarks = data.shoppingMarks.map { ShoppingMarkDto(it.ingredientId, it.checked, it.haveIt) },
+            ownedItems = data.ownedItems.map { OwnedItemDto(it.ingredientId, it.quantity, it.updatedAtEpochMillis) },
             settings = data.settings.toDto(),
             appSettings = appSettings,
         )
@@ -141,6 +144,7 @@ object BackupMapper {
             },
             shoppingEntries = backup.shoppingEntries.map { it.toModel() },
             shoppingMarks = backup.shoppingMarks.map { ShoppingMark(it.ingredientId, it.checked, it.haveIt) },
+            ownedItems = backup.ownedItems.map { OwnedItem(it.ingredientId, it.quantity, it.updatedAtEpochMillis) },
             settings = backup.settings.toModel(),
         )
     }
@@ -423,6 +427,8 @@ private fun Ingredient.toDto() = IngredientDto(
     note = note,
     archived = archived,
     createdAtEpochMillis = createdAtEpochMillis,
+    addedSugars = per100.addedSugars,
+    foodGroup = foodGroup?.name,
 )
 private fun IngredientDto.toModel(portions: List<Portion>) = Ingredient(
     id = id,
@@ -437,7 +443,7 @@ private fun IngredientDto.toModel(portions: List<Portion>) = Ingredient(
     productName = productName,
     sourceUrl = sourceUrl,
     barcode = barcode,
-    per100 = Nutrition(kcal, fat, saturates, carbs, sugars, fibre, protein, salt),
+    per100 = Nutrition(kcal, fat, saturates, carbs, sugars, fibre, protein, salt, addedSugars),
     nutritionSource = NutritionSource.valueOf(nutritionSource),
     vegKind = VegKind.valueOf(vegKind),
     shelf = Shelf.valueOf(shelf),
@@ -445,6 +451,7 @@ private fun IngredientDto.toModel(portions: List<Portion>) = Ingredient(
     archived = archived,
     createdAtEpochMillis = createdAtEpochMillis,
     portions = portions,
+    foodGroup = foodGroup?.let { name -> FoodGroup.entries.firstOrNull { it.name == name } },
 )
 
 private fun Recipe.toDto() = RecipeDto(

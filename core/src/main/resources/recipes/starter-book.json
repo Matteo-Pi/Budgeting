@@ -18,6 +18,7 @@
    "product": "Tesco Smoked Streaky Bacon Rashers 14 Pack 300g",
    "url": "https://www.tesco.com/shop/en-GB/products/281037392",
    "per100": {
+    "addedSugars": 0.2,
     "carbs": 0.2,
     "fat": 17.8,
     "fibre": 0,
@@ -52,6 +53,7 @@
    "product": "Tesco Bay Leaves 3g",
    "url": "https://www.tesco.com/shop/en-GB/products/264104905",
    "per100": {
+    "addedSugars": 0,
     "carbs": 50.7,
     "fat": 8.4,
     "fibre": 26,
@@ -86,14 +88,15 @@
    "product": "Tesco British Beef Lean Steak Mince 5% Fat 500g",
    "url": null,
    "per100": {
-    "kcal": 124,
-    "fat": 5,
-    "saturates": 2.2,
+    "addedSugars": 0,
     "carbs": 0,
-    "sugars": 0,
+    "fat": 5,
     "fibre": 0,
+    "kcal": 124,
     "protein": 21.6,
-    "salt": 0.15
+    "salt": 0.15,
+    "saturates": 2.2,
+    "sugars": 0
    },
    "nutritionSource": "ESTIMATE",
    "veg": "NONE",
@@ -115,6 +118,7 @@
    "product": "Tesco Ground Black Pepper 100g",
    "url": "https://www.tesco.com/shop/en-GB/products/256150775",
    "per100": {
+    "addedSugars": 0,
     "carbs": 44.3,
     "fat": 3.3,
     "fibre": 28.5,
@@ -149,6 +153,7 @@
    "product": "Tesco Broccoli Loose",
    "url": "https://www.tesco.com/shop/en-GB/products/257231200",
    "per100": {
+    "addedSugars": 0,
     "carbs": 1.8,
     "fat": 0.5,
     "fibre": 2.6,
@@ -183,6 +188,7 @@
    "product": "Tesco Carrots 1kg",
    "url": "https://www.tesco.com/shop/en-GB/products/305953125",
    "per100": {
+    "addedSugars": 0,
     "carbs": 8,
     "fat": 0.3,
     "fibre": 2.4,
@@ -217,6 +223,7 @@
    "product": "Tesco Chicken Breast Fillets 320g",
    "url": "https://www.tesco.com/shop/en-GB/products/320661079",
    "per100": {
+    "addedSugars": 0,
     "carbs": 0,
     "fat": 2.1,
     "fibre": 0,
@@ -251,6 +258,7 @@
    "product": "Tesco British Chicken Thigh Fillets 600g",
    "url": "https://www.trolley.co.uk/product/tesco-british-chicken-thigh-fillets/KWC844",
    "per100": {
+    "addedSugars": 0,
     "carbs": 0,
     "fat": 9.8,
     "fibre": 0,
@@ -285,6 +293,7 @@
    "product": "Tesco Bird Eye Chillies 25g",
    "url": "https://www.trolley.co.uk/product/tesco-bird-eye-chillies-price-marked/RUJ182",
    "per100": {
+    "addedSugars": 0,
     "carbs": 4.3,
     "fat": 4.7,
     "fibre": 1,
@@ -319,14 +328,15 @@
    "product": "Tesco Mild Chilli Powder 46g",
    "url": null,
    "per100": {
-    "kcal": 315,
-    "fat": 14,
-    "saturates": 2.5,
+    "addedSugars": 0,
     "carbs": 25,
-    "sugars": 7,
+    "fat": 14,
     "fibre": 35,
+    "kcal": 315,
     "protein": 13,
-    "salt": 1
+    "salt": 1,
+    "saturates": 2.5,
+    "sugars": 7
    },
    "nutritionSource": "ESTIMATE",
    "veg": "NONE",
@@ -353,6 +363,7 @@
    "product": "Tesco Cornflour 500g",
    "url": "https://www.tesco.com/shop/en-GB/products/301392869",
    "per100": {
+    "addedSugars": 0,
     "carbs": 88,
     "fat": 0.4,
     "fibre": 0,
@@ -387,6 +398,7 @@
    "product": "Tesco Courgettes Loose",
    "url": "https://www.trolley.co.uk/product/courgettes-loose-class-1/DVA772",
    "per100": {
+    "addedSugars": 0,
     "carbs": 1.8,
     "fat": 0.4,
     "fibre": 0.9,
@@ -421,14 +433,15 @@
    "product": "Tesco Ground Cumin 46g",
    "url": null,
    "per100": {
-    "kcal": 375,
-    "fat": 22.3,
-    "saturates": 1.5,
+    "addedSugars": 0,
     "carbs": 44.2,
-    "sugars": 2.3,
+    "fat": 22.3,
     "fibre": 10.5,
+    "kcal": 375,
     "protein": 17.8,
-    "salt": 0.42
+    "salt": 0.42,
+    "saturates": 1.5,
+    "sugars": 2.3
    },
    "nutritionSource": "ESTIMATE",
    "veg": "NONE",
@@ -455,6 +468,7 @@
    "product": "Tesco Large Garlic Each",
    "url": "https://www.tesco.com/shop/en-GB/products/272682288",
    "per100": {
+    "addedSugars": 0,
     "carbs": 16.3,
     "fat": 0.6,
     "fibre": 4.1,
@@ -493,6 +507,7 @@
    "product": "Tesco Garlic Powder 45g",
    "url": "https://www.tesco.com/shop/en-GB/products/300456382",
    "per100": {
+    "addedSugars": 0,
     "carbs": 63.7,
     "fat": 0.7,
     "fibre": 9,
@@ -527,6 +542,7 @@
    "product": "Tesco Root Ginger Loose",
    "url": "https://www.tesco.com/shop/en-GB/products/253559297",
    "per100": {
+    "addedSugars": 0,
     "carbs": 7.2,
     "fat": 0.6,
     "fibre": 2,
@@ -561,6 +577,7 @@
    "product": "Tesco Fine Beans 200g",
    "url": "https://www.trolley.co.uk/product/tesco-fine-beans/PEA102",
    "per100": {
+    "addedSugars": 0,
     "carbs": 3.5,
     "fat": 0.4,
     "fibre": 3,
@@ -590,6 +607,7 @@
    "product": "Stockwell & Co Honey 340g",
    "url": "https://www.tesco.com/shop/en-GB/products/300257829",
    "per100": {
+    "addedSugars": 82.4,
     "carbs": 82.4,
     "fat": 0,
     "fibre": 0.2,
@@ -624,14 +642,15 @@
    "product": "Tesco Red Kidney Beans In Water 400g",
    "url": null,
    "per100": {
-    "kcal": 107,
-    "fat": 0.6,
-    "saturates": 0.1,
+    "addedSugars": 0,
     "carbs": 15,
-    "sugars": 1.5,
+    "fat": 0.6,
     "fibre": 7.3,
+    "kcal": 107,
     "protein": 6.9,
-    "salt": 0.03
+    "salt": 0.03,
+    "saturates": 0.1,
+    "sugars": 1.5
    },
    "nutritionSource": "ESTIMATE",
    "veg": "PULSE",
@@ -658,6 +677,7 @@
    "product": "Tesco Lemons Each",
    "url": "https://www.trolley.co.uk/product/lemons-each/NBJ510",
    "per100": {
+    "addedSugars": 0,
     "carbs": 3.2,
     "fat": 0.3,
     "fibre": 0,
@@ -692,14 +712,15 @@
    "product": "Tesco Mixed Herbs 13g",
    "url": null,
    "per100": {
-    "kcal": 260,
-    "fat": 6,
-    "saturates": 2,
+    "addedSugars": 0,
     "carbs": 37,
-    "sugars": 4,
+    "fat": 6,
     "fibre": 37,
+    "kcal": 260,
     "protein": 11,
-    "salt": 0.1
+    "salt": 0.1,
+    "saturates": 2,
+    "sugars": 4
    },
    "nutritionSource": "ESTIMATE",
    "veg": "NONE",
@@ -726,6 +747,7 @@
    "product": "Tesco Chestnut Vitamin D Mushrooms 250g",
    "url": "https://www.tesco.com/shop/en-GB/products/273796618",
    "per100": {
+    "addedSugars": 0,
     "carbs": 0.3,
     "fat": 0.2,
     "fibre": 0.7,
@@ -755,6 +777,7 @@
    "product": "Tesco Closed Cup Mushrooms 300g",
    "url": "https://www.tesco.com/shop/en-GB/products/280046682",
    "per100": {
+    "addedSugars": 0,
     "carbs": 0.3,
     "fat": 0.2,
     "fibre": 0.7,
@@ -784,6 +807,7 @@
    "product": "Tesco Okra 175g",
    "url": "https://www.tesco.com/shop/en-GB/products/260918818",
    "per100": {
+    "addedSugars": 0,
     "carbs": 3.5,
     "fat": 1,
     "fibre": 3.2,
@@ -813,6 +837,7 @@
    "product": "Tesco Olive Oil 1L",
    "url": "https://www.tesco.com/shop/en-GB/products/254918424",
    "per100": {
+    "addedSugars": 0,
     "carbs": 0,
     "fat": 91.2,
     "fibre": 0,
@@ -842,6 +867,7 @@
    "product": "Tesco Brown Onions 1kg",
    "url": "https://www.tesco.com/groceries/en-GB/products/255736044",
    "per100": {
+    "addedSugars": 0,
     "carbs": 7.4,
     "fat": 0.1,
     "fibre": 1.8,
@@ -876,6 +902,7 @@
    "product": "Tesco Oyster Sauce 150ml",
    "url": "https://www.tesco.com/shop/en-GB/products/260827344",
    "per100": {
+    "addedSugars": 22,
     "carbs": 32,
     "fat": 0,
     "fibre": 1.2,
@@ -905,14 +932,15 @@
    "product": "Tesco Red Pepper Each",
    "url": null,
    "per100": {
-    "kcal": 30,
-    "fat": 0.3,
-    "saturates": 0.1,
+    "addedSugars": 0,
     "carbs": 5.3,
-    "sugars": 5.3,
+    "fat": 0.3,
     "fibre": 1.7,
+    "kcal": 30,
     "protein": 1,
-    "salt": 0.01
+    "salt": 0.01,
+    "saturates": 0.1,
+    "sugars": 5.3
    },
    "nutritionSource": "ESTIMATE",
    "veg": "VEG",
@@ -939,6 +967,7 @@
    "product": "Tesco Baking Potatoes 4 Pack",
    "url": "https://www.trolley.co.uk/product/tesco-baking-potatoes/NQV109",
    "per100": {
+    "addedSugars": 0,
     "carbs": 15.5,
     "fat": 0.2,
     "fibre": 1.6,
@@ -973,14 +1002,15 @@
    "product": "Tesco Red Split Lentils 1kg",
    "url": null,
    "per100": {
-    "kcal": 318,
-    "fat": 1.3,
-    "saturates": 0.2,
+    "addedSugars": 0,
     "carbs": 48.5,
-    "sugars": 2,
+    "fat": 1.3,
     "fibre": 11,
+    "kcal": 318,
     "protein": 24,
-    "salt": 0.03
+    "salt": 0.03,
+    "saturates": 0.2,
+    "sugars": 2
    },
    "nutritionSource": "ESTIMATE",
    "veg": "PULSE",
@@ -1002,6 +1032,7 @@
    "product": "Grower's Harvest Long Grain Rice 1kg",
    "url": "https://www.tesco.com/shop/en-GB/products/300843799",
    "per100": {
+    "addedSugars": 0,
     "carbs": 79,
     "fat": 1.3,
     "fibre": 1,
@@ -1031,6 +1062,7 @@
    "product": "Tesco Cooking Salt 1.5kg",
    "url": "https://www.trolley.co.uk/product/asda-table-salt/ZFM057",
    "per100": {
+    "addedSugars": 0,
     "carbs": 0,
     "fat": 0,
     "fibre": 0,
@@ -1065,6 +1097,7 @@
    "product": "Tesco Toasted Sesame Oil 250ml",
    "url": "https://www.tesco.com/shop/en-GB/products/259028703",
    "per100": {
+    "addedSugars": 0,
     "carbs": 0,
     "fat": 92,
     "fibre": 0,
@@ -1094,6 +1127,7 @@
    "product": "Tesco Smoked Paprika 48g",
    "url": "https://www.tesco.com/shop/en-GB/products/255770365",
    "per100": {
+    "addedSugars": 0,
     "carbs": 18.3,
     "fat": 13,
     "fibre": 37.4,
@@ -1128,6 +1162,7 @@
    "product": "Tesco Light Soy Sauce 150ml",
    "url": "https://www.trolley.co.uk/product/tesco-light-soy-sauce/QKJ372",
    "per100": {
+    "addedSugars": 10,
     "carbs": 12,
     "fat": 0,
     "fibre": 0.5,
@@ -1157,6 +1192,7 @@
    "product": "Tesco Chicken Stock Cubes 10 x 10g",
    "url": "https://www.trolley.co.uk/product/tesco-10-chicken-stock-cubes/PSD053",
    "per100": {
+    "addedSugars": 3,
     "carbs": 20,
     "fat": 20,
     "fibre": 0,
@@ -1191,6 +1227,7 @@
    "product": "Tesco Thyme 19g",
    "url": "https://www.trolley.co.uk/product/tesco-thyme/DGJ800",
    "per100": {
+    "addedSugars": 0,
     "carbs": 23.1,
     "fat": 7.3,
     "fibre": 37.5,
@@ -1225,6 +1262,7 @@
    "product": "Tesco Tomato Puree 200g",
    "url": "https://www.trolley.co.uk/product/tesco-tomato-puree-tube/FJA033",
    "per100": {
+    "addedSugars": 0,
     "carbs": 14,
     "fat": 0.3,
     "fibre": 3.1,
@@ -1259,14 +1297,15 @@
    "product": "Tesco Chopped Tomatoes 400g",
    "url": null,
    "per100": {
-    "kcal": 21,
-    "fat": 0.1,
-    "saturates": 0,
+    "addedSugars": 0,
     "carbs": 3.5,
-    "sugars": 3.4,
+    "fat": 0.1,
     "fibre": 0.9,
+    "kcal": 21,
     "protein": 1.1,
-    "salt": 0.03
+    "salt": 0.03,
+    "saturates": 0,
+    "sugars": 3.4
    },
    "nutritionSource": "ESTIMATE",
    "veg": "VEG",
@@ -1293,6 +1332,7 @@
    "product": "Tesco Pure Vegetable Oil 1L",
    "url": "https://www.tesco.com/shop/en-GB/products/254918067",
    "per100": {
+    "addedSugars": 0,
     "carbs": 0,
     "fat": 92,
     "fibre": 0,

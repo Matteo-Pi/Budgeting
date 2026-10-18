@@ -415,4 +415,185 @@ class RecipeTextTest {
         assertEquals(recipe.lines.size, draft.lines.size)
         assertEquals(recipe.steps, draft.steps)
     }
+
+    // ---- recipes copied from a chat (docs/PLAN.md §11.11) ----------------------------------
+
+    private val chatNoodles = """
+        Here's a cheap, high-protein dinner that keeps well:
+
+        # Spicy Peanut Chicken Noodles
+
+        A quick weeknight stir-fry with a punchy peanut sauce.
+
+        **Serves:** 2 | **Prep:** 10 minutes | **Cook:** 15 minutes
+
+        ## Ingredients
+
+        **For the sauce:**
+        - 2 tbsp smooth peanut butter
+        - 2 tbsp light soy sauce
+        - 1 tsp honey
+
+        **For the noodles:**
+        - 150 g egg noodles
+        - 2 chicken breast fillets (about 320 g), sliced
+        - 1 tbsp vegetable oil
+        - 1 red pepper, sliced
+        - *Optional:* 1 red chilli, sliced
+
+        ## Method
+
+        1. **Make the sauce (2 min):** Whisk the peanut butter, soy sauce and honey with 3 tbsp hot water.
+        2. **Cook the noodles.** Boil for 4 minutes, then drain.
+        3. **Fry the chicken** (5–6 min): Heat the oil in a wok and fry until golden.
+
+           **Ready when:** no pink remains in the thickest piece.
+        4. Add the pepper and noodles, pour over the sauce and toss for 1 minute.
+
+        ## Tips
+        - Swap the chicken for **firm tofu** to make it meat-free.
+        - Use [crunchy peanut butter](https://example.com/pb) for texture.
+
+        ## Storage
+        Keeps in the fridge for 2 days.
+
+        ---
+
+        Enjoy! Let me know if you'd like a vegetarian version.
+    """.trimIndent()
+
+    @Test
+    fun `a recipe as a chat writes it reads into its parts`() {
+        val d = RecipeText.parse(chatNoodles)
+        assertEquals("Spicy Peanut Chicken Noodles", d.title)
+        assertEquals("A quick weeknight stir-fry with a punchy peanut sauce.", d.tagline)
+        assertEquals(2, d.serves)
+        assertEquals(10, d.prepMins)
+        assertEquals(15, d.cookMins)
+        assertEquals(
+            listOf(
+                DraftLine("For the sauce", "2 tbsp smooth peanut butter"),
+                DraftLine("For the sauce", "2 tbsp light soy sauce"),
+                DraftLine("For the sauce", "1 tsp honey"),
+                DraftLine("For the noodles", "150 g egg noodles"),
+                DraftLine("For the noodles", "2 chicken breast fillets (about 320 g), sliced"),
+                DraftLine("For the noodles", "1 tbsp vegetable oil"),
+                DraftLine("For the noodles", "1 red pepper, sliced"),
+                DraftLine("For the noodles", "Optional: 1 red chilli, sliced", optional = true),
+            ),
+            d.lines,
+        )
+        assertEquals(
+            listOf(
+                RecipeStep(StepKind.STEP, "Make the sauce", "2 min", "Whisk the peanut butter, soy sauce and honey with 3 tbsp hot water."),
+                RecipeStep(StepKind.STEP, "Cook the noodles", null, "Boil for 4 minutes, then drain."),
+                RecipeStep(
+                    StepKind.STEP, "Fry the chicken", "5–6 min",
+                    "Heat the oil in a wok and fry until golden.\n\nReady when: no pink remains in the thickest piece.",
+                ),
+                RecipeStep(StepKind.STEP, null, null, "Add the pepper and noodles, pour over the sauce and toss for 1 minute."),
+            ),
+            d.method,
+        )
+        assertEquals(
+            listOf("Swap the chicken for firm tofu to make it meat-free.", "Use crunchy peanut butter for texture."),
+            d.tips.map { it.body },
+        )
+        assertEquals(listOf("Keeps in the fridge for 2 days."), d.storage.map { it.body })
+        assertTrue(d.warnings.none { "Enjoy" in it || "Spicy" in it }, d.warnings.toString())
+        assertTrue(RecipeText.looksLikeRecipe(chatNoodles))
+    }
+
+    @Test
+    fun `bold headings, an ingredients table and step headings`() {
+        val text = """
+            **Creamy Tomato & Lentil Soup**
+
+            Serves 4 · Prep time: 10 mins · Cook time: 30 mins
+
+            **Ingredients**
+
+            | Ingredient | Amount |
+            |---|---|
+            | Red split lentils | 150 g |
+            | Chopped tomatoes | 1 × 400 g tin |
+            | Onion, diced | 1 |
+            | Salt and pepper | to taste |
+
+            **Instructions**
+
+            **Step 1: Soften the onion**
+            Fry the onion in a little oil for 5 minutes.
+
+            **Step 2: Simmer**
+            Add everything else and simmer for 25 minutes, stirring every 5 min.
+
+            **Nutrition (per portion, approx.)**
+            - 210 kcal
+            - 12 g protein
+        """.trimIndent()
+        val d = RecipeText.parse(text)
+        assertEquals("Creamy Tomato & Lentil Soup", d.title)
+        assertEquals(4, d.serves)
+        assertEquals(10, d.prepMins)
+        assertEquals(30, d.cookMins)
+        assertEquals(
+            listOf("150 g Red split lentils", "1 × 400 g tin Chopped tomatoes", "1 Onion, diced", "Salt and pepper, to taste"),
+            d.lines.map { it.text },
+        )
+        assertEquals(listOf("Soften the onion", "Simmer"), d.method.map { it.title })
+        assertEquals(
+            listOf("Fry the onion in a little oil for 5 minutes.", "Add everything else and simmer for 25 minutes, stirring every 5 min."),
+            d.method.map { it.body },
+        )
+        assertTrue(RecipeText.looksLikeRecipe(text))
+    }
+
+    @Test
+    fun `headings with emoji and extra words, chat openers and nested bullets`() {
+        val d = RecipeText.parse(
+            """
+            Sure! Here's a simple traybake.
+
+            ## 🍗 Lemon Chicken Traybake
+
+            ### Ingredients (serves 2)
+            * 4 chicken thighs
+            * 500 g baby potatoes, halved
+            * 1 lemon
+
+            ### How to make it
+            1. Heat the oven to 200°C (180°C fan).
+            2. Toss everything on a tray:
+               - potatoes cut side down
+               - chicken skin side up
+            3. Roast for 40–45 minutes.
+
+            ### Tips & variations
+            - Add a handful of olives for the last 10 minutes.
+
+            Would you like a side to go with it?
+            """.trimIndent(),
+        )
+        assertEquals("Lemon Chicken Traybake", d.title)
+        assertEquals(2, d.serves)
+        assertEquals(listOf("4 chicken thighs", "500 g baby potatoes, halved", "1 lemon"), d.lines.map { it.text })
+        assertEquals(3, d.method.size)
+        assertEquals("Toss everything on a tray", d.method[1].title)
+        assertEquals("potatoes cut side down\n\nchicken skin side up", d.method[1].body)
+        assertEquals("Roast for 40–45 minutes.", d.method[2].body)
+        assertEquals(listOf("Add a handful of olives for the last 10 minutes."), d.tips.map { it.body })
+    }
+
+    @Test
+    fun `unknown header facts are skipped and a copied recipe pastes back unchanged`() {
+        val d = RecipeText.parse("# Soup\n**Difficulty:** Easy | **Serves:** 3 | **Ready in:** 40 min\n\n## Ingredients\n- 1 leek\n\n## Method\n1. Chop.\n")
+        assertEquals(3, d.serves)
+        assertNull(d.prepMins)
+        for (key in StarterBook.models.recipeKeys.keys) {
+            val recipe = StarterBook.recipe(key)
+            val copied = RecipeText.format(recipe)
+            assertEquals(copied, RecipeText.format(RecipeText.parse(copied)), key)
+        }
+    }
 }

@@ -16,7 +16,7 @@ sealed class BackupDecodeResult {
     data class Failure(val errors: List<String>) : BackupDecodeResult()
 }
 
-/** JSON encode/decode for [BackupV1] (versions 1 to 3), with validation. See docs/PLAN.md §5.17. */
+/** JSON encode/decode for [BackupV1] (versions 1 to 4), with validation. See docs/PLAN.md §5.17. */
 object BackupCodec {
 
     private val json = Json {
@@ -200,6 +200,10 @@ object BackupCodec {
             b.shoppingMarks.map { it.ingredientId }.toSet().size == b.shoppingMarks.size,
             "An ingredient has two shopping list marks.",
         )
+        check(
+            b.ownedItems.map { it.ingredientId }.toSet().size == b.ownedItems.size,
+            "An ingredient is listed twice in what you have.",
+        )
 
         for (ingredient in b.ingredients) {
             ingredient.productId?.let {
@@ -240,6 +244,10 @@ object BackupCodec {
                 mark.ingredientId in ingredientIds,
                 "A shopping list mark refers to a missing ingredient ${mark.ingredientId}.",
             )
+        }
+        for (item in b.ownedItems) {
+            check(item.ingredientId in ingredientIds, "What you have refers to a missing ingredient ${item.ingredientId}.")
+            item.quantity?.let { check(it >= 0.0, "What you have of ingredient ${item.ingredientId} is below zero.") }
         }
     }
 }
