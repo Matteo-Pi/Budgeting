@@ -146,7 +146,10 @@ class IngredientsAndShoppingTest : UiTest() {
             blocking { appContainer.shoppingRepository.observeMarks().first() }.none { it.checked || it.haveIt }
         }
         waitForExists(tagged(ShoppingTags.lineQuantity(chicken), "640 g · 2 packs of 320 g"), "the chicken back on the bill")
-        assertTrue(exists(hasText("Stir-fry · 2 servings", substring = true)))
+        // The recipes on the list stay: their chips are near the top, so bring them back into view.
+        val stirFryChip = hasText("Stir-fry · 2 servings", substring = true)
+        scrollIntoView(stirFryChip)
+        waitForExists(stirFryChip, "the stir-fry still on the list")
         shot("shopping-03-cleared")
     }
 }

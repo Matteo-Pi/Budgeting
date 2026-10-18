@@ -20,6 +20,8 @@
   silently keeps the old report. The report commit's message names the commit it tested. A
   push cancels the run in progress, which still publishes a partial (often empty) report, and a
   full run takes about 30 minutes, so batch changes before pushing. Each shard's diagnostics
-  (logcat tail, memory/disk per minute) are in the report's `diag/`.
+  (logcat tail, memory/disk/swap and the biggest processes per minute) are in the report's `diag/`. The
+  emulator process grows to 6+ GB on the 8 GB runner (host-side graphics), so the job adds swap and gives the
+  test run's Gradle a 1 GB heap; if a shard dies near the end, look there first.
 - UI test conventions (tapping, date pickers, lazy lists, the keyboard): see the "Testing" notes
   at the end of `docs/PLAN.md` §8.

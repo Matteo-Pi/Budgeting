@@ -10,7 +10,7 @@ adb logcat -v time 'TestRunner:I' 'ActivityManager:W' 'lowmemorykiller:I' 'lmkd:
 while true; do
   {
     echo "=== $(date -u +%H:%M:%S)"
-    free -m | head -2
+    free -m | head -3
     ps -eo rss=,comm= --sort=-rss | head -5 | awk '{printf "  %6d MB %s\n", $1/1024, $2}'
     df -h / | tail -1
     adb shell 'grep -E "MemTotal|MemAvailable|SwapFree" /proc/meminfo; df -h /data /sdcard 2>/dev/null | tail -2' 2>&1

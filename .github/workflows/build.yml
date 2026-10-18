@@ -150,6 +150,17 @@ jobs:
           grep jvmargs gradle.properties
           free -m
 
+      # The emulator process grows far past its guest's memory (6+ GB with a 2.5 GB guest in run 62: host-side
+      # graphics buffers), and near the end of a long shard the runner had only a few hundred MB left. Extra
+      # swap lets the kernel page out what it hardly touches instead of killing the emulator.
+      - name: Add swap
+        run: |
+          sudo fallocate -l 6G /swapfile-extra
+          sudo chmod 600 /swapfile-extra
+          sudo mkswap /swapfile-extra
+          sudo swapon /swapfile-extra
+          free -m
+
       - name: Run device tests on an emulator (shard ${{ matrix.shard }} of 2)
         uses: reactivecircus/android-emulator-runner@v2
         with:
