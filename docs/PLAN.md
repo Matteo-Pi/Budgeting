@@ -1940,6 +1940,10 @@ portion makes the pulses cap give exactly 1.
 - *Import recipes (JSON)*.
 
 ### 11.9 Order of work
+**Status (2026-10-18)**: F0 to F5 are built and CI run 63 is green: 387 of 387 device tests, core and app JVM
+tests. The APK is build 63. Not tested on a device: the photo flows (label, barcode, the Open Food Facts call);
+their parsing is covered by `NutritionLabelTest`, `OpenFoodFactsTest` and `ScanRulesTest`.
+
 Each package is one agent, reviewed and pushed by the orchestrator with CI green before the next
 depends on it.
 
