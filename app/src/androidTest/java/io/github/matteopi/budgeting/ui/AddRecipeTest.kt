@@ -45,7 +45,7 @@ class AddRecipeTest : UiTest() {
         starterRecipe("Chilli").lines.indexOfFirst { fragment in it.text }.also { check(it >= 0) { fragment } } + 1L
 
     private fun pasteAndRead(text: String) {
-        tapText("Add recipe")
+        tapIcon("Add recipe")
         waitForExists(hasTestTag(ReviewTags.PASTE_TEXT), "the paste box", HEAVY_TIMEOUT_MS)
         typeInTag(ReviewTags.PASTE_TEXT, text)
         tap(hasTestTag(ReviewTags.READ), "Read recipe")

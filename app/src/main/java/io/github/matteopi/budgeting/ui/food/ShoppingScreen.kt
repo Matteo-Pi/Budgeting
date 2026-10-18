@@ -160,7 +160,8 @@ fun ShoppingScreen(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = { adding = true },
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                // Material clears the extended button's text from accessibility, so the icon carries its name.
+                icon = { Icon(Icons.Default.Add, contentDescription = "Add item") },
                 text = { Text("Add item") },
                 modifier = Modifier.testTag(ShoppingTags.ADD_ITEM),
             )

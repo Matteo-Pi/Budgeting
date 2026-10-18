@@ -139,13 +139,14 @@ jobs:
         run: ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --console=plain
 
       # The Gradle and Kotlin daemons left over from compiling hold several GB of the runner's memory.
-      # The test run's own daemon only re-runs KSP (Room) and installs, so it gets a smaller heap: with
-      # 4 GB it grew until run 58's second shard ran the runner out of memory and lost its emulator.
+      # The test run's own daemon only installs and runs the tests (every other task is up to date), so it
+      # gets a small heap: with 4 GB run 58's second shard ran the runner out of memory and lost its
+      # emulator, and with 2 GB run 61 lost both as the suite grew.
       - name: Free build daemons' memory before starting the emulator
         run: |
           ./gradlew --stop || true
           pkill -f KotlinCompileDaemon || true
-          sed -i 's/^org.gradle.jvmargs=.*/org.gradle.jvmargs=-Xmx2g -XX:MaxMetaspaceSize=768m -Dfile.encoding=UTF-8/' gradle.properties
+          sed -i 's/^org.gradle.jvmargs=.*/org.gradle.jvmargs=-Xmx1g -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8/' gradle.properties
           grep jvmargs gradle.properties
           free -m
 
@@ -159,8 +160,10 @@ jobs:
           target: default
           profile: pixel_6
           cores: 3
-          # The runner has about 8 GB and the guest uses about 1.5 GB; 4 GB left the host swapping.
-          ram-size: 3072M
+          # The runner has about 8 GB and the guest uses about 1.5 GB, but its page cache slowly fills
+          # whatever it is given and the host holds all of it: 4 GB left the host swapping, and 3 GB ran
+          # it out of memory in run 61 once the suite had grown.
+          ram-size: 2560M
           disk-size: 3G
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none

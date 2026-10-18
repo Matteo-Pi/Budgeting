@@ -107,6 +107,8 @@ class IngredientsAndShoppingTest : UiTest() {
 
         // 150 g of onion in each recipe: one 1 kg bag. 320 g of chicken in each: two 320 g packs.
         waitForExists(tagged(ShoppingTags.lineQuantity(onion), "300 g · 1 pack of 1 kg"), "the onions", HEAVY_TIMEOUT_MS)
+        // The header is the list's first row: read it while it is on screen.
+        val headerBefore = firstText(hasTestTag(ShoppingTags.HEADER))
         scrollIntoView(hasTestTag(ShoppingTags.lineQuantity(chicken)))
         waitForExists(tagged(ShoppingTags.lineQuantity(chicken), "640 g · 2 packs of 320 g"), "the chicken")
         shot("shopping-01-list")
@@ -114,11 +116,13 @@ class IngredientsAndShoppingTest : UiTest() {
         assertEquals(2, itemsBefore)
 
         // "I have it" takes the chicken off the bill.
-        val headerBefore = firstText(hasTestTag(ShoppingTags.HEADER))
         tap(hasTestTag(ShoppingTags.lineMenu(chicken)), "the chicken's menu")
         tapMenuItem("I have it")
         waitForExists(tagged(ShoppingTags.lineQuantity(chicken), "640 g · you have it"), "the chicken marked")
-        waitFor("the header to change") { firstText(hasTestTag(ShoppingTags.HEADER)) != headerBefore }
+        scrollIntoView(hasTestTag(ShoppingTags.HEADER))
+        waitFor("the header to change from '$headerBefore'") {
+            firstText(hasTestTag(ShoppingTags.HEADER)).let { it != null && it != headerBefore }
+        }
 
         // Tick the onions, add a free-text item and tick it, then clear the ticked ones.
         scrollIntoView(hasTestTag(ShoppingTags.lineCheck(onion)))

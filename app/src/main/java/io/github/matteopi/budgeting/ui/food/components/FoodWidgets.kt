@@ -112,7 +112,8 @@ fun VegDots(veg: Double, modifier: Modifier = Modifier, dotSize: Dp = 10.dp) {
 @Composable
 fun RatingStars(rating: Int, modifier: Modifier = Modifier, starSize: Dp = 16.dp) {
     if (rating <= 0) return
-    Row(modifier.semantics(mergeDescendants = true) { contentDescription = FoodFormat.ratingText(rating) }) {
+    // Not a merge boundary of its own, so a card that holds the stars reads the rating with the rest.
+    Row(modifier.semantics { contentDescription = FoodFormat.ratingText(rating) }) {
         for (i in 1..5) {
             Icon(
                 imageVector = if (i <= rating) FoodIcons.Star else FoodIcons.StarOutline,
