@@ -2223,3 +2223,172 @@ Six changes the user asked for once the section was built. Room goes to **versio
   - *Copy recipe* then pasting it back.
   - `MigrationTest` 3 → 4.
 - **After the first green build**, commit `4.json` from `refs/ci/room-schemas`.
+
+## 12. Time: to-do list, timetable and study planner (proposed 2026-10-19, not started)
+
+Goal: a third section next to Budgeting and Recipes for organising the user's time as a student: a
+to-do list, a weekly timetable, a link to Google Calendar, and insights. The insights cover free time,
+suggested study time, and a record of what the time actually went on, so the user can see where it is
+lost. Like the rest of the app it works offline, keeps everything on the phone, uses no AI, and
+explains every number it shows. This section says *what* it will include; how to build it is planned
+once the questions in §12.12 are answered.
+
+### 12.1 Proposed decisions
+| Topic | Proposal |
+|---|---|
+| Where | A third section, **Time**, with its own bottom tabs. The top-left switch becomes a chooser of the three sections, and the app opens in the last one used. |
+| Google Calendar | **Linked offline.** Android keeps a copy of the phone's Google calendars on the phone, and the app reads that copy, so no sign-in or internet is needed (§12.5). |
+| Other calendars | Any calendar already on the phone (Outlook, Samsung, a university feed subscribed in Google Calendar), plus importing `.ics` files. |
+| Writing to Google Calendar | Optional, off by default. When on, accepted study blocks and timed tasks go into a calendar the user picks. |
+| Study suggestions | Rule-based, shaped by the user's preferences. They can be switched off completely, or for a day or a module. |
+| Tracking | Whatever the user records: a start/stop timer, quick entries, and a look-back that asks what each untracked gap was. Nothing is tracked behind the user's back. |
+| Term dates | The same term dates as Budgeting, so the timetable, the suggestions and the insights know term from holidays. |
+| Privacy | Everything stays on the phone, and backups include it. Calendar data is read only from calendars the user picks. |
+
+### 12.2 Tabs
+- **Today**:
+  - The day as a timeline: classes and events, planned study blocks, tasks with times, and the free gaps.
+  - Below it: today's tasks and anything overdue.
+  - A **Now** card with the next class (time and room), the running timer, and "what are you doing?" for an untracked gap.
+- **Timetable**:
+  - The week as a grid, with day and month views.
+  - The user's own timetable and the linked calendars appear together, coloured by module or by calendar.
+- **To-do**: tasks and deadlines (§12.3).
+- **Insights**: free time, study time, where time went, and the weekly review (§12.6–§12.9).
+- **Time settings**: sleep and wake times, study preferences, linked calendars, notifications and tracking prompts.
+
+### 12.3 To-do list
+- **Tasks**:
+  - Title, notes, due date (optionally a time), estimated time, priority, module or project, tags.
+  - A checklist of sub-steps.
+  - Repeats: daily, weekly, every N days, or on chosen weekdays.
+  - A reminder.
+- **Deadlines** (assignments, exams, applications) as their own kind of task:
+  - A countdown and the module.
+  - How much work is left (estimated hours, which tracked study reduces).
+  - An "on track" indicator: the hours left against the free time before the deadline.
+- **Breaking work down**:
+  - A deadline can be split into steps with their own dates, for example an essay into research, outline, draft, edit and reference.
+  - Templates for common kinds of work, which the user can edit.
+- **Views**: Today, Upcoming, Overdue, by module, and Done (a log of what was finished and when).
+- **Quick add**: one line such as "Econ essay draft fri 3pm 2h #EC101" is read into its parts and shown for checking before it is saved.
+- **Tasks from the other sections** (optional): Budgeting's bills and paydays, and Recipes' "go shopping" or "batch cook" become tasks.
+
+### 12.4 Timetable creator
+- **Entries**: lectures, seminars, labs, tutorials, work shifts, sport, societies, or anything else. Each has:
+  - its days and times;
+  - a location and room, a lecturer or contact, the module and a colour, and notes.
+- **Week patterns**:
+  - Every week of term, chosen teaching weeks ("weeks 1–5, 7–11"), odd or even weeks, or one-offs.
+  - Entries follow the term dates, so reading week and holidays are empty unless the user says otherwise.
+- **Building it**:
+  - Typed by hand, copied from last term, or taken from a linked or imported calendar.
+  - Imported events can become timetable entries, so one feed fills the whole term.
+- **Clashes**: overlapping entries are flagged, as is a class that starts before the travel time from the one before has passed.
+- **Exam season**: an exam timetable mode, with the exams as deadlines and a revision plan building towards them (§12.7).
+- **Sharing out**: export as an `.ics` file, or (if allowed) write it into a Google calendar so it shows on other devices.
+- **Widget**: a home-screen widget with the next class, today's tasks and the free time left today.
+
+### 12.5 Linking calendars
+- **Google Calendar, offline**:
+  - When Google Calendar syncs on the phone, Android stores the events on the phone itself.
+  - The app reads that store after asking once for the calendar permission, so it works without internet and without signing in to Google.
+  - Changes made in Google Calendar on another device show up once the phone has synced.
+  - The user picks which calendars count (for example "Uni", but not "Birthdays").
+- **Writing back** (optional, off by default):
+  - Accepted study blocks, and tasks with a time, can be added to a chosen Google calendar.
+  - Android sends them to Google the next time the phone is online.
+- **Other calendars**:
+  - Every calendar account already on the phone works the same way: Outlook or Exchange, Samsung, and work or university accounts.
+  - **University timetables**: most UK universities publish a calendar feed. Subscribing to it in Google Calendar ("From URL") makes it reach the phone, so the app gets it offline too.
+  - **`.ics` files** (exported from any calendar, emailed, or downloaded) can be imported as a one-off copy, with repeating events handled.
+  - Importing a feed straight from a web address would need the internet. If wanted, it would be a separate opt-in setting, like the barcode lookup.
+- **Rules**:
+  - Linked events are shown, not copied: the source calendar stays in charge, so nothing is duplicated and editing happens there.
+  - Imported `.ics` events and the app's own entries can be edited in the app.
+
+### 12.6 Free time
+- **Free time** = waking hours minus classes, events and timetable entries, meals (optional fixed slots), and travel buffers.
+  - **Travel buffers**: a default, or a time per location ("campus to home: 25 min").
+  - Gaps shorter than a minimum the user sets (for example 30 minutes) are left out as too short to use.
+- **Shown**:
+  - Per day: "3 h 20 m free today: 13:00–14:30, 17:00–19:00".
+  - Per week as a chart, with the week ahead next to the weeks before.
+  - The free time before each deadline.
+- **Preferences**: wake and sleep times (they can differ by weekday), meal times, buffers, and the minimum useful block.
+
+### 12.7 Suggested study time (can be switched off)
+- **What it does**:
+  - Proposes study blocks in the free time, for the modules and deadlines that need them, and says why ("EC101 essay due Fri: 6 h left, 9 h free before then").
+  - A suggestion is only a proposal: **accept** it (it becomes a planned block, and goes into Google Calendar if writing back is on), **move** it, or **dismiss** it.
+- **Preferences**:
+  - Preferred and avoided times of day, days off, and the longest block and the breaks between blocks (for example 50 min on, 10 off).
+  - The most study per day and per week, a weekly target per module, and how much earlier than a deadline to finish.
+- **Switching off**: everywhere, for a day ("day off"), or for a module.
+- **Re-planning**: a missed or shortened block puts its time back into the remaining plan and moves later suggestions, instead of leaving a gap.
+- **Revision mode**: before exams, topics come back at growing intervals (spaced repetition), and harder or more heavily weighted modules get more time.
+- **Learning from the record**: once there is history, blocks are suggested at the times the user actually studies and focuses best (§12.8). This can be switched off.
+
+### 12.8 Tracking: what the time went on
+- **Recording**:
+  - A **timer**: start "studying EC101" or "free time" with one tap from the Today tab, a notification or the widget, and stop it later.
+  - **Quick entries** after the fact ("gym 18:00–19:00").
+  - Accepted study blocks and classes count automatically, unless the user says they didn't happen.
+- **Looking back**:
+  - Each day's timeline shows what was planned and what was recorded side by side, with the gaps.
+  - Tapping a gap asks "What were you doing?" and offers one-tap categories: study, lecture, work, exercise, social, cooking and eating, travel, chores, rest, phone and scrolling, sleep, other.
+  - The categories can be renamed and added to.
+- **Study blocks** can be marked done, partly done or skipped, with a focus rating (1–5) and a short note.
+- **Prompts** (each optional):
+  - An end-of-day review at a chosen time, to fill in gaps and rate the day.
+  - Or a gentle nudge after a long untracked stretch.
+- **Optional phone usage**: with Android's usage-access permission, the timeline can show screen-time per app as a hint for filling in gaps. It is off unless the user turns it on.
+
+### 12.9 Insights
+- **Where time went**: hours per category per day, week and month, with trends ("phone 14 h this week, up 3 h").
+- **Study**:
+  - Hours per module against the targets.
+  - Planned against done: the completion rate, and which blocks get skipped (time of day, weekday, length).
+- **Focus**: the average focus rating by time of day and block length, for example "You focus best 09:00–12:00; evening blocks are rated 2/5 and skipped half the time."
+- **Deadlines**: work done and left on each, and the ones at risk at the current pace.
+- **Efficiency suggestions**, rule-based and each with the numbers behind it:
+  - Moving study to the best hours.
+  - Shorter blocks if long ones fade.
+  - Using regular gaps between classes.
+  - Revision for the commute.
+  - Batching chores.
+  - Flagging time that went to scrolling.
+- **Weekly review** (for example Sunday evening): last week planned against actual, the top time sinks and the deadlines coming up. Then plan the next week, accepting or adjusting the suggested blocks in one place.
+
+### 12.10 Other ideas (proposed; the user picks which to keep)
+- **Focus timer**: a Pomodoro-style timer that records into the tracking. It can optionally turn on Do Not Disturb during a block, with permission.
+- **Grades tracker**:
+  - Assessments per module with their weights and marks.
+  - The module and year average so far, and the mark needed on what is left for a target grade (for example a 2:1).
+- **Attendance**: classes attended or missed, with a note, as part of the look-back.
+- **Habits**: recurring goals such as gym three times a week or reading 20 minutes a day, counted from the tracking, with an optional streak.
+- **Sleep**: bed and wake times logged (or taken from the first and last phone use, if usage access is on). Free time and suggestions use them.
+- **Links to the other sections**:
+  - **Work shifts** in the timetable could feed Budgeting's forecast of expected income (hours × pay).
+  - **Meal planning**: free evenings are suggested for cooking, with the time from Recipes' prep and cook times. A batch-cook session can be planned around the shopping list.
+  - **Spending by activity**: "social" time next to the money spent on social things.
+- **Reminders**: before classes (with the room), for task due times, a "leave now" alert using the travel buffer, and a deadline countdown at 7, 3 and 1 days.
+- **Templates**: a "typical week" to start a new term from, and assignment breakdowns (§12.3).
+- **Export**: a CSV of the tracked time, for the user's own analysis.
+
+### 12.11 Not in v1
+- Sharing with friends or group scheduling.
+- A web version.
+- Syncing through a server of our own.
+- AI planning.
+- Tracking without the user knowing (phone usage only when turned on).
+- Taking over the university's own systems (beyond reading their calendar feed).
+
+### 12.12 Questions for the user (before building)
+1. **Name**: "Time", "Planner" or "Study" for the third section?
+2. **University timetable**: how does the university provide it? A calendar feed (subscribe in Google Calendar), an `.ics` download, or only a web page or app?
+3. **Writing back**: should accepted study blocks and timed tasks be added to Google Calendar, or stay in the app?
+4. **Tracking prompts**: an end-of-day review, nudges during the day, both, or neither?
+5. **Screen time**: should the optional phone-usage hint (needs Android's usage access) be built at all?
+6. **Which of §12.10** to include in v1: focus timer, grades tracker, attendance, habits, sleep, links to the other sections, reminders?
+7. **Part-time work**: shifts with hours and pay that feed the budget forecast?
