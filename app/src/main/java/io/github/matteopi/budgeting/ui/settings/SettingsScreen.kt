@@ -48,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -458,6 +459,12 @@ private fun DataSection(
     }
 }
 
+/** Test tags of the Settings screen. */
+object SettingsTags {
+    /** The line under the version that says which key the installed copy is signed with. */
+    const val SIGNING = "settings-signing"
+}
+
 @Composable
 private fun AboutSection(forecastDiagnostics: String) {
     val context = LocalContext.current
@@ -465,6 +472,13 @@ private fun AboutSection(forecastDiagnostics: String) {
         runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "unknown"
     }
     Text("Version $versionName", style = MaterialTheme.typography.bodyMedium)
+    val signers = remember { SigningCheck.installedSigners(context) }
+    Text(
+        SigningCheck.summary(signers),
+        style = MaterialTheme.typography.bodySmall,
+        color = if (SigningCheck.isProjectKey(signers)) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+        modifier = Modifier.padding(top = 2.dp).testTag(SettingsTags.SIGNING),
+    )
     if (forecastDiagnostics.isNotEmpty()) {
         Spacer(Modifier.height(4.dp))
         Text(

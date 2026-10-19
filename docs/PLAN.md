@@ -79,8 +79,17 @@ All data stays on the phone. No server, no login, no bank connection.
 - **Database migrations**: the user's data lives only on their phone. **Never** use
   `fallbackToDestructiveMigration`. Every schema change bumps the Room version and adds an
   `@AutoMigration` or a manual `Migration`. Room schemas are exported to `app/schemas/` and committed.
-- **Installing on the phone**: download the APK artifact from the latest green Actions run,
-  unzip, open the `.apk` on the phone, allow "install unknown apps" once.
+- **Installing on the phone** (README "Installing on your phone"): download `budgeting.apk` from the
+  "Latest build" release and open it with Android's own installer. Never a separate installer app: one
+  re-signed the user's copy with its own key (2026-10-16), after which no build could update it until a
+  backup, uninstall, reinstall and restore.
+- **Publishing guard (2026-10-19)**: CI publishes the release only from the `publish` job, after the
+  `update-check` job has installed the branch's previous build on an emulator and then this build's exact
+  APK over it with `adb install -r` (`.github/scripts/check-update-install.sh`). A changed key fails it,
+  so a build a phone couldn't update over the last one is never published. The release notes carry the
+  file's size and SHA-256 and the check's verdict, the device report's SUMMARY.txt repeats the verdict,
+  and Settings shows whether the installed copy carries the project key (`ui/settings/SigningCheck.kt`,
+  device test `data/AppSigningTest`).
 
 ---
 

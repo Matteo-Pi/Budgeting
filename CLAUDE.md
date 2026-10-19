@@ -7,6 +7,11 @@
   `-Dorg.gradle.internal.repository.max.retries=12 -Dorg.gradle.internal.repository.initial.backoff=3000`).
 - `app/` needs Google Maven (`dl.google.com`), which may be blocked in cloud sessions; then
   only CI (`.github/workflows/build.yml`) can compile it. Check runs with the GitHub tools.
+- Phone installs: the APK reaches the "latest-build" release only through the `publish` job, after the
+  `update-check` job has installed the previous build of the branch on an emulator and this build's exact
+  APK over it (`.github/scripts/check-update-install.sh`). Never publish a build any other way, and never
+  tell the user a build is ready before `publish` has succeeded. Settings shows the installed copy's
+  signing key (`ui/settings/SigningCheck.kt`).
 - Never regenerate `app/debug.keystore`; never use destructive Room migrations. Every APK is signed
   with that keystore (certificate SHA-256 `56:C2:7A:40:…:B7:84`) and CI fails the build if not;
   `.github/workflows/apk-certs.yml` prints the certificate of each recent build's APK (it runs when
