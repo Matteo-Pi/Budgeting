@@ -2002,6 +2002,9 @@ fixed.
 3. **Budget link**: none in v1.
 
 ### 11.11 Additions (asked for 2026-10-18)
+**Status (2026-10-19)**: built, and CI run 65 is green: 396 of 396 device tests, core and app JVM tests. The APK is
+build 65. `4.json` is committed. Not tested on a device: a timer handed to a real clock app (tests turn that off).
+
 Six changes the user asked for once the section was built. Room goes to **version 4** with
 `@AutoMigration(3, 4)`: two nullable columns on `ingredients` and one new table, nothing else. Backups go to
 **version 4**; versions 1 to 3 still restore.
