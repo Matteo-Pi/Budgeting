@@ -13,7 +13,7 @@ import androidx.room.PrimaryKey
 @Entity(
     tableName = "planner_records",
     foreignKeys = [
-        ForeignKey(entity = CategoryEntity::class, parentColumns = ["id"], childColumns = ["category_id"]),
+        ForeignKey(entity = TimeCategoryEntity::class, parentColumns = ["id"], childColumns = ["category_id"]),
         ForeignKey(entity = ModuleEntity::class, parentColumns = ["id"], childColumns = ["module_id"], onDelete = ForeignKey.SET_NULL),
         ForeignKey(entity = TaskEntity::class, parentColumns = ["id"], childColumns = ["task_id"], onDelete = ForeignKey.SET_NULL),
         ForeignKey(entity = PlanBlockEntity::class, parentColumns = ["id"], childColumns = ["plan_block_id"], onDelete = ForeignKey.SET_NULL),

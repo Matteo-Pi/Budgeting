@@ -6,7 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
-import io.github.matteopi.budgeting.data.db.entities.planner.CategoryEntity
+import io.github.matteopi.budgeting.data.db.entities.planner.TimeCategoryEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.DayReviewEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.PlanBlockEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.RecordEntity
@@ -24,19 +24,19 @@ abstract class DayDao {
     // ---- Categories ---------------------------------------------------------------------------
 
     @Query("SELECT * FROM planner_categories ORDER BY archived, sort_order, id")
-    abstract fun observeCategories(): Flow<List<CategoryEntity>>
+    abstract fun observeCategories(): Flow<List<TimeCategoryEntity>>
 
     @Query("SELECT * FROM planner_categories ORDER BY archived, sort_order, id")
-    abstract suspend fun getCategories(): List<CategoryEntity>
+    abstract suspend fun getCategories(): List<TimeCategoryEntity>
 
     @Insert
-    abstract suspend fun insertCategories(categories: List<CategoryEntity>): List<Long>
+    abstract suspend fun insertCategories(categories: List<TimeCategoryEntity>): List<Long>
 
     @Insert
-    abstract suspend fun insertCategory(category: CategoryEntity): Long
+    abstract suspend fun insertCategory(category: TimeCategoryEntity): Long
 
     @Update
-    abstract suspend fun updateCategory(category: CategoryEntity): Int
+    abstract suspend fun updateCategory(category: TimeCategoryEntity): Int
 
     // ---- Records ------------------------------------------------------------------------------
 

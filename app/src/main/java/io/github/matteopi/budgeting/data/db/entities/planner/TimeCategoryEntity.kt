@@ -10,7 +10,7 @@ import androidx.room.PrimaryKey
  * find them after a rename; the user's own have none. Archived, never deleted, while chunks point at it.
  */
 @Entity(tableName = "planner_categories", indices = [Index(value = ["system_key"], unique = true)])
-data class CategoryEntity(
+data class TimeCategoryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     @ColumnInfo(name = "color_argb") val colorArgb: Long,

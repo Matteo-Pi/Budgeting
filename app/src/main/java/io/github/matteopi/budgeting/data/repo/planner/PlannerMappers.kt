@@ -27,7 +27,7 @@ import io.github.matteopi.budgeting.core.planner.timetable.WeekList
 import io.github.matteopi.budgeting.core.planner.timetable.WeekListResult
 import io.github.matteopi.budgeting.data.db.dao.TaskWithChecklist
 import io.github.matteopi.budgeting.data.db.entities.planner.CalendarLinkEntity
-import io.github.matteopi.budgeting.data.db.entities.planner.CategoryEntity
+import io.github.matteopi.budgeting.data.db.entities.planner.TimeCategoryEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.ChecklistItemEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.DayReviewEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.EntryExceptionEntity
@@ -244,7 +244,7 @@ fun CalendarLink.toEntity() = CalendarLinkEntity(id, itemKey, calendarId, eventI
 
 // ---- The day record (version 7) ------------------------------------------------------------------
 
-fun CategoryEntity.toModel() = TimeCategory(
+fun TimeCategoryEntity.toModel() = TimeCategory(
     id = id,
     name = name,
     colorArgb = colorArgb,
@@ -254,7 +254,7 @@ fun CategoryEntity.toModel() = TimeCategory(
     sortOrder = sortOrder,
 )
 
-fun TimeCategory.toEntity() = CategoryEntity(
+fun TimeCategory.toEntity() = TimeCategoryEntity(
     id = id,
     name = name.trim(),
     colorArgb = colorArgb,

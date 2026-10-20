@@ -47,7 +47,7 @@ import io.github.matteopi.budgeting.data.db.entities.SinkingFundEntity
 import io.github.matteopi.budgeting.data.db.entities.TermPeriodEntity
 import io.github.matteopi.budgeting.data.db.entities.TransactionEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.CalendarLinkEntity
-import io.github.matteopi.budgeting.data.db.entities.planner.CategoryEntity
+import io.github.matteopi.budgeting.data.db.entities.planner.TimeCategoryEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.ChecklistItemEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.DayReviewEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.EntryExceptionEntity
@@ -96,7 +96,7 @@ import io.github.matteopi.budgeting.data.db.entities.planner.TimetableEntryEntit
         TimetableEntryEntity::class,
         EntryExceptionEntity::class,
         CalendarLinkEntity::class,
-        CategoryEntity::class,
+        TimeCategoryEntity::class,
         PlanBlockEntity::class,
         RecordEntity::class,
         DayReviewEntity::class,
