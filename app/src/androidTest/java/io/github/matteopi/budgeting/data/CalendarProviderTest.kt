@@ -94,7 +94,7 @@ class CalendarProviderTest {
     fun aRepeatingEventIsReadWithItsMovedDayAndWithoutItsCancelledOne() = runBlocking<Unit> {
         val start = tomorrow.atTime(8, 0)
         val gym = calendar.addDaily("Gym", start, days = 3)
-        calendar.moveOccurrence(gym, start.plusDays(1), start.plusDays(1).withHour(9), start.plusDays(1).withHour(10))
+        calendar.moveOccurrence(gym, start.plusDays(1), start.plusDays(1).withHour(9))
         calendar.cancelOccurrence(gym, start.plusDays(2))
 
         val instances = container.calendarAccess.instances(
@@ -106,6 +106,7 @@ class CalendarProviderTest {
             instances.map { it.start },
             "the first day as set, the second moved to 09:00, the third cancelled",
         )
+        assertEquals(start.plusDays(1).withHour(10).atZone(zone).toInstant(), instances[1].end, "the moved day keeps the hour")
     }
 
     @Test

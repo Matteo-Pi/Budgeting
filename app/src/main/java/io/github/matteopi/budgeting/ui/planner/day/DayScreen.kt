@@ -33,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -141,6 +142,8 @@ fun DayScreen(
     var sheet by remember { mutableStateOf<SheetTarget?>(null) }
     var finishing by remember { mutableStateOf(false) }
     val scroll = rememberScrollState()
+    // The sheets open fully: the chunk form is taller than half the screen.
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val density = LocalDensity.current
     val minutePx = with(density) { HOUR_HEIGHT.toPx() } / 60f
 
@@ -227,7 +230,7 @@ fun DayScreen(
     when (val target = sheet) {
         null -> Unit
         is SheetTarget.Segment -> if (model != null) {
-            ModalBottomSheet(onDismissRequest = { sheet = null }) {
+            ModalBottomSheet(onDismissRequest = { sheet = null }, sheetState = sheetState) {
                 Column(modifier = Modifier.fillMaxWidth().testTag(DayTags.SHEET).padding(horizontal = 24.dp, vertical = 8.dp)) {
                     SegmentActions(
                         ui = target.ui,
@@ -264,7 +267,7 @@ fun DayScreen(
             }
         }
         is SheetTarget.Form -> if (model != null) {
-            ModalBottomSheet(onDismissRequest = { sheet = null }) {
+            ModalBottomSheet(onDismissRequest = { sheet = null }, sheetState = sheetState) {
                 ChunkEditor(
                     form = target.form,
                     categories = model.categories.filter { !it.archived || it.id == target.form.categoryId },
@@ -588,7 +591,7 @@ private fun ChunkEditor(
     val errors = form.errors(window, zone, categories)
     val category = categories.firstOrNull { it.id == form.categoryId }
     Column(
-        modifier = Modifier.fillMaxWidth().testTag(DayTags.SHEET).padding(horizontal = 24.dp, vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).testTag(DayTags.SHEET).padding(horizontal = 24.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(if (form.isNew) "Add to the day" else "Edit", style = MaterialTheme.typography.titleLarge)

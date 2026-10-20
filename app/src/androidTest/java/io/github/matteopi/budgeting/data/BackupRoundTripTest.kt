@@ -53,9 +53,14 @@ import io.github.matteopi.budgeting.core.recipes.RecipeMaths
 import io.github.matteopi.budgeting.core.recipes.RecipeStep
 import io.github.matteopi.budgeting.core.recipes.Shelf
 import io.github.matteopi.budgeting.core.recipes.StepKind
+import io.github.matteopi.budgeting.core.planner.day.DefaultTimeCategories
+import io.github.matteopi.budgeting.core.planner.day.EditPlan
 import io.github.matteopi.budgeting.core.planner.model.CalendarLink
 import io.github.matteopi.budgeting.core.planner.model.ChecklistItem
 import io.github.matteopi.budgeting.core.planner.model.Module
+import io.github.matteopi.budgeting.core.planner.model.PlanBlock
+import io.github.matteopi.budgeting.core.planner.model.RecordChunk
+import io.github.matteopi.budgeting.core.planner.model.RecordOrigin
 import io.github.matteopi.budgeting.core.planner.model.RepeatKind
 import io.github.matteopi.budgeting.core.planner.model.Task
 import io.github.matteopi.budgeting.core.planner.model.TaskKind
@@ -74,6 +79,7 @@ import io.github.matteopi.budgeting.testing.DataTestSupport
 import io.github.matteopi.budgeting.testing.DataTestSupport.createAccount
 import io.github.matteopi.budgeting.testing.DataTestSupport.transactions
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import kotlin.test.assertEquals
@@ -83,6 +89,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -528,6 +535,10 @@ class BackupRoundTripTest {
         plannerEntries = plannerEntries.sortedBy { it.id },
         plannerEntryExceptions = plannerEntryExceptions.sortedBy { it.id },
         plannerCalendarLinks = plannerCalendarLinks.sortedBy { it.id },
+        plannerCategories = plannerCategories.sortedBy { it.id },
+        plannerPlanBlocks = plannerPlanBlocks.sortedBy { it.id },
+        plannerRecords = plannerRecords.sortedBy { it.id },
+        plannerDayReviews = plannerDayReviews.sortedBy { it.date },
     )
 
     /** Table by table (so a failure names the table), ignoring row order but not ids. */
@@ -565,6 +576,10 @@ class BackupRoundTripTest {
         assertEquals(e.plannerEntries, a.plannerEntries, "timetable entries")
         assertEquals(e.plannerEntryExceptions, a.plannerEntryExceptions, "the timetable's one-week changes")
         assertEquals(e.plannerCalendarLinks, a.plannerCalendarLinks, "the links to events written to a calendar")
+        assertEquals(e.plannerCategories, a.plannerCategories, "the day record's categories")
+        assertEquals(e.plannerPlanBlocks, a.plannerPlanBlocks, "plan blocks")
+        assertEquals(e.plannerRecords, a.plannerRecords, "the day record")
+        assertEquals(e.plannerDayReviews, a.plannerDayReviews, "day reviews")
         assertEquals(e.settings, a.settings, "budget settings")
     }
 
@@ -839,16 +854,17 @@ class BackupRoundTripTest {
     }
 
     @Test
-    fun theExportedFileIsVersion6AndCarriesTheFoodAndPlannerLists() = runBlocking<Unit> {
+    fun theExportedFileIsVersion7AndCarriesTheFoodAndPlannerLists() = runBlocking<Unit> {
         populateEverything()
 
         val json = BackupViewModel(container).buildExportJson()
 
-        assertTrue("\"version\": 6" in json, "the file says it is version 6")
+        assertTrue("\"version\": 7" in json, "the file says it is version 7")
         for (list in listOf(
             "ingredients", "ingredientPortions", "ingredientAliases", "recipes", "recipeLines", "recipeSteps", "shoppingEntries",
             "shoppingMarks", "ownedItems", "plannerModules", "plannerTasks", "plannerChecklist", "plannerCompletions",
-            "plannerEntries", "plannerEntryExceptions", "plannerCalendarLinks",
+            "plannerEntries", "plannerEntryExceptions", "plannerCalendarLinks", "plannerCategories", "plannerPlanBlocks", "plannerRecords",
+            "plannerDayReviews",
         )) {
             assertTrue("\"$list\": [" in json, "the file has a \"$list\" list")
         }
@@ -902,7 +918,28 @@ class BackupRoundTripTest {
             emptyList(),
         )
 
+        // The day record: the seeded categories, a plan block and the record that confirmed it, and a finished day.
+        val categories = withTimeout(10_000) { container.dayRepository.observeCategories().first { it.isNotEmpty() } }
+        val study = categories.first().id
+        val start = Instant.ofEpochMilli(container.clock.nowMillis()).minusSeconds(7_200)
+        val block = container.dayRepository.applyPlans(
+            EditPlan(inserts = listOf(PlanBlock(start = start, end = start.plusSeconds(3_600), categoryId = study, moduleId = moduleId, taskId = essayId))),
+        ).inserts.single()
+        container.dayRepository.applyRecords(
+            EditPlan(
+                inserts = listOf(
+                    RecordChunk(start = start, end = start.plusSeconds(3_000), categoryId = study, taskId = essayId, planBlockId = block.id, focus = 4,
+                        origin = RecordOrigin.CONFIRMED),
+                ),
+            ),
+        )
+        container.dayRepository.finishDay(today.minusDays(1), rating = 5, note = "Good")
+
         val original = container.backupRepository.readAll()
+        assertEquals(1, original.plannerRecords.size)
+        assertEquals(1, original.plannerPlanBlocks.size)
+        assertEquals(DefaultTimeCategories.all.size, original.plannerCategories.size)
+        assertEquals(1, original.plannerDayReviews.size)
         assertEquals(1, original.plannerEntries.size)
         assertEquals(1, original.plannerEntryExceptions.size)
         assertEquals(1, original.plannerCalendarLinks.size)

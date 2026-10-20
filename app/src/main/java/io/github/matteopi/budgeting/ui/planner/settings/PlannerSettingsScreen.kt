@@ -10,6 +10,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -24,6 +25,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -31,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
@@ -39,13 +42,18 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.matteopi.budgeting.core.planner.PlannerText
+import io.github.matteopi.budgeting.core.planner.day.DayMode
+import io.github.matteopi.budgeting.core.planner.day.DaySettings
 import io.github.matteopi.budgeting.data.settings.PlannerCalendarSettings
 import io.github.matteopi.budgeting.ui.planner.components.TimeField
 import io.github.matteopi.budgeting.work.planner.PlannerNotifications
+import java.time.DayOfWeek
 
 /**
  * The Planner's settings (docs/PLAN.md §12.11), opened from the gear on every Planner tab: modules, breakdown
- * templates, term dates, calendars and reminders; later builds add the day, the day record and study suggestions.
+ * templates, the day and its categories, term dates, calendars, and reminders with the end-of-day review. Later
+ * builds add free time and study suggestions.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,6 +63,8 @@ fun PlannerSettingsScreen(
     onOpenTemplates: () -> Unit,
     onOpenTermDates: () -> Unit,
     onOpenCalendars: () -> Unit,
+    onOpenDaySettings: () -> Unit,
+    onOpenCategories: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PlannerSettingsViewModel = viewModel(factory = PlannerSettingsViewModel.Factory),
 ) {
@@ -97,6 +107,19 @@ fun PlannerSettingsScreen(
             )
             HorizontalDivider()
 
+            Text("Your day", style = MaterialTheme.typography.titleMedium)
+            LinkRow(
+                title = "The day",
+                detail = daySummary(state.day),
+                onClick = onOpenDaySettings,
+            )
+            LinkRow(
+                title = "Day record categories",
+                detail = state.categories.filter { !it.archived }.joinToString(", ") { it.name }.ifBlank { "Study, Lecture or class, Exercise, …" },
+                onClick = onOpenCategories,
+            )
+            HorizontalDivider()
+
             Text("Timetable", style = MaterialTheme.typography.titleMedium)
             LinkRow(
                 title = "Term dates",
@@ -119,6 +142,24 @@ fun PlannerSettingsScreen(
                     label = "Reminders for tasks without a time",
                     time = state.reminders.taskTime,
                     onTimeChange = { time -> if (time != null) viewModel.setTaskReminderTime(time) },
+                )
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("End-of-day review")
+                    Text(
+                        "One reminder to fill in and confirm the day. Nothing else nudges you during the day.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(checked = state.reminders.reviewOn, onCheckedChange = viewModel::setReviewOn)
+            }
+            if (!state.loading && state.reminders.reviewOn) {
+                TimeField(
+                    label = "Review reminder time",
+                    time = state.reminders.reviewTime,
+                    onTimeChange = { time -> if (time != null) viewModel.setReviewTime(time) },
                 )
             }
             if (!canNotify) {
@@ -153,6 +194,21 @@ fun PlannerSettingsScreen(
             )
         }
     }
+}
+
+/** "Wake 08:00, sleep 00:00 · the record runs from waking to sleep". */
+private fun daySummary(day: DaySettings): String {
+    val same = day.wakeMinutes.toSet().size == 1 && day.sleepMinutes.toSet().size == 1
+    val times = if (same) {
+        "Wake ${PlannerText.time(day.wake(DayOfWeek.MONDAY))}, sleep ${PlannerText.time(day.sleep(DayOfWeek.MONDAY))}"
+    } else {
+        "Wake and sleep times by weekday"
+    }
+    val record = when (day.mode) {
+        DayMode.WAKE_SLEEP -> "the record runs from waking to sleep"
+        DayMode.FIXED -> "the record runs ${PlannerText.time(day.cutoff)} to ${PlannerText.time(day.cutoff)}"
+    }
+    return "$times · $record"
 }
 
 private fun calendarsSummary(settings: PlannerCalendarSettings): String {

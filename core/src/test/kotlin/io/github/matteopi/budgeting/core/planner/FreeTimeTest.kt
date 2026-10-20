@@ -97,6 +97,17 @@ class FreeTimeTest {
     }
 
     @Test
+    fun `the widget redraws at the next class start and end`() {
+        val first = Occurrence(1, date, t(9), t(10), LocalTime.of(9, 0), LocalTime.of(10, 0), "EC101", EntryKind.LECTURE, null, "", "", null)
+        val second = first.copy(entryId = 2, start = t(11), end = t(12))
+        val cancelled = first.copy(entryId = 3, start = t(9, 45), end = t(10, 15), cancelled = true)
+        val refreshes = ReminderPlan.widgetRefreshes(listOf(first, second, cancelled), t(9, 30))
+        assertEquals(listOf(t(10), t(11)), refreshes.map { it.at })
+        assertTrue(refreshes.all { it.kind == ReminderKind.WIDGET })
+        assertTrue(ReminderPlan.widgetRefreshes(listOf(first), t(10)).isEmpty())
+    }
+
+    @Test
     fun `the review reminder skips finished days and can be off`() {
         val time = LocalTime.of(21, 30)
         val reminders = ReminderPlan.dayReviewReminders(time, emptyList(), date, zone)

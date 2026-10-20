@@ -10,9 +10,13 @@ import androidx.test.platform.app.InstrumentationRegistry
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.Receipt
 import io.github.matteopi.budgeting.core.model.TxKind
+import io.github.matteopi.budgeting.core.planner.day.DefaultTimeCategories
 import io.github.matteopi.budgeting.core.planner.model.ChecklistItem
 import io.github.matteopi.budgeting.core.planner.model.EntryException
 import io.github.matteopi.budgeting.core.planner.model.Module
+import io.github.matteopi.budgeting.core.planner.model.PlanBlock
+import io.github.matteopi.budgeting.core.planner.model.RecordChunk
+import io.github.matteopi.budgeting.core.planner.model.RecordOrigin
 import io.github.matteopi.budgeting.core.planner.model.Task
 import io.github.matteopi.budgeting.core.planner.model.TaskCompletion
 import io.github.matteopi.budgeting.core.planner.model.TaskKind
@@ -29,6 +33,7 @@ import io.github.matteopi.budgeting.core.recipes.RecipeStep
 import io.github.matteopi.budgeting.core.recipes.Shelf
 import io.github.matteopi.budgeting.core.recipes.StepKind
 import io.github.matteopi.budgeting.data.db.BudgetDatabase
+import io.github.matteopi.budgeting.data.db.dao.TaskMillis
 import io.github.matteopi.budgeting.data.repo.planner.toChecklistEntities
 import io.github.matteopi.budgeting.data.repo.planner.toEntity
 import io.github.matteopi.budgeting.data.repo.planner.toModel
@@ -658,6 +663,94 @@ class MigrationTest {
             assertNull(dao.getEntry(entryId)?.moduleId)
             dao.deleteEntry(entryId)
             assertTrue(dao.getExceptions().isEmpty())
+        } finally {
+            db.close()
+        }
+    }
+
+    // ---- 6 -> 7: the day record (docs/PLAN.md §13.5) -----------------------------------------------
+
+    private val dayTables = listOf("planner_categories", "planner_plan_blocks", "planner_records", "planner_day_reviews")
+
+    @Test
+    fun migratingFromVersion6To7KeepsTheTimetableAndAddsEmptyDayRecordTables() {
+        createVersion3Database()
+        helper.runMigrationsAndValidate(DB_NAME, 6, true).use { db ->
+            db.execSQL(
+                "INSERT INTO planner_entries (id, title, kind, module_id, location, room, contact, color_argb, note, weekday, " +
+                    "start_minute, end_minute, pattern, weeks, once_date, term_id, in_holidays, archived, created_at_millis) VALUES " +
+                    "(1, 'EC101 Lecture', 'LECTURE', NULL, '', '', '', NULL, '', 1, 540, 600, 'EVERY', '', NULL, NULL, 0, 0, 1000)",
+            )
+        }
+
+        val db = helper.runMigrationsAndValidate(DB_NAME, 7, true)
+
+        assertVersion2RowsSurvived(db)
+        assertEquals(listOf("EC101 Lecture"), db.strings("SELECT title FROM planner_entries"))
+        val tables = db.strings("SELECT name FROM sqlite_master WHERE type = 'table'")
+        for (table in dayTables) {
+            assertTrue(table in tables, "the $table table exists; have $tables")
+            assertEquals(listOf(0L), db.longs("SELECT COUNT(*) FROM $table"), "$table starts empty")
+        }
+        assertEquals(
+            setOf(
+                Triple("planner_categories", "category_id", "NO ACTION"),
+                Triple("planner_modules", "module_id", "SET NULL"),
+                Triple("planner_plan_blocks", "plan_block_id", "SET NULL"),
+                Triple("planner_tasks", "task_id", "SET NULL"),
+            ),
+            db.foreignKeys("planner_records").toSet(),
+        )
+        db.execSQL("INSERT INTO planner_categories (id, name, color_argb, system_key, rates_focus, archived, sort_order) VALUES (1, 'Study', 1, 'STUDY', 1, 0, 0)")
+        db.execSQL(
+            "INSERT INTO planner_records (start_millis, end_millis, category_id, module_id, task_id, plan_block_id, source_key, focus, note, origin, " +
+                "created_at_millis) VALUES (1000, 2000, 1, NULL, NULL, NULL, 'entry:1:2026-10-19', 4, '', 'CONFIRMED', 1000)",
+        )
+        db.execSQL("INSERT INTO planner_day_reviews (date, finished_at_millis, rating, note) VALUES ($day, 5000, 4, 'Good')")
+        assertEquals(listOf(1L), db.longs("SELECT COUNT(*) FROM planner_records"))
+        db.close()
+    }
+
+    @Test
+    fun migratingStraightFromVersion1To7RunsAllSixAutoMigrations() {
+        createVersion1Database()
+
+        val db = helper.runMigrationsAndValidate(DB_NAME, 7, true)
+
+        assertEquals(listOf(1L, 2L, 3L), db.longs("SELECT id FROM transactions ORDER BY id"))
+        val tables = db.strings("SELECT name FROM sqlite_master WHERE type = 'table'")
+        for (table in listOf("receipts", "products") + foodTables + "owned_items" + plannerTables + timetableTables + dayTables) {
+            assertTrue(table in tables, "the $table table exists; have $tables")
+        }
+        db.close()
+    }
+
+    @Test
+    fun theVersion7FileOpensWithTheRealDatabaseClassAndTheDayRecordTablesWork() = runBlocking<Unit> {
+        createVersion3Database()
+        helper.runMigrationsAndValidate(DB_NAME, 7, true).close()
+
+        val db = Room.databaseBuilder(context, BudgetDatabase::class.java, DB_NAME).build()
+        try {
+            val dao = db.dayDao()
+            val categoryIds = dao.insertCategories(DefaultTimeCategories.all.map { it.toEntity() })
+            val study = categoryIds.first()
+            val taskId = db.plannerDao().saveTask(Task(title = "Essay").toEntity(), emptyList())
+            val start = Instant.ofEpochMilli(1_000_000)
+            val planId = dao.insertPlans(listOf(PlanBlock(start = start, end = start.plusSeconds(3_600), categoryId = study, taskId = taskId).toEntity())).single()
+            val record = RecordChunk(start = start, end = start.plusSeconds(1_800), categoryId = study, taskId = taskId, planBlockId = planId, focus = 4,
+                origin = RecordOrigin.CONFIRMED)
+            val recordId = dao.applyRecords(listOf(record.toEntity()), emptyList(), emptyList()).single()
+            assertEquals(record.copy(id = recordId), dao.getRecords(0, 2_000_000).single().toModel())
+            assertEquals(listOf(TaskMillis(taskId, 1_800_000)), dao.observeTimeByTask().first())
+
+            // Deleting the task or the plan keeps the time recorded against them.
+            db.plannerDao().deleteTask(taskId)
+            dao.deletePlans(listOf(planId))
+            val kept = dao.getRecords(0, 2_000_000).single().toModel()
+            assertNull(kept.taskId)
+            assertNull(kept.planBlockId)
+            assertEquals(1_800_000, kept.end.toEpochMilli() - kept.start.toEpochMilli())
         } finally {
             db.close()
         }

@@ -10,6 +10,7 @@ import io.github.matteopi.budgeting.core.planner.todo.TaskViews
 import io.github.matteopi.budgeting.core.planner.todo.TodoFilter
 import io.github.matteopi.budgeting.data.repo.planner.CompletionUndo
 import io.github.matteopi.budgeting.data.repo.planner.DeletedTask
+import io.github.matteopi.budgeting.data.repo.planner.DayRepository
 import io.github.matteopi.budgeting.data.repo.planner.ModuleRepository
 import io.github.matteopi.budgeting.data.repo.planner.TaskRepository
 import io.github.matteopi.budgeting.domain.Clock
@@ -64,6 +65,7 @@ sealed interface TodoEvent {
 class TodoViewModel(
     private val taskRepository: TaskRepository,
     moduleRepository: ModuleRepository,
+    dayRepository: DayRepository,
     private val clock: Clock,
 ) : ViewModel() {
     private val filter = MutableStateFlow(TodoFilter.TODAY)
@@ -73,11 +75,14 @@ class TodoViewModel(
     /** One-off messages for the snackbar. */
     val eventFlow: Flow<TodoEvent> = events.receiveAsFlow()
 
-    private data class Source(val tasks: List<Task>, val modules: List<Module>, val today: LocalDate)
+    private data class Source(val tasks: List<Task>, val modules: List<Module>, val today: LocalDate, val studied: Map<Long, Int>)
 
-    private val source = combine(taskRepository.observeOpenTasks(), moduleRepository.observeModules(), clock.todayFlow) { tasks, modules, today ->
-        Source(tasks, modules, today)
-    }
+    private val source = combine(
+        taskRepository.observeOpenTasks(),
+        moduleRepository.observeModules(),
+        clock.todayFlow,
+        dayRepository.observeMinutesByTask(),
+    ) { tasks, modules, today, studied -> Source(tasks, modules, today, studied) }
 
     private val doneLog = clock.todayFlow.flatMapLatest { taskRepository.observeDoneLog(it.minusDays(TodoMapping.DONE_DAYS)) }
 
@@ -88,7 +93,7 @@ class TodoViewModel(
             today = src.today,
             filter = filter,
             counts = TaskViews.counts(src.tasks, src.today),
-            sections = TodoMapping.sections(filter, src.tasks, src.modules, src.today),
+            sections = TodoMapping.sections(filter, src.tasks, src.modules, src.today, src.studied),
             done = if (filter == TodoFilter.DONE) done.map { TodoMapping.doneRow(it, src.modules, src.today, clock.zone()) } else emptyList(),
             modules = src.modules,
             previewChips = if (text.isBlank()) emptyList() else TodoMapping.previewChips(quick, src.modules, src.today),
@@ -158,7 +163,7 @@ class TodoViewModel(
 
     companion object {
         val Factory: ViewModelProvider.Factory = budgetViewModelFactory {
-            TodoViewModel(it.taskRepository, it.moduleRepository, it.clock)
+            TodoViewModel(it.taskRepository, it.moduleRepository, it.dayRepository, it.clock)
         }
     }
 }

@@ -65,14 +65,14 @@ class TestCalendar private constructor(val id: Long, private val zone: ZoneId) {
         },
     )
 
-    /** Moves the occurrence of repeating [eventId] that was due at [original] to [start]–[end]. */
-    fun moveOccurrence(eventId: Long, original: LocalDateTime, start: LocalDateTime, end: LocalDateTime) = exception(
+    /**
+     * Moves the occurrence of repeating [eventId] that was due at [original] to start at [start]. It keeps the
+     * series' length: the provider refuses an exception that sets its own end ("Exceptions can't overwrite dtend").
+     */
+    fun moveOccurrence(eventId: Long, original: LocalDateTime, start: LocalDateTime) = exception(
         eventId,
         original,
-        ContentValues().apply {
-            put(CalendarContract.Events.DTSTART, start.atZone(zone).toInstant().toEpochMilli())
-            put(CalendarContract.Events.DTEND, end.atZone(zone).toInstant().toEpochMilli())
-        },
+        ContentValues().apply { put(CalendarContract.Events.DTSTART, start.atZone(zone).toInstant().toEpochMilli()) },
     )
 
     /** Cancels the occurrence of repeating [eventId] that was due at [original]. */

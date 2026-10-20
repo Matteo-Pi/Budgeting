@@ -53,9 +53,15 @@ object TodoMapping {
         TodoFilter.DONE -> "Nothing done in the last 30 days yet."
     }
 
-    /** The sections of [filter] (all but [TodoFilter.DONE]) from the open [tasks]. */
-    fun sections(filter: TodoFilter, tasks: List<Task>, modules: List<Module>, today: LocalDate): List<TodoSection> {
-        val rows = RowBuilder(tasks, modules, today)
+    /** The sections of [filter] (all but [TodoFilter.DONE]) from the open [tasks]; [studied] is minutes recorded per task. */
+    fun sections(
+        filter: TodoFilter,
+        tasks: List<Task>,
+        modules: List<Module>,
+        today: LocalDate,
+        studied: Map<Long, Int> = emptyMap(),
+    ): List<TodoSection> {
+        val rows = RowBuilder(tasks, modules, today, studied)
         fun section(title: String, list: List<Task>) = if (list.isEmpty()) null else TodoSection(title, list.map(rows::row))
         fun group(g: TaskGroup) = TodoSection(g.title, g.tasks.map(rows::row))
         return when (filter) {
@@ -72,8 +78,8 @@ object TodoMapping {
     }
 
     /** The row of one open task, for screens that show a single list (Today). */
-    fun rows(list: List<Task>, allOpen: List<Task>, modules: List<Module>, today: LocalDate): List<TaskRowUi> {
-        val rows = RowBuilder(allOpen, modules, today)
+    fun rows(list: List<Task>, allOpen: List<Task>, modules: List<Module>, today: LocalDate, studied: Map<Long, Int> = emptyMap()): List<TaskRowUi> {
+        val rows = RowBuilder(allOpen, modules, today, studied)
         return list.map(rows::row)
     }
 
@@ -113,7 +119,12 @@ object TodoMapping {
     )
 
     /** Builds rows with what they need of the other tasks: a step's deadline, and a deadline's open steps. */
-    private class RowBuilder(allOpen: List<Task>, modules: List<Module>, private val today: LocalDate) {
+    private class RowBuilder(
+        allOpen: List<Task>,
+        modules: List<Module>,
+        private val today: LocalDate,
+        private val studied: Map<Long, Int>,
+    ) {
         private val byId = allOpen.associateBy { it.id }
         private val stepsOf = allOpen.filter { it.parentId != null }.groupBy { it.parentId!! }
         private val modulesById = modules.associateBy { it.id }
@@ -145,7 +156,7 @@ object TodoMapping {
         }
 
         private fun deadlineStatus(deadline: Task, openSteps: List<Task>): String? {
-            val progress = DeadlineStatus.of(deadline, openSteps, emptyMap(), today)
+            val progress = DeadlineStatus.of(deadline, openSteps, studied, today)
             if (progress.state == DeadlineState.DONE || progress.state == DeadlineState.OVERDUE) return null
             val due = deadline.dueDate ?: return null
             return listOfNotNull(

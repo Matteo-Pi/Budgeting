@@ -17,6 +17,7 @@ import io.github.matteopi.budgeting.MainActivity
 import io.github.matteopi.budgeting.R
 import io.github.matteopi.budgeting.core.analysis.Accuracy
 import io.github.matteopi.budgeting.widget.SafeToSpendWidget
+import io.github.matteopi.budgeting.widget.planner.PlannerWidget
 import kotlinx.coroutines.flow.first
 
 /**
@@ -66,6 +67,9 @@ class DailyWorker(
         if (shouldRemind) {
             postReminderNotification(applicationContext)
         }
+
+        // The Planner widget rolls over to the new day too.
+        PlannerWidget.refresh(applicationContext)
 
         // Writing back adds the days that came into range and drops what ended (docs/PLAN.md §13.7).
         if (container.settingsStore.plannerCalendars.first().writeTo != null) container.plannerCalendarSync.sync()

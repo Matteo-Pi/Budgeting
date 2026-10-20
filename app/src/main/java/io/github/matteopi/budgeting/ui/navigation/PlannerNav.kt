@@ -6,7 +6,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import io.github.matteopi.budgeting.ui.plan.TermDatesScreen
 import io.github.matteopi.budgeting.ui.planner.components.PlannerComingSoonScreen
+import io.github.matteopi.budgeting.ui.planner.day.DayScreen
 import io.github.matteopi.budgeting.ui.planner.settings.CalendarsScreen
+import io.github.matteopi.budgeting.ui.planner.settings.CategoriesScreen
+import io.github.matteopi.budgeting.ui.planner.settings.DaySettingsScreen
 import io.github.matteopi.budgeting.ui.planner.settings.ModulesScreen
 import io.github.matteopi.budgeting.ui.planner.settings.PlannerSettingsScreen
 import io.github.matteopi.budgeting.ui.planner.settings.TemplatesScreen
@@ -32,12 +35,7 @@ fun NavGraphBuilder.plannerDestinations(navController: NavHostController) {
                     launchSingleTop = true
                 }
             },
-            onOpenTimetable = {
-                navController.navigate(Route.Timetable) {
-                    popUpTo<Route.Today>()
-                    launchSingleTop = true
-                }
-            },
+            onOpenDay = { date, review -> navController.navigate(Route.Day(epochDay = date.toEpochDay(), review = review)) },
             onAddTask = { navController.navigate(Route.TaskEdit()) },
         )
     }
@@ -104,6 +102,8 @@ fun NavGraphBuilder.plannerDestinations(navController: NavHostController) {
             onOpenTemplates = { navController.navigate(Route.Templates) },
             onOpenTermDates = { navController.navigate(Route.PlannerTermDates) },
             onOpenCalendars = { navController.navigate(Route.PlannerCalendars) },
+            onOpenDaySettings = { navController.navigate(Route.PlannerDaySettings) },
+            onOpenCategories = { navController.navigate(Route.PlannerCategories) },
         )
     }
     composable<Route.Modules> {
@@ -125,5 +125,15 @@ fun NavGraphBuilder.plannerDestinations(navController: NavHostController) {
     }
     composable<Route.PlannerTermDates> {
         TermDatesScreen(onBack = { navController.popBackStack() })
+    }
+    composable<Route.Day> { backStackEntry ->
+        val args = backStackEntry.toRoute<Route.Day>()
+        DayScreen(epochDay = args.epochDay, review = args.review, onBack = { navController.popBackStack() })
+    }
+    composable<Route.PlannerDaySettings> {
+        DaySettingsScreen(onBack = { navController.popBackStack() })
+    }
+    composable<Route.PlannerCategories> {
+        CategoriesScreen(onBack = { navController.popBackStack() })
     }
 }

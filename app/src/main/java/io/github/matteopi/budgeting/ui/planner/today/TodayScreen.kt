@@ -28,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -46,7 +47,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -172,7 +172,7 @@ fun TodayScreen(
     }
 
     if (startingTimer) {
-        ModalBottomSheet(onDismissRequest = { startingTimer = false }) {
+        ModalBottomSheet(onDismissRequest = { startingTimer = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
             TimerStartSheet(state, onStart = { categoryId, moduleId ->
                 viewModel.startTimer(categoryId, moduleId)
                 startingTimer = false
@@ -248,7 +248,6 @@ private fun AgendaRow(row: AgendaRowUi, onClick: () -> Unit) {
                 row.title,
                 style = MaterialTheme.typography.bodyLarge,
                 color = if (faint) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.onSurface,
-                textDecoration = if (row.state == ChunkState.TO_CONFIRM) null else TextDecoration.None,
             )
             if (row.detail.isNotBlank()) {
                 Text(row.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

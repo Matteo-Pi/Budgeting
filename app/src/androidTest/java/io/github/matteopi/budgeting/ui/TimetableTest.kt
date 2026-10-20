@@ -104,8 +104,9 @@ class TimetableTest : UiTest() {
         seedEntry(TimetableEntry(title = "EC102 Seminar", weekday = today.dayOfWeek, start = LocalTime.of(10, 0), end = LocalTime.of(11, 0)))
         openPlanner()
 
-        // Today lists the day's classes and the calendar's event.
-        for (title in listOf("EC101 Lecture", "EC102 Seminar", "Dentist")) {
+        // Today's agenda has the lecture and the calendar's event (the seminar falls inside the lecture's time,
+        // and the day is one strip with nothing overlapping).
+        for (title in listOf("EC101 Lecture", "Dentist")) {
             waitForExists(tagged(TodayTags.ON_TODAY, title), "$title on Today")
         }
         shot("timetable-04-today")

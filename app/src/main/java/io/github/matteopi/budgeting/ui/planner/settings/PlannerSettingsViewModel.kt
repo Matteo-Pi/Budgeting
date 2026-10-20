@@ -4,10 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import io.github.matteopi.budgeting.core.model.TermPeriod
+import io.github.matteopi.budgeting.core.planner.day.DaySettings
 import io.github.matteopi.budgeting.core.planner.model.Module
+import io.github.matteopi.budgeting.core.planner.model.TimeCategory
 import io.github.matteopi.budgeting.core.planner.todo.BreakdownTemplate
 import io.github.matteopi.budgeting.core.planner.todo.BreakdownTemplates
 import io.github.matteopi.budgeting.data.repo.PlanRepository
+import io.github.matteopi.budgeting.data.repo.planner.DayRepository
 import io.github.matteopi.budgeting.data.repo.planner.ModuleRepository
 import io.github.matteopi.budgeting.data.settings.PlannerCalendarSettings
 import io.github.matteopi.budgeting.data.settings.PlannerReminderSettings
@@ -29,25 +32,29 @@ data class PlannerSettingsUiState(
     val reminders: PlannerReminderSettings = PlannerReminderSettings(),
     val terms: List<TermPeriod> = emptyList(),
     val calendars: PlannerCalendarSettings = PlannerCalendarSettings(),
+    val day: DaySettings = DaySettings(),
+    val categories: List<TimeCategory> = emptyList(),
 )
 
 /** The Planner's settings (docs/PLAN.md §12.11), its modules and its breakdown templates. */
 class PlannerSettingsViewModel(
     private val moduleRepository: ModuleRepository,
     planRepository: PlanRepository,
+    private val dayRepository: DayRepository,
     private val settingsStore: SettingsStore,
     private val plannerUpdater: PlannerUpdater,
     private val plannerAlarms: PlannerAlarms,
 ) : ViewModel() {
 
     val state: StateFlow<PlannerSettingsUiState> = combine(
-        moduleRepository.observeModules(),
-        settingsStore.breakdownTemplates,
-        settingsStore.plannerReminders,
+        combine(moduleRepository.observeModules(), settingsStore.breakdownTemplates, settingsStore.plannerReminders) { m, t, r -> Triple(m, t, r) },
         planRepository.observeTermPeriods(),
         settingsStore.plannerCalendars,
-    ) { modules, templates, reminders, terms, calendars -> PlannerSettingsUiState(false, modules, templates, reminders, terms, calendars) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PlannerSettingsUiState())
+        settingsStore.plannerDay,
+        dayRepository.observeCategories(),
+    ) { (modules, templates, reminders), terms, calendars, day, categories ->
+        PlannerSettingsUiState(false, modules, templates, reminders, terms, calendars, day, categories)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PlannerSettingsUiState())
 
     /** False when Android refuses exact alarms. */
     fun exactAlarmsAllowed(): Boolean = plannerAlarms.exactAlarmsAllowed()
@@ -56,6 +63,39 @@ class PlannerSettingsViewModel(
         viewModelScope.launch {
             settingsStore.setPlannerReminders(state.value.reminders.copy(taskMinute = time.hour * 60 + time.minute))
             plannerUpdater.changed()
+        }
+    }
+
+    fun setReviewOn(on: Boolean) {
+        viewModelScope.launch {
+            settingsStore.setPlannerReminders(state.value.reminders.copy(reviewOn = on))
+            plannerUpdater.changed()
+        }
+    }
+
+    fun setReviewTime(time: LocalTime) {
+        viewModelScope.launch {
+            settingsStore.setPlannerReminders(state.value.reminders.copy(reviewMinute = time.hour * 60 + time.minute))
+            plannerUpdater.changed()
+        }
+    }
+
+    // ---- The day ----
+
+    fun setDay(day: DaySettings) {
+        viewModelScope.launch {
+            settingsStore.setPlannerDay(day.sanitized())
+            plannerUpdater.changed()
+        }
+    }
+
+    // ---- Categories ----
+
+    /** Saves [category]; a new one goes last. */
+    fun saveCategory(category: TimeCategory) {
+        viewModelScope.launch {
+            val order = if (category.id == 0L) (state.value.categories.maxOfOrNull { it.sortOrder } ?: -1) + 1 else category.sortOrder
+            dayRepository.saveCategory(category.copy(sortOrder = order))
         }
     }
 
@@ -95,7 +135,7 @@ class PlannerSettingsViewModel(
 
     companion object {
         val Factory: ViewModelProvider.Factory = budgetViewModelFactory {
-            PlannerSettingsViewModel(it.moduleRepository, it.planRepository, it.settingsStore, it.plannerUpdater, it.plannerAlarms)
+            PlannerSettingsViewModel(it.moduleRepository, it.planRepository, it.dayRepository, it.settingsStore, it.plannerUpdater, it.plannerAlarms)
         }
     }
 }

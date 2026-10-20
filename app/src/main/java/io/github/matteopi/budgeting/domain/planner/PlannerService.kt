@@ -78,6 +78,14 @@ class PlannerService(
     private val settingsStore: SettingsStore,
     private val clock: Clock,
 ) {
+    companion object {
+        /** How much earlier than a deadline to finish; the study settings make it the user's choice in stage P5. */
+        const val FINISH_EARLY_DAYS = 1L
+
+        /** The on-track test looks no further ahead than this. */
+        const val MAX_DAYS_AHEAD = 60L
+    }
+
     private data class Timetable3(val entries: List<TimetableEntry>, val exceptions: List<EntryException>, val terms: List<TermPeriod>)
 
     private data class Stored(
@@ -121,6 +129,44 @@ class PlannerService(
             ) { records, plans, categories, reviews, calendar -> Stored(records, plans, categories, reviews, calendar) }
             combine(stored, timetable, taskRepository.observeOpenTasks(), now) { s, t, tasks, at ->
                 build(date, freeSettings, window, waking, zone, at, s, t, tasks)
+            }
+        }
+
+    /**
+     * The unplanned free minutes from now to the end of the day [FINISH_EARLY_DAYS] before [due] (today at the
+     * least), looking at most [MAX_DAYS_AHEAD] days on: what a deadline's on-track test weighs its work against.
+     */
+    fun freeMinutesBefore(due: LocalDate): Flow<Int> =
+        combine(settingsStore.plannerDay, settingsStore.plannerFree) { day, free -> day to free }.flatMapLatest { (daySettings, freeSettings) ->
+            val zone = clock.zone()
+            val today = clock.today()
+            val last = minOf(maxOf(today, due.minusDays(FINISH_EARLY_DAYS)), today.plusDays(MAX_DAYS_AHEAD))
+            if (due.isBefore(today)) return@flatMapLatest flowOf(0)
+            val dates = generateSequence(today) { it.plusDays(1) }.takeWhile { !it.isAfter(last) }.toList()
+            val windows = dates.map { DayWindows.wakingWindow(it, daySettings, zone) }
+            val range = Interval(windows.first().start, windows.last().end)
+            val now = Instant.ofEpochMilli(clock.nowMillis())
+            combine(
+                dayRepository.observePlans(range),
+                timetable,
+                plannerCalendar.observe(range.start, range.end),
+                taskRepository.observeOpenTasks(),
+            ) { plans, t, calendar, tasks ->
+                val occurrences = Timetable.occurrences(t.entries, t.exceptions, t.terms, today.minusDays(1), last, zone)
+                val busy = FreeTime.busyItems(occurrences, calendar.instances, tasks, zone)
+                dates.indices.sumOf { i ->
+                    val waking = windows[i]
+                    val left = Interval(maxOf(now, waking.start), waking.end)
+                    if (left.isEmpty) return@sumOf 0L
+                    val free = FreeTime.compute(
+                        waking,
+                        busy.filter { it.interval.overlaps(waking) },
+                        FreeTime.meals(dates[i], freeSettings, zone),
+                        freeSettings.travel,
+                        freeSettings.minGapMinutes,
+                    )
+                    FreeTime.unplannedMinutes(free.free, plans, left)
+                }.toInt()
             }
         }
 

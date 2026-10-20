@@ -10,20 +10,28 @@ import io.github.matteopi.budgeting.core.planner.model.Priority
 import io.github.matteopi.budgeting.core.planner.model.Task
 import io.github.matteopi.budgeting.core.planner.todo.BreakdownTemplate
 import io.github.matteopi.budgeting.core.planner.todo.BreakdownTemplates
+import io.github.matteopi.budgeting.core.planner.todo.DeadlineProgress
 import io.github.matteopi.budgeting.core.planner.todo.DeadlineState
 import io.github.matteopi.budgeting.core.planner.todo.DeadlineStatus
+import io.github.matteopi.budgeting.data.repo.planner.DayRepository
 import io.github.matteopi.budgeting.data.repo.planner.ModuleRepository
 import io.github.matteopi.budgeting.data.repo.planner.TaskRepository
 import io.github.matteopi.budgeting.data.settings.SettingsStore
 import io.github.matteopi.budgeting.domain.Clock
+import io.github.matteopi.budgeting.domain.planner.PlannerService
 import io.github.matteopi.budgeting.ui.planner.components.TaskRowUi
 import io.github.matteopi.budgeting.ui.planner.todo.TodoMapping
 import io.github.matteopi.budgeting.ui.settings.budgetViewModelFactory
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -46,21 +54,30 @@ data class TaskDetailUiState(
 )
 
 /** One task's page: its details, checklist, and for a deadline its status and steps (docs/PLAN.md §13.9). */
+@OptIn(ExperimentalCoroutinesApi::class)
 class TaskDetailViewModel(
     private val taskId: Long,
     private val taskRepository: TaskRepository,
     moduleRepository: ModuleRepository,
     settingsStore: SettingsStore,
+    dayRepository: DayRepository,
+    plannerService: PlannerService,
     private val clock: Clock,
 ) : ViewModel() {
 
+    private val task = taskRepository.observeTask(taskId)
+
+    /** The free time before an open deadline's due date, for its on-track test; null for anything else. */
+    private val freeBefore: Flow<Int?> = task.map { t -> t?.takeIf { it.isDeadline && it.isOpen }?.dueDate }.distinctUntilChanged()
+        .flatMapLatest { due -> if (due == null) flowOf(null) else plannerService.freeMinutesBefore(due) }
+
     private val parts = combine(
-        taskRepository.observeTask(taskId),
-        taskRepository.observeSteps(taskId),
-        moduleRepository.observeModules(),
+        combine(task, taskRepository.observeSteps(taskId), moduleRepository.observeModules()) { t, steps, modules -> Triple(t, steps, modules) },
         settingsStore.breakdownTemplates,
         clock.todayFlow,
-    ) { task, steps, modules, templates, today -> Parts(task, steps, modules, templates, today) }
+        dayRepository.observeMinutesByTask(),
+        freeBefore,
+    ) { (task, steps, modules), templates, today, studied, free -> Parts(task, steps, modules, templates, today, studied, free) }
 
     private data class Parts(
         val task: Task?,
@@ -68,6 +85,8 @@ class TaskDetailViewModel(
         val modules: List<Module>,
         val templates: List<BreakdownTemplate>,
         val today: LocalDate,
+        val studied: Map<Long, Int>,
+        val freeBefore: Int?,
     )
 
     val state: StateFlow<TaskDetailUiState> = parts.map { p ->
@@ -79,8 +98,8 @@ class TaskDetailViewModel(
             today = p.today,
             details = details(task, p.modules, p.today),
             parentTitle = parent?.title,
-            deadline = if (task.isDeadline) deadlineCard(task, p.steps, p.today) else null,
-            steps = TodoMapping.rows(p.steps, p.steps, p.modules, p.today),
+            deadline = if (task.isDeadline) deadlineCard(task, p.steps, p.today, p.studied, p.freeBefore) else null,
+            steps = TodoMapping.rows(p.steps, p.steps, p.modules, p.today, p.studied),
             templates = p.templates,
         )
     }.flowOn(Dispatchers.Default)
@@ -121,8 +140,8 @@ class TaskDetailViewModel(
         task.completedAt?.let { "Done ${PlannerText.date(it.atZone(clock.zone()).toLocalDate(), today)}" },
     )
 
-    private fun deadlineCard(task: Task, steps: List<Task>, today: LocalDate): DeadlineCardUi {
-        val progress = DeadlineStatus.of(task, steps, emptyMap(), today)
+    private fun deadlineCard(task: Task, steps: List<Task>, today: LocalDate, studied: Map<Long, Int>, freeBefore: Int?): DeadlineCardUi {
+        val progress = DeadlineStatus.of(task, steps, studied, today, freeBefore)
         val due = task.dueDate ?: today
         val headline = when (progress.state) {
             DeadlineState.DONE -> "Done"
@@ -133,14 +152,32 @@ class TaskDetailViewModel(
             progress.workLeftMinutes?.let { left -> "${PlannerText.duration(left)} of work left" + (progress.estimateMinutes?.let { " of ${PlannerText.duration(it)}" } ?: "") },
             if (progress.state == DeadlineState.NO_ESTIMATE) "Add an estimate to see how much work is left." else null,
             progress.stepsTotal.takeIf { it > 0 }?.let { "${progress.stepsDone} of $it steps done" },
-            if (progress.state == DeadlineState.IN_PROGRESS) "Whether it's on track comes with the timetable and your free time in a later build." else null,
+            progress.studiedMinutes.takeIf { it > 0 }?.let { "${PlannerText.duration(it)} recorded on it" },
+            onTrackLine(progress, due, today),
         )
         return DeadlineCardUi(headline, lines)
     }
 
+    /**
+     * "On track: 6 h left · 14 h free before Thu", with the reason for the half: other work and rest need time too
+     * (docs/PLAN.md §13.4).
+     */
+    private fun onTrackLine(progress: DeadlineProgress, due: LocalDate, today: LocalDate): String? {
+        val left = progress.workLeftMinutes ?: return null
+        val free = progress.freeMinutes ?: return null
+        val target = maxOf(today, due.minusDays(PlannerService.FINISH_EARLY_DAYS))
+        val numbers = "${PlannerText.duration(left)} left · ${PlannerText.duration(free)} free to ${PlannerText.day(target, today)}"
+        return when (progress.state) {
+            DeadlineState.ON_TRACK -> "On track: $numbers"
+            DeadlineState.TIGHT -> "Tight: $numbers. On track means the work takes at most half the free time, leaving the rest for other work and rest."
+            DeadlineState.AT_RISK -> "At risk: $numbers. Plan time for it, or move other things."
+            else -> null
+        }
+    }
+
     companion object {
         fun factory(taskId: Long): ViewModelProvider.Factory = budgetViewModelFactory {
-            TaskDetailViewModel(taskId, it.taskRepository, it.moduleRepository, it.settingsStore, it.clock)
+            TaskDetailViewModel(taskId, it.taskRepository, it.moduleRepository, it.settingsStore, it.dayRepository, it.plannerService, it.clock)
         }
     }
 }
