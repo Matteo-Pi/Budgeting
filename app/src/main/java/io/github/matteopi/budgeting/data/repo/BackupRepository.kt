@@ -5,6 +5,7 @@ import io.github.matteopi.budgeting.core.backup.BackupData
 import io.github.matteopi.budgeting.data.db.BudgetDatabase
 import io.github.matteopi.budgeting.data.db.dao.AccountDao
 import io.github.matteopi.budgeting.data.db.dao.CategoryDao
+import io.github.matteopi.budgeting.data.db.dao.DayDao
 import io.github.matteopi.budgeting.data.db.dao.FoodDao
 import io.github.matteopi.budgeting.data.db.dao.ImportDao
 import io.github.matteopi.budgeting.data.db.dao.PlanDao
@@ -44,6 +45,7 @@ class BackupRepository(
     private val foodDao: FoodDao,
     private val plannerDao: PlannerDao,
     private val timetableDao: TimetableDao,
+    private val dayDao: DayDao,
     private val settingsStore: SettingsStore,
     private val widgetUpdater: WidgetUpdater,
     private val plannerUpdater: PlannerUpdater,
@@ -84,15 +86,24 @@ class BackupRepository(
             plannerEntries = timetableDao.getEntries().map { it.toModel() },
             plannerEntryExceptions = timetableDao.getExceptions().map { it.toModel() },
             plannerCalendarLinks = timetableDao.getLinks().map { it.toModel() },
+            plannerCategories = dayDao.getCategories().map { it.toModel() },
+            plannerPlanBlocks = dayDao.getAllPlans().map { it.toModel() },
+            plannerRecords = dayDao.getAllRecords().map { it.toModel() },
+            plannerDayReviews = dayDao.getAllReviews().map { it.toModel() },
         )
     }
 
     /** Deletes every table (children first) then inserts [data] back with its original ids, atomically. */
     suspend fun replaceAll(data: BackupData) {
         database.withTransaction {
-            // The Planner's tables first: the timetable's changes, entries (which point at modules and term
-            // dates) and calendar links; the Done log and checklists, steps before their deadlines, then the
-            // tasks and the modules they point at.
+            // The Planner's tables first: the day record (records point at plan blocks, both at categories,
+            // tasks and modules); the timetable's changes, entries (which point at modules and term dates) and
+            // calendar links; the Done log and checklists, steps before their deadlines, then the tasks and the
+            // modules they point at.
+            dayDao.deleteAllRecords()
+            dayDao.deleteAllPlans()
+            dayDao.deleteAllReviews()
+            dayDao.deleteAllCategories()
             timetableDao.deleteAllExceptions()
             timetableDao.deleteAllEntries()
             timetableDao.deleteAllLinks()
@@ -186,6 +197,12 @@ class BackupRepository(
             timetableDao.insertEntries(data.plannerEntries.map { it.toEntity() })
             timetableDao.insertExceptions(data.plannerEntryExceptions.map { it.toEntity() })
             timetableDao.upsertLinks(data.plannerCalendarLinks.map { it.toEntity() })
+            // The day record after the tasks and modules: categories, plan blocks, then the records that point
+            // at them, and the reviews.
+            dayDao.insertCategories(data.plannerCategories.map { it.toEntity() })
+            dayDao.insertPlans(data.plannerPlanBlocks.map { it.toEntity() })
+            dayDao.insertRecords(data.plannerRecords.map { it.toEntity() })
+            dayDao.insertReviews(data.plannerDayReviews.map { it.toEntity() })
         }
         settingsStore.replaceBudgetSettings(data.settings)
         // Cooking ticks are kept by recipe id, and the restored recipes have other ids.

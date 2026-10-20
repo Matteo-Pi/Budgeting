@@ -6,10 +6,16 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import io.github.matteopi.budgeting.core.planner.reminders.Reminder
+import io.github.matteopi.budgeting.core.planner.reminders.ReminderKind
 import io.github.matteopi.budgeting.core.planner.reminders.ReminderPlan
+import io.github.matteopi.budgeting.core.planner.timetable.Timetable
+import io.github.matteopi.budgeting.data.repo.PlanRepository
+import io.github.matteopi.budgeting.data.repo.planner.DayRepository
 import io.github.matteopi.budgeting.data.repo.planner.TaskRepository
+import io.github.matteopi.budgeting.data.repo.planner.TimetableRepository
 import io.github.matteopi.budgeting.data.settings.SettingsStore
 import io.github.matteopi.budgeting.domain.Clock
+import io.github.matteopi.budgeting.widget.planner.PlannerWidget
 import java.time.Instant
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
@@ -23,6 +29,9 @@ import kotlinx.coroutines.sync.withLock
 class PlannerAlarms(
     private val context: Context,
     private val taskRepository: TaskRepository,
+    private val dayRepository: DayRepository,
+    private val timetableRepository: TimetableRepository,
+    private val planRepository: PlanRepository,
     private val settingsStore: SettingsStore,
     private val clock: Clock,
 ) {
@@ -38,10 +47,18 @@ class PlannerAlarms(
     /** False when Android refuses exact alarms, so reminders may come a few minutes late. */
     fun exactAlarmsAllowed(): Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
 
-    /** Every reminder the Planner has now. */
+    /** Every reminder the Planner has now: tasks, the end-of-day review, and the widget's next class changes. */
     suspend fun reminders(): List<Reminder> {
         val settings = settingsStore.plannerReminders.first()
-        return ReminderPlan.taskReminders(taskRepository.getOpenTasks(), settings.taskTime, clock.zone(), clock.today())
+        val zone = clock.zone()
+        val today = clock.today()
+        val occurrences = Timetable.occurrences(
+            timetableRepository.getEntries(), timetableRepository.getExceptions(), planRepository.observeTermPeriods().first(),
+            today, today.plusDays(1), zone,
+        )
+        return ReminderPlan.taskReminders(taskRepository.getOpenTasks(), settings.taskTime, zone, today) +
+            ReminderPlan.dayReviewReminders(settings.reviewTime, dayRepository.getReviews(today, today.plusDays(1)), today, zone) +
+            ReminderPlan.widgetRefreshes(occurrences, Instant.ofEpochMilli(clock.nowMillis()))
     }
 
     suspend fun reschedule() = mutex.withLock { scheduleNext(Instant.ofEpochMilli(clock.nowMillis())) }
@@ -50,9 +67,9 @@ class PlannerAlarms(
     suspend fun fire() = mutex.withLock {
         val now = Instant.ofEpochMilli(clock.nowMillis())
         val lastFired = settingsStore.plannerAlarmFired.first()
-        for (reminder in ReminderPlan.dueBetween(reminders(), lastFired, now)) {
-            PlannerNotifications.post(context, reminder)
-        }
+        val due = ReminderPlan.dueBetween(reminders(), lastFired, now)
+        for (reminder in due) PlannerNotifications.post(context, reminder)
+        if (due.any { it.kind == ReminderKind.WIDGET }) PlannerWidget.refresh(context)
         settingsStore.setPlannerAlarmFired(now)
         scheduleNext(now)
     }

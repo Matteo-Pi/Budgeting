@@ -1,6 +1,8 @@
 package io.github.matteopi.budgeting.core.planner.reminders
 
 import io.github.matteopi.budgeting.core.planner.PlannerText
+import io.github.matteopi.budgeting.core.planner.model.DayReview
+import io.github.matteopi.budgeting.core.planner.model.Occurrence
 import io.github.matteopi.budgeting.core.planner.model.Task
 import java.time.Duration
 import java.time.Instant
@@ -9,8 +11,11 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
-/** What a reminder is about; later stages add the reviews and habits (docs/PLAN.md §13.4). */
-enum class ReminderKind { TASK }
+/**
+ * What a reminder is about; later stages add habits and the weekly review (docs/PLAN.md §13.4). [WIDGET] posts
+ * nothing: it redraws the Planner widget when a class starts or ends.
+ */
+enum class ReminderKind { TASK, DAY_REVIEW, WIDGET }
 
 /**
  * One reminder to post at [at]. [key] is stable for the same reminder and changes when what it reminds of changes
@@ -56,6 +61,30 @@ object ReminderPlan {
                 text = PlannerText.due(date, task.dueTime, today),
             )
         }
+
+    /**
+     * The end-of-day review at [time] today and tomorrow (so the alarm moves on once today's has gone), leaving out
+     * days whose review is finished. Null [time]: the review reminder is off. [itemId] is the date's epoch day.
+     */
+    fun dayReviewReminders(time: LocalTime?, reviews: List<DayReview>, today: LocalDate, zone: ZoneId): List<Reminder> {
+        if (time == null) return emptyList()
+        val finished = reviews.filter { it.finishedAt != null }.map { it.date }.toSet()
+        return listOf(today, today.plusDays(1)).filter { it !in finished }.map { date ->
+            Reminder(
+                key = "review:$date:$time",
+                kind = ReminderKind.DAY_REVIEW,
+                itemId = date.toEpochDay(),
+                at = ZonedDateTime.of(date, time, zone).toInstant(),
+                title = "How did today go?",
+                text = "Fill in the gaps, confirm what happened and finish the day.",
+            )
+        }
+    }
+
+    /** The next class start and end after [now], when the widget's *next class* changes. */
+    fun widgetRefreshes(occurrences: List<Occurrence>, now: Instant): List<Reminder> =
+        occurrences.filter { !it.cancelled }.flatMap { listOf(it.start, it.end) }.filter { it.isAfter(now) }.distinct().sorted().take(2)
+            .map { at -> Reminder("widget:${at.toEpochMilli()}", ReminderKind.WIDGET, 0, at, "", "") }
 
     /** The earliest reminder after [now], or null. */
     fun next(reminders: List<Reminder>, now: Instant): Reminder? =

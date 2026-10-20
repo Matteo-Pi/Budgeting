@@ -21,10 +21,14 @@ import io.github.matteopi.budgeting.core.model.SinkingFund
 import io.github.matteopi.budgeting.core.model.TermPeriod
 import io.github.matteopi.budgeting.core.model.Transaction
 import io.github.matteopi.budgeting.core.planner.model.CalendarLink
+import io.github.matteopi.budgeting.core.planner.model.DayReview
 import io.github.matteopi.budgeting.core.planner.model.EntryException
 import io.github.matteopi.budgeting.core.planner.model.Module
+import io.github.matteopi.budgeting.core.planner.model.PlanBlock
+import io.github.matteopi.budgeting.core.planner.model.RecordChunk
 import io.github.matteopi.budgeting.core.planner.model.Task
 import io.github.matteopi.budgeting.core.planner.model.TaskCompletion
+import io.github.matteopi.budgeting.core.planner.model.TimeCategory
 import io.github.matteopi.budgeting.core.planner.model.TimetableEntry
 import io.github.matteopi.budgeting.core.recipes.Ingredient
 import io.github.matteopi.budgeting.core.recipes.IngredientAliasRecord
@@ -75,4 +79,9 @@ data class BackupData(
     val plannerEntries: List<TimetableEntry> = emptyList(),
     val plannerEntryExceptions: List<EntryException> = emptyList(),
     val plannerCalendarLinks: List<CalendarLink> = emptyList(),
+    // Backup version 7.
+    val plannerCategories: List<TimeCategory> = emptyList(),
+    val plannerPlanBlocks: List<PlanBlock> = emptyList(),
+    val plannerRecords: List<RecordChunk> = emptyList(),
+    val plannerDayReviews: List<DayReview> = emptyList(),
 )

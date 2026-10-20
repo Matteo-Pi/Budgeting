@@ -26,6 +26,8 @@ class BudgetApp : Application() {
         }
         // The alarm is lost when the app is force-stopped; setting it again on every start keeps it.
         container.appScope.launch { container.plannerAlarms.reschedule() }
+        // A running timer's notification is gone after a restart.
+        container.appScope.launch { container.plannerTimer.restoreNotification() }
         // Writing back catches up on what changed in the calendar or the app while it was closed.
         container.appScope.launch {
             if (container.settingsStore.plannerCalendars.first().writeTo != null) CalendarSyncWorker.enqueue(this@BudgetApp)

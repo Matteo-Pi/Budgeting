@@ -17,6 +17,7 @@ import io.github.matteopi.budgeting.data.repo.ScenarioRepository
 import io.github.matteopi.budgeting.data.repo.ShoppingRepository
 import io.github.matteopi.budgeting.data.repo.SnapshotRepository
 import io.github.matteopi.budgeting.data.repo.TransactionRepository
+import io.github.matteopi.budgeting.data.repo.planner.DayRepository
 import io.github.matteopi.budgeting.data.repo.planner.ModuleRepository
 import io.github.matteopi.budgeting.data.repo.planner.TaskRepository
 import io.github.matteopi.budgeting.data.repo.planner.TimetableRepository
@@ -26,8 +27,11 @@ import io.github.matteopi.budgeting.domain.ForecastService
 import io.github.matteopi.budgeting.domain.PostingService
 import io.github.matteopi.budgeting.domain.planner.PlannerCalendar
 import io.github.matteopi.budgeting.domain.planner.PlannerCalendarSync
+import io.github.matteopi.budgeting.domain.planner.PlannerService
+import io.github.matteopi.budgeting.domain.planner.PlannerTimer
 import io.github.matteopi.budgeting.ui.food.timers.CookingTimers
 import io.github.matteopi.budgeting.widget.WidgetUpdater
+import io.github.matteopi.budgeting.widget.planner.PlannerWidget
 import io.github.matteopi.budgeting.work.planner.CalendarSyncWorker
 import io.github.matteopi.budgeting.work.planner.PlannerAlarms
 import io.github.matteopi.budgeting.work.planner.PlannerUpdater
@@ -57,11 +61,12 @@ class AppContainer(context: Context) {
     val widgetUpdater = WidgetUpdater(context.applicationContext, appScope)
 
     /**
-     * After Planner writes (docs/PLAN.md §13.5): the reminder alarm follows, and with writing back on, the calendar
-     * sync. [plannerAlarms] is built below.
+     * After Planner writes (docs/PLAN.md §13.5): the reminder alarm and the Planner widget follow, and with writing
+     * back on, the calendar sync. [plannerAlarms] is built below.
      */
     val plannerUpdater: PlannerUpdater = PlannerUpdater(appScope) {
         plannerAlarms.reschedule()
+        PlannerWidget.refresh(context.applicationContext)
         if (settingsStore.plannerCalendars.first().writeTo != null) CalendarSyncWorker.enqueue(context.applicationContext)
     }
 
@@ -156,6 +161,12 @@ class AppContainer(context: Context) {
         plannerUpdater = plannerUpdater,
     )
 
+    val dayRepository: DayRepository = DayRepository(
+        dayDao = database.dayDao(),
+        clock = clock,
+        plannerUpdater = plannerUpdater,
+    )
+
     /** The phone's calendars (docs/PLAN.md §13.7): read offline, and written to only when the user turns it on. */
     val calendarAccess = CalendarAccess(context.applicationContext)
 
@@ -179,7 +190,29 @@ class AppContainer(context: Context) {
     val plannerAlarms: PlannerAlarms = PlannerAlarms(
         context = context.applicationContext,
         taskRepository = taskRepository,
+        dayRepository = dayRepository,
+        timetableRepository = timetableRepository,
+        planRepository = planRepository,
         settingsStore = settingsStore,
+        clock = clock,
+    )
+
+    /** The day record's shared computations (docs/PLAN.md §13.9), for Today, the day editor and the widget. */
+    val plannerService = PlannerService(
+        dayRepository = dayRepository,
+        timetableRepository = timetableRepository,
+        taskRepository = taskRepository,
+        planRepository = planRepository,
+        plannerCalendar = plannerCalendar,
+        settingsStore = settingsStore,
+        clock = clock,
+    )
+
+    val plannerTimer = PlannerTimer(
+        context = context.applicationContext,
+        settingsStore = settingsStore,
+        dayRepository = dayRepository,
+        moduleRepository = moduleRepository,
         clock = clock,
     )
 
@@ -204,6 +237,7 @@ class AppContainer(context: Context) {
         foodDao = database.foodDao(),
         plannerDao = database.plannerDao(),
         timetableDao = database.timetableDao(),
+        dayDao = database.dayDao(),
         settingsStore = settingsStore,
         widgetUpdater = widgetUpdater,
         plannerUpdater = plannerUpdater,

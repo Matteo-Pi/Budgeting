@@ -113,6 +113,15 @@ sealed interface Route {
 
     /** The same term dates as Budgeting's, reached from the Planner so it keeps its own bottom bar. */
     @Serializable data object PlannerTermDates : Route
+
+    /** One day's record ([epochDay]); [review] opens it for the end-of-day review. */
+    @Serializable data class Day(val epochDay: Long, val review: Boolean = false) : Route
+
+    /** Where the day starts and ends, and the wake and sleep times. */
+    @Serializable data object PlannerDaySettings : Route
+
+    /** The day record's categories. */
+    @Serializable data object PlannerCategories : Route
 }
 
 /**
@@ -154,6 +163,9 @@ val plannerRoutes: List<KClass<out Route>> = listOf(
     Route.EntryEdit::class,
     Route.PlannerCalendars::class,
     Route.PlannerTermDates::class,
+    Route.Day::class,
+    Route.PlannerDaySettings::class,
+    Route.PlannerCategories::class,
 )
 
 /** True if this destination is one of [plannerRoutes]. */

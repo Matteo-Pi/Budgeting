@@ -13,6 +13,8 @@ import androidx.datastore.preferences.preferencesDataStore
 import io.github.matteopi.budgeting.core.model.BudgetSettings
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.ZeroPoint
+import io.github.matteopi.budgeting.core.planner.day.DaySettings
+import io.github.matteopi.budgeting.core.planner.freetime.FreeSettings
 import io.github.matteopi.budgeting.core.planner.todo.BreakdownTemplate
 import java.time.DayOfWeek
 import java.time.Instant
@@ -29,6 +31,8 @@ private val DEFAULT_BUDGET_SETTINGS = BudgetSettings()
 /** The `appSettings` map entries a backup uses for the Planner's preferences. */
 const val PLANNER_REMINDERS_BACKUP_KEY = "plannerReminders"
 const val PLANNER_TEMPLATES_BACKUP_KEY = "plannerTemplates"
+const val PLANNER_DAY_BACKUP_KEY = "plannerDay"
+const val PLANNER_FREE_BACKUP_KEY = "plannerFree"
 
 /** Preferences DataStore named "settings". See docs/PLAN.md §6.3 for the key list. */
 class SettingsStore(context: Context) {
@@ -256,7 +260,7 @@ class SettingsStore(context: Context) {
 
     // ---- Planner (docs/PLAN.md §13.6) -------------------------------------------------------------
 
-    /** When tasks without a time remind; later stages add the reviews. In backups ([plannerBackupMap]). */
+    /** When tasks without a time remind, and the end-of-day review. In backups ([plannerBackupMap]). */
     val plannerReminders: Flow<PlannerReminderSettings> = dataStore.data.map { prefs ->
         PlannerSettingsCodec.decodeReminders(prefs[PlannerKeys.REMINDERS])
     }
@@ -297,12 +301,40 @@ class SettingsStore(context: Context) {
         dataStore.edit { it[PlannerKeys.CALENDARS] = PlannerSettingsCodec.encodeCalendars(settings) }
     }
 
+    /** The user's day: where the record's days start and end, and wake and sleep times. In backups. */
+    val plannerDay: Flow<DaySettings> = dataStore.data.map { prefs -> PlannerSettingsCodec.decodeDay(prefs[PlannerKeys.DAY]) }
+        .distinctUntilChanged()
+
+    suspend fun setPlannerDay(settings: DaySettings) {
+        dataStore.edit { it[PlannerKeys.DAY] = PlannerSettingsCodec.encodeDay(settings) }
+    }
+
+    /** Meals, travel and the shortest useful gap, for free time. In backups. */
+    val plannerFree: Flow<FreeSettings> = dataStore.data.map { prefs -> PlannerSettingsCodec.decodeFree(prefs[PlannerKeys.FREE]) }
+        .distinctUntilChanged()
+
+    suspend fun setPlannerFree(settings: FreeSettings) {
+        dataStore.edit { it[PlannerKeys.FREE] = PlannerSettingsCodec.encodeFree(settings) }
+    }
+
+    /** The running timer, or null (device-specific: not in backups). */
+    val plannerTimer: Flow<TimerState?> = dataStore.data.map { prefs -> PlannerSettingsCodec.decodeTimer(prefs[PlannerKeys.TIMER]) }
+        .distinctUntilChanged()
+
+    suspend fun setPlannerTimer(state: TimerState?) {
+        dataStore.edit { prefs ->
+            if (state == null) prefs.remove(PlannerKeys.TIMER) else prefs[PlannerKeys.TIMER] = PlannerSettingsCodec.encodeTimer(state)
+        }
+    }
+
     /** The Planner preferences a backup carries, as entries of its `appSettings` map. */
     suspend fun plannerBackupMap(): Map<String, String> {
         val prefs = dataStore.data.first()
         return buildMap {
             prefs[PlannerKeys.REMINDERS]?.let { put(PLANNER_REMINDERS_BACKUP_KEY, it) }
             prefs[PlannerKeys.TEMPLATES]?.let { put(PLANNER_TEMPLATES_BACKUP_KEY, it) }
+            prefs[PlannerKeys.DAY]?.let { put(PLANNER_DAY_BACKUP_KEY, it) }
+            prefs[PlannerKeys.FREE]?.let { put(PLANNER_FREE_BACKUP_KEY, it) }
         }
     }
 
@@ -314,6 +346,8 @@ class SettingsStore(context: Context) {
         dataStore.edit { prefs ->
             map[PLANNER_REMINDERS_BACKUP_KEY]?.let { prefs[PlannerKeys.REMINDERS] = it }
             map[PLANNER_TEMPLATES_BACKUP_KEY]?.let { prefs[PlannerKeys.TEMPLATES] = it }
+            map[PLANNER_DAY_BACKUP_KEY]?.let { prefs[PlannerKeys.DAY] = it }
+            map[PLANNER_FREE_BACKUP_KEY]?.let { prefs[PlannerKeys.FREE] = it }
         }
     }
 
@@ -322,6 +356,9 @@ class SettingsStore(context: Context) {
         val TEMPLATES = stringPreferencesKey("planner_templates")
         val ALARM_FIRED = longPreferencesKey("planner_alarm_fired")
         val CALENDARS = stringPreferencesKey("planner_calendars")
+        val DAY = stringPreferencesKey("planner_day")
+        val FREE = stringPreferencesKey("planner_free")
+        val TIMER = stringPreferencesKey("planner_timer")
     }
 
     private object FoodKeys {

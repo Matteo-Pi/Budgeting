@@ -477,3 +477,57 @@ data class PlannerCalendarLinkDto(
     val uid: String,
     val contentHash: String,
 )
+
+// ---- Version 7: the day record (docs/PLAN.md §13.5) --------------------------------------------
+
+/** [systemKey] is a `CategoryKey` name, or null for the user's own categories. */
+@Serializable
+data class PlannerCategoryDto(
+    val id: Long,
+    val name: String,
+    val colorArgb: Long,
+    val systemKey: String?,
+    val ratesFocus: Boolean,
+    val archived: Boolean,
+    val sortOrder: Int,
+)
+
+@Serializable
+data class PlannerPlanBlockDto(
+    val id: Long,
+    val startEpochMillis: Long,
+    val endEpochMillis: Long,
+    val categoryId: Long,
+    val moduleId: Long?,
+    val taskId: Long?,
+    val habitId: Long?,
+    val topicId: Long?,
+    val origin: String,
+    val outcomeOverride: String?,
+    val note: String,
+    val createdAtEpochMillis: Long,
+)
+
+@Serializable
+data class PlannerRecordDto(
+    val id: Long,
+    val startEpochMillis: Long,
+    val endEpochMillis: Long,
+    val categoryId: Long,
+    val moduleId: Long?,
+    val taskId: Long?,
+    val planBlockId: Long?,
+    val sourceKey: String?,
+    val focus: Int?,
+    val note: String,
+    val origin: String,
+    val createdAtEpochMillis: Long,
+)
+
+@Serializable
+data class PlannerDayReviewDto(
+    val date: String,
+    val finishedAtEpochMillis: Long?,
+    val rating: Int?,
+    val note: String,
+)

@@ -32,17 +32,25 @@ import io.github.matteopi.budgeting.core.model.SinkingFundStatus
 import io.github.matteopi.budgeting.core.model.TermPeriod
 import io.github.matteopi.budgeting.core.model.Transaction
 import io.github.matteopi.budgeting.core.planner.model.CalendarLink
+import io.github.matteopi.budgeting.core.planner.model.CategoryKey
+import io.github.matteopi.budgeting.core.planner.model.DayReview
 import io.github.matteopi.budgeting.core.planner.model.ChecklistItem
 import io.github.matteopi.budgeting.core.planner.model.EntryException
 import io.github.matteopi.budgeting.core.planner.model.EntryKind
 import io.github.matteopi.budgeting.core.planner.model.DeadlineType
 import io.github.matteopi.budgeting.core.planner.model.Module
+import io.github.matteopi.budgeting.core.planner.model.Outcome
+import io.github.matteopi.budgeting.core.planner.model.PlanBlock
+import io.github.matteopi.budgeting.core.planner.model.PlanOrigin
 import io.github.matteopi.budgeting.core.planner.model.Priority
+import io.github.matteopi.budgeting.core.planner.model.RecordChunk
+import io.github.matteopi.budgeting.core.planner.model.RecordOrigin
 import io.github.matteopi.budgeting.core.planner.model.RepeatKind
 import io.github.matteopi.budgeting.core.planner.model.Task
 import io.github.matteopi.budgeting.core.planner.model.TaskCompletion
 import io.github.matteopi.budgeting.core.planner.model.TaskKind
 import io.github.matteopi.budgeting.core.planner.model.TaskRepeat
+import io.github.matteopi.budgeting.core.planner.model.TimeCategory
 import io.github.matteopi.budgeting.core.planner.model.TimetableEntry
 import io.github.matteopi.budgeting.core.planner.model.WeekPattern
 import io.github.matteopi.budgeting.core.planner.model.Weekdays
@@ -139,6 +147,14 @@ object BackupMapper {
             plannerCalendarLinks = data.plannerCalendarLinks.map {
                 PlannerCalendarLinkDto(it.id, it.itemKey, it.calendarId, it.eventId, it.uid, it.contentHash)
             },
+            plannerCategories = data.plannerCategories.map {
+                PlannerCategoryDto(it.id, it.name, it.colorArgb, it.systemKey?.name, it.ratesFocus, it.archived, it.sortOrder)
+            },
+            plannerPlanBlocks = data.plannerPlanBlocks.map { it.toDto() },
+            plannerRecords = data.plannerRecords.map { it.toDto() },
+            plannerDayReviews = data.plannerDayReviews.map {
+                PlannerDayReviewDto(it.date.toString(), it.finishedAt?.toEpochMilli(), it.rating, it.note)
+            },
             settings = data.settings.toDto(),
             appSettings = appSettings,
         )
@@ -194,6 +210,14 @@ object BackupMapper {
             },
             plannerCalendarLinks = backup.plannerCalendarLinks.map {
                 CalendarLink(it.id, it.itemKey, it.calendarId, it.eventId, it.uid, it.contentHash)
+            },
+            plannerCategories = backup.plannerCategories.map {
+                TimeCategory(it.id, it.name, it.colorArgb, it.systemKey?.let(::categoryKeyOf), it.ratesFocus, it.archived, it.sortOrder)
+            },
+            plannerPlanBlocks = backup.plannerPlanBlocks.map { it.toModel() },
+            plannerRecords = backup.plannerRecords.map { it.toModel() },
+            plannerDayReviews = backup.plannerDayReviews.map {
+                DayReview(LocalDate.parse(it.date), it.finishedAtEpochMillis?.let(Instant::ofEpochMilli), it.rating, it.note)
             },
             settings = backup.settings.toModel(),
         )
@@ -688,5 +712,70 @@ private fun PlannerEntryDto.toModel() = TimetableEntry(
     termId = termId,
     inHolidays = inHolidays,
     archived = archived,
+    createdAt = Instant.ofEpochMilli(createdAtEpochMillis),
+)
+
+// ---- Planner (version 7) ------------------------------------------------------------------------
+
+/** A category key the file names, or null for one this version doesn't know (it reads as the user's own). */
+private fun categoryKeyOf(name: String): CategoryKey? = CategoryKey.entries.firstOrNull { it.name == name }
+
+private fun PlanBlock.toDto() = PlannerPlanBlockDto(
+    id = id,
+    startEpochMillis = start.toEpochMilli(),
+    endEpochMillis = end.toEpochMilli(),
+    categoryId = categoryId,
+    moduleId = moduleId,
+    taskId = taskId,
+    habitId = habitId,
+    topicId = topicId,
+    origin = origin.name,
+    outcomeOverride = outcomeOverride?.name,
+    note = note,
+    createdAtEpochMillis = createdAt.toEpochMilli(),
+)
+
+private fun PlannerPlanBlockDto.toModel() = PlanBlock(
+    id = id,
+    start = Instant.ofEpochMilli(startEpochMillis),
+    end = Instant.ofEpochMilli(endEpochMillis),
+    categoryId = categoryId,
+    moduleId = moduleId,
+    taskId = taskId,
+    habitId = habitId,
+    topicId = topicId,
+    origin = PlanOrigin.entries.firstOrNull { it.name == origin } ?: PlanOrigin.USER,
+    outcomeOverride = outcomeOverride?.let { o -> Outcome.entries.firstOrNull { it.name == o } },
+    note = note,
+    createdAt = Instant.ofEpochMilli(createdAtEpochMillis),
+)
+
+private fun RecordChunk.toDto() = PlannerRecordDto(
+    id = id,
+    startEpochMillis = start.toEpochMilli(),
+    endEpochMillis = end.toEpochMilli(),
+    categoryId = categoryId,
+    moduleId = moduleId,
+    taskId = taskId,
+    planBlockId = planBlockId,
+    sourceKey = sourceKey,
+    focus = focus,
+    note = note,
+    origin = origin.name,
+    createdAtEpochMillis = createdAt.toEpochMilli(),
+)
+
+private fun PlannerRecordDto.toModel() = RecordChunk(
+    id = id,
+    start = Instant.ofEpochMilli(startEpochMillis),
+    end = Instant.ofEpochMilli(endEpochMillis),
+    categoryId = categoryId,
+    moduleId = moduleId,
+    taskId = taskId,
+    planBlockId = planBlockId,
+    sourceKey = sourceKey,
+    focus = focus,
+    note = note,
+    origin = RecordOrigin.entries.firstOrNull { it.name == origin } ?: RecordOrigin.MANUAL,
     createdAt = Instant.ofEpochMilli(createdAtEpochMillis),
 )

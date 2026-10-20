@@ -35,9 +35,11 @@ class PlannerAlarmsTest {
     private val clock get() = container.clock
 
     @Before
-    fun allowNotifications() {
+    fun allowNotificationsAndTurnTheReviewOff() {
         InstrumentationRegistry.getInstrumentation().uiAutomation
             .executeShellCommand("pm grant ${DataTestSupport.app.packageName} android.permission.POST_NOTIFICATIONS").close()
+        // The end-of-day review reminds by default; these tests are about tasks until the last one.
+        runBlocking { container.settingsStore.setPlannerReminders(PlannerReminderSettings(reviewOn = false)) }
     }
 
     @After
@@ -56,7 +58,7 @@ class PlannerAlarmsTest {
         alarms.reschedule()
         assertEquals(at(tomorrow, ReminderPlan.DEFAULT_TASK_TIME), alarms.scheduledAt, "09:00 for the untimed task comes first")
 
-        container.settingsStore.setPlannerReminders(PlannerReminderSettings(taskMinute = 7 * 60))
+        container.settingsStore.setPlannerReminders(PlannerReminderSettings(taskMinute = 7 * 60, reviewOn = false))
         alarms.reschedule()
         assertEquals(at(tomorrow, LocalTime.of(7, 0)), alarms.scheduledAt, "the default time follows the setting")
 
@@ -91,5 +93,26 @@ class PlannerAlarmsTest {
         assertNotNull(alarms.scheduledAt, "the next one is set")
         assertTrue(alarms.scheduledAt!!.isAfter(fired))
         assertTrue(PlannerNotifications.canPost(DataTestSupport.app))
+    }
+
+    @Test
+    fun theEndOfDayReviewRemindsUntilTheDayIsFinished() = runBlocking<Unit> {
+        val today = clock.today()
+        val now = Instant.ofEpochMilli(clock.nowMillis())
+        // A review time a minute from now (or tomorrow's, so late in the day that a minute from now is tomorrow).
+        val reviewAt = now.plusSeconds(60).atZone(clock.zone())
+        val minute = reviewAt.hour * 60 + reviewAt.minute
+        container.settingsStore.setPlannerReminders(PlannerReminderSettings(reviewOn = true, reviewMinute = minute))
+        alarms.reschedule()
+        assertEquals(reviewAt.withSecond(0).withNano(0).toInstant(), alarms.scheduledAt)
+
+        container.dayRepository.finishDay(reviewAt.toLocalDate(), rating = 4, note = "")
+        alarms.reschedule()
+        if (reviewAt.toLocalDate() == today) {
+            val next = assertNotNull(alarms.scheduledAt, "tomorrow's review is still to come")
+            assertEquals(today.plusDays(1), next.atZone(clock.zone()).toLocalDate())
+        } else {
+            assertNull(alarms.scheduledAt, "today's review time has passed and tomorrow's day is finished")
+        }
     }
 }

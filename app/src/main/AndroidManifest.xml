@@ -76,6 +76,18 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/safe_to_spend_widget_info" />
         </receiver>
+        <!-- The Planner's widget (docs/PLAN.md §13.7): the next class, free time, today's tasks and the timer. -->
+        <receiver
+            android:name=".widget.planner.PlannerWidgetReceiver"
+            android:exported="true"
+            android:label="@string/planner_widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/planner_widget_info" />
+        </receiver>
 
         <!-- The Planner's reminder alarm and the Done button on its notifications (docs/PLAN.md §13.7). -->
         <receiver

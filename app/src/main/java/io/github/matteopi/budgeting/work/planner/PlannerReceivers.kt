@@ -40,9 +40,13 @@ class PlannerBootReceiver : BroadcastReceiver() {
     }
 }
 
-/** A notification's *Done* button: ticks the task off and clears the notification. */
+/** A notification's buttons: *Done* ticks the task off and clears the notification; *Stop* stops the timer. */
 class PlannerActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == ACTION_TIMER_STOP) {
+            runAsync(context) { it.container.plannerTimer.stop() }
+            return
+        }
         if (intent.action != ACTION_TASK_DONE) return
         val taskId = intent.getLongExtra(EXTRA_TASK_ID, -1L)
         val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, 0)
@@ -56,6 +60,7 @@ class PlannerActionReceiver : BroadcastReceiver() {
 
     companion object {
         private const val ACTION_TASK_DONE = "io.github.matteopi.budgeting.PLANNER_TASK_DONE"
+        private const val ACTION_TIMER_STOP = "io.github.matteopi.budgeting.PLANNER_TIMER_STOP"
         private const val EXTRA_TASK_ID = "task_id"
         private const val EXTRA_NOTIFICATION_ID = "notification_id"
 
@@ -67,6 +72,13 @@ class PlannerActionReceiver : BroadcastReceiver() {
                 putExtra(EXTRA_TASK_ID, taskId)
                 putExtra(EXTRA_NOTIFICATION_ID, notificationId)
             },
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+
+        fun timerStopIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
+            context,
+            PlannerNotifications.TIMER_NOTIFICATION_ID,
+            Intent(context, PlannerActionReceiver::class.java).apply { action = ACTION_TIMER_STOP },
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
     }

@@ -99,7 +99,7 @@ class SafeToSpendWidget : GlanceAppWidget() {
  * the same scheme, otherwise the widget follows the system's day/night setting.
  */
 @Composable
-private fun WidgetTheme(theme: AppTheme, darkMode: DarkMode, content: @Composable () -> Unit) {
+internal fun WidgetTheme(theme: AppTheme, darkMode: DarkMode, content: @Composable () -> Unit) {
     if (theme == AppTheme.DYNAMIC && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         GlanceTheme(content = content)
     } else {

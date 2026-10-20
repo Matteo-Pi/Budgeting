@@ -1,5 +1,6 @@
 package io.github.matteopi.budgeting.domain
 
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.delay
@@ -24,6 +25,18 @@ class Clock(
     fun zone(): ZoneId = ZoneId.systemDefault()
 
     /**
+     * Emits now, then at each minute boundary, only while collected (docs/PLAN.md §13.2). Like [todayFlow] it never
+     * waits more than a minute at a time, so deep sleep can't leave it far behind.
+     */
+    val minuteFlow: Flow<Instant> = flow {
+        while (true) {
+            val now = nowMillis()
+            emit(Instant.ofEpochMilli(now))
+            delay((MINUTE_MILLIS - now % MINUTE_MILLIS).coerceIn(DateWatch.MIN_DELAY_MILLIS, MINUTE_MILLIS))
+        }
+    }
+
+    /**
      * Emits the current date immediately, then again whenever the date changes.
      *
      * It re-reads the date at least every [DateWatch.MAX_POLL_MILLIS] instead of sleeping until
@@ -44,6 +57,8 @@ class Clock(
         }
     }
 }
+
+private const val MINUTE_MILLIS = 60_000L
 
 /** The pure timing rules behind [Clock.todayFlow], split out so they can be unit-tested. */
 object DateWatch {

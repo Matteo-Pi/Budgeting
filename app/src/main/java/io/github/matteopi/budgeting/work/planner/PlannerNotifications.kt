@@ -19,17 +19,72 @@ import io.github.matteopi.budgeting.core.planner.reminders.ReminderKind
 /** The Planner's notification channels and posting (docs/PLAN.md §13.7). */
 object PlannerNotifications {
     const val REMINDERS_CHANNEL_ID = "planner_reminders"
+    const val REVIEWS_CHANNEL_ID = "planner_reviews"
+    const val TIMER_CHANNEL_ID = "planner_timer"
 
-    /** `MainActivity` opens the Planner on this action; [EXTRA_TASK_ID] picks the task. */
+    /**
+     * `MainActivity` opens the Planner on this action: [EXTRA_TASK_ID] picks a task, [EXTRA_REVIEW_DATE] (an epoch
+     * day) opens that day's review, and [EXTRA_TODAY] the Today tab.
+     */
     const val ACTION_OPEN_PLANNER = "io.github.matteopi.budgeting.OPEN_PLANNER"
     const val EXTRA_TASK_ID = "planner_task_id"
+    const val EXTRA_REVIEW_DATE = "planner_review_date"
+    const val EXTRA_TODAY = "planner_today"
+
+    /** The running timer's notification, one at a time. */
+    const val TIMER_NOTIFICATION_ID = 7302
 
     fun createChannels(context: Context) {
-        val channel = NotificationChannel(REMINDERS_CHANNEL_ID, "Planner reminders", NotificationManager.IMPORTANCE_DEFAULT).apply {
-            description = "Tasks and deadlines you asked to be reminded of."
-        }
-        context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+        val manager = context.getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(
+            NotificationChannel(REMINDERS_CHANNEL_ID, "Planner reminders", NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = "Tasks and deadlines you asked to be reminded of."
+            },
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(REVIEWS_CHANNEL_ID, "Planner reviews", NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = "The end-of-day review, at the time you chose."
+            },
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(TIMER_CHANNEL_ID, "Planner timer", NotificationManager.IMPORTANCE_LOW).apply {
+                description = "Shows while a timer is recording."
+                setShowBadge(false)
+            },
+        )
     }
+
+    private fun openIntent(context: Context, extras: Intent.() -> Unit) = Intent(context, MainActivity::class.java).apply {
+        action = ACTION_OPEN_PLANNER
+        extras()
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+    }
+
+    /** The ongoing timer notification: what it records, a running clock from [startMillis], and *Stop*. */
+    fun showTimer(context: Context, title: String, startMillis: Long) {
+        if (!canPost(context)) return
+        val open = openIntent(context) { putExtra(EXTRA_TODAY, true) }
+        val notification = NotificationCompat.Builder(context, TIMER_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("Recording: $title")
+            .setContentText("Tap Stop when you finish; it goes into today's record.")
+            .setWhen(startMillis)
+            .setShowWhen(true)
+            .setUsesChronometer(true)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setCategory(NotificationCompat.CATEGORY_STOPWATCH)
+            .setContentIntent(PendingIntent.getActivity(context, TIMER_NOTIFICATION_ID, open, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT))
+            .addAction(0, "Stop", PlannerActionReceiver.timerStopIntent(context))
+            .build()
+        try {
+            NotificationManagerCompat.from(context).notify(TIMER_NOTIFICATION_ID, notification)
+        } catch (e: SecurityException) {
+            // The permission was taken away between the check and posting: the Today card still shows the timer.
+        }
+    }
+
+    fun cancelTimer(context: Context) = cancel(context, TIMER_NOTIFICATION_ID)
 
     /** True when the app may post notifications (always before Android 13). */
     fun canPost(context: Context): Boolean =
@@ -40,14 +95,13 @@ object PlannerNotifications {
     fun idOf(reminder: Reminder): Int = reminder.key.hashCode()
 
     fun post(context: Context, reminder: Reminder) {
-        if (!canPost(context)) return
+        if (!canPost(context) || reminder.kind == ReminderKind.WIDGET) return
         val id = idOf(reminder)
-        val open = Intent(context, MainActivity::class.java).apply {
-            action = ACTION_OPEN_PLANNER
-            putExtra(EXTRA_TASK_ID, reminder.itemId)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        val review = reminder.kind == ReminderKind.DAY_REVIEW
+        val open = openIntent(context) {
+            if (review) putExtra(EXTRA_REVIEW_DATE, reminder.itemId) else putExtra(EXTRA_TASK_ID, reminder.itemId)
         }
-        val builder = NotificationCompat.Builder(context, REMINDERS_CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, if (review) REVIEWS_CHANNEL_ID else REMINDERS_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(reminder.title)
             .setContentText(reminder.text)

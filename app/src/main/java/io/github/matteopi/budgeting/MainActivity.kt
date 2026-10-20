@@ -104,14 +104,20 @@ class MainActivity : FragmentActivity() {
                             if (route != null) {
                                 // Before onboarding there are no accounts to save a receipt into.
                                 if (startDestination != Route.Onboarding) {
-                                    if (plannerRoutes.any { it.isInstance(route) } &&
+                                    val switching = plannerRoutes.any { it.isInstance(route) } &&
                                         !navController.currentBackStackEntry?.destination.isPlannerDestination()
-                                    ) {
+                                    if (switching) {
                                         // A Planner reminder opens the Planner as a switch would, then the task on top.
                                         navController.navigate(Route.Today) { popUpTo(navController.graph.id) { inclusive = true } }
                                         container.appScope.launch { container.settingsStore.setAppSection(AppSection.PLANNER) }
                                     }
-                                    navController.navigate(route)
+                                    when {
+                                        route != Route.Today -> navController.navigate(route)
+                                        !switching -> navController.navigate(Route.Today) {
+                                            popUpTo<Route.Today>()
+                                            launchSingleTop = true
+                                        }
+                                    }
                                 }
                                 receiptRequest.value = null
                             }
@@ -148,7 +154,13 @@ class MainActivity : FragmentActivity() {
         when (intent.action) {
             PlannerNotifications.ACTION_OPEN_PLANNER -> {
                 val taskId = intent.getLongExtra(PlannerNotifications.EXTRA_TASK_ID, -1L)
-                receiptRequest.value = if (taskId >= 0) Route.TaskDetail(taskId) else Route.Todo
+                val reviewDate = intent.getLongExtra(PlannerNotifications.EXTRA_REVIEW_DATE, Long.MIN_VALUE)
+                receiptRequest.value = when {
+                    reviewDate != Long.MIN_VALUE -> Route.Day(epochDay = reviewDate, review = true)
+                    intent.getBooleanExtra(PlannerNotifications.EXTRA_TODAY, false) -> Route.Today
+                    taskId >= 0 -> Route.TaskDetail(taskId)
+                    else -> Route.Todo
+                }
             }
             ReceiptFiles.ACTION_SCAN_RECEIPT -> receiptRequest.value = Route.ReceiptScan
             Intent.ACTION_SEND -> {

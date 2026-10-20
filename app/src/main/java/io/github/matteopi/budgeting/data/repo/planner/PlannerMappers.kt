@@ -1,17 +1,25 @@
 package io.github.matteopi.budgeting.data.repo.planner
 
 import io.github.matteopi.budgeting.core.planner.model.CalendarLink
+import io.github.matteopi.budgeting.core.planner.model.CategoryKey
 import io.github.matteopi.budgeting.core.planner.model.ChecklistItem
+import io.github.matteopi.budgeting.core.planner.model.DayReview
 import io.github.matteopi.budgeting.core.planner.model.DeadlineType
 import io.github.matteopi.budgeting.core.planner.model.EntryException
 import io.github.matteopi.budgeting.core.planner.model.EntryKind
 import io.github.matteopi.budgeting.core.planner.model.Module
+import io.github.matteopi.budgeting.core.planner.model.Outcome
+import io.github.matteopi.budgeting.core.planner.model.PlanBlock
+import io.github.matteopi.budgeting.core.planner.model.PlanOrigin
 import io.github.matteopi.budgeting.core.planner.model.Priority
+import io.github.matteopi.budgeting.core.planner.model.RecordChunk
+import io.github.matteopi.budgeting.core.planner.model.RecordOrigin
 import io.github.matteopi.budgeting.core.planner.model.RepeatKind
 import io.github.matteopi.budgeting.core.planner.model.Task
 import io.github.matteopi.budgeting.core.planner.model.TaskCompletion
 import io.github.matteopi.budgeting.core.planner.model.TaskKind
 import io.github.matteopi.budgeting.core.planner.model.TaskRepeat
+import io.github.matteopi.budgeting.core.planner.model.TimeCategory
 import io.github.matteopi.budgeting.core.planner.model.TimetableEntry
 import io.github.matteopi.budgeting.core.planner.model.WeekPattern
 import io.github.matteopi.budgeting.core.planner.model.Weekdays
@@ -19,9 +27,13 @@ import io.github.matteopi.budgeting.core.planner.timetable.WeekList
 import io.github.matteopi.budgeting.core.planner.timetable.WeekListResult
 import io.github.matteopi.budgeting.data.db.dao.TaskWithChecklist
 import io.github.matteopi.budgeting.data.db.entities.planner.CalendarLinkEntity
+import io.github.matteopi.budgeting.data.db.entities.planner.CategoryEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.ChecklistItemEntity
+import io.github.matteopi.budgeting.data.db.entities.planner.DayReviewEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.EntryExceptionEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.ModuleEntity
+import io.github.matteopi.budgeting.data.db.entities.planner.PlanBlockEntity
+import io.github.matteopi.budgeting.data.db.entities.planner.RecordEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.TaskCompletionEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.TaskEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.TimetableEntryEntity
@@ -229,3 +241,99 @@ fun EntryException.toEntity() = EntryExceptionEntity(
 fun CalendarLinkEntity.toModel() = CalendarLink(id, itemKey, calendarId, eventId, uid, contentHash)
 
 fun CalendarLink.toEntity() = CalendarLinkEntity(id, itemKey, calendarId, eventId, uid, contentHash)
+
+// ---- The day record (version 7) ------------------------------------------------------------------
+
+fun CategoryEntity.toModel() = TimeCategory(
+    id = id,
+    name = name,
+    colorArgb = colorArgb,
+    systemKey = enumOrNull<CategoryKey>(systemKey),
+    ratesFocus = ratesFocus,
+    archived = archived,
+    sortOrder = sortOrder,
+)
+
+fun TimeCategory.toEntity() = CategoryEntity(
+    id = id,
+    name = name.trim(),
+    colorArgb = colorArgb,
+    systemKey = systemKey?.name,
+    ratesFocus = ratesFocus,
+    archived = archived,
+    sortOrder = sortOrder,
+)
+
+fun PlanBlockEntity.toModel() = PlanBlock(
+    id = id,
+    start = Instant.ofEpochMilli(startMillis),
+    end = Instant.ofEpochMilli(endMillis),
+    categoryId = categoryId,
+    moduleId = moduleId,
+    taskId = taskId,
+    habitId = habitId,
+    topicId = topicId,
+    origin = enumOr(origin, PlanOrigin.USER),
+    outcomeOverride = enumOrNull<Outcome>(outcomeOverride),
+    note = note,
+    createdAt = Instant.ofEpochMilli(createdAtMillis),
+)
+
+fun PlanBlock.toEntity() = PlanBlockEntity(
+    id = id,
+    startMillis = start.toEpochMilli(),
+    endMillis = end.toEpochMilli(),
+    categoryId = categoryId,
+    moduleId = moduleId,
+    taskId = taskId,
+    habitId = habitId,
+    topicId = topicId,
+    origin = origin.name,
+    outcomeOverride = outcomeOverride?.name,
+    note = note.trim(),
+    createdAtMillis = createdAt.toEpochMilli(),
+)
+
+fun RecordEntity.toModel() = RecordChunk(
+    id = id,
+    start = Instant.ofEpochMilli(startMillis),
+    end = Instant.ofEpochMilli(endMillis),
+    categoryId = categoryId,
+    moduleId = moduleId,
+    taskId = taskId,
+    planBlockId = planBlockId,
+    sourceKey = sourceKey,
+    focus = focus?.takeIf { it in 1..5 },
+    note = note,
+    origin = enumOr(origin, RecordOrigin.MANUAL),
+    createdAt = Instant.ofEpochMilli(createdAtMillis),
+)
+
+fun RecordChunk.toEntity() = RecordEntity(
+    id = id,
+    startMillis = start.toEpochMilli(),
+    endMillis = end.toEpochMilli(),
+    categoryId = categoryId,
+    moduleId = moduleId,
+    taskId = taskId,
+    planBlockId = planBlockId,
+    sourceKey = sourceKey,
+    focus = focus,
+    note = note.trim(),
+    origin = origin.name,
+    createdAtMillis = createdAt.toEpochMilli(),
+)
+
+fun DayReviewEntity.toModel() = DayReview(
+    date = LocalDate.ofEpochDay(date),
+    finishedAt = finishedAtMillis?.let(Instant::ofEpochMilli),
+    rating = rating?.takeIf { it in 1..5 },
+    note = note,
+)
+
+fun DayReview.toEntity() = DayReviewEntity(
+    date = date.toEpochDay(),
+    finishedAtMillis = finishedAt?.toEpochMilli(),
+    rating = rating,
+    note = note.trim(),
+)

@@ -16,7 +16,7 @@ sealed class BackupDecodeResult {
     data class Failure(val errors: List<String>) : BackupDecodeResult()
 }
 
-/** JSON encode/decode for [BackupV1] (versions 1 to 6), with validation. See docs/PLAN.md §5.17. */
+/** JSON encode/decode for [BackupV1] (versions 1 to 7), with validation. See docs/PLAN.md §5.17. */
 object BackupCodec {
 
     private val json = Json {
@@ -181,9 +181,9 @@ object BackupCodec {
     }
 
     /**
-     * The Planner tables (versions 5 and 6): references, the unique module codes (without case), steps one level deep,
-     * one change per entry and date, one link per item, and times inside the day (`LocalTime.of` would otherwise throw
-     * on a corrupted minute).
+     * The Planner tables (versions 5 to 7): references, the unique module codes (without case), steps one level deep,
+     * one change per entry and date, one link per item, times inside the day (`LocalTime.of` would otherwise throw on a
+     * corrupted minute), chunks that end after they start, and one review per day.
      */
     private fun validatePlanner(b: BackupV1, check: (Boolean, String) -> Unit) {
         val moduleIds = b.plannerModules.map { it.id }.toSet()
@@ -237,6 +237,33 @@ object BackupCodec {
             b.plannerCalendarLinks.map { it.itemKey }.toSet().size == b.plannerCalendarLinks.size,
             "Two calendar links are for the same item.",
         )
+
+        // Version 7: the day record.
+        val categoryIds = b.plannerCategories.map { it.id }.toSet()
+        check(categoryIds.size == b.plannerCategories.size, "Two day-record categories have the same id.")
+        val keys = b.plannerCategories.mapNotNull { it.systemKey }
+        check(keys.toSet().size == keys.size, "Two day-record categories have the same meaning.")
+        val blockIds = b.plannerPlanBlocks.map { it.id }.toSet()
+        check(blockIds.size == b.plannerPlanBlocks.size, "Two plan blocks have the same id.")
+        for (block in b.plannerPlanBlocks) {
+            check(block.categoryId in categoryIds, "Plan block ${block.id} refers to a missing category ${block.categoryId}.")
+            block.moduleId?.let { check(it in moduleIds, "Plan block ${block.id} refers to a missing module $it.") }
+            block.taskId?.let { check(it in tasksById, "Plan block ${block.id} refers to a missing task $it.") }
+            check(block.endEpochMillis > block.startEpochMillis, "Plan block ${block.id} ends before it starts.")
+        }
+        check(b.plannerRecords.map { it.id }.toSet().size == b.plannerRecords.size, "Two record chunks have the same id.")
+        for (record in b.plannerRecords) {
+            check(record.categoryId in categoryIds, "Record ${record.id} refers to a missing category ${record.categoryId}.")
+            record.moduleId?.let { check(it in moduleIds, "Record ${record.id} refers to a missing module $it.") }
+            record.taskId?.let { check(it in tasksById, "Record ${record.id} refers to a missing task $it.") }
+            record.planBlockId?.let { check(it in blockIds, "Record ${record.id} refers to a missing plan block $it.") }
+            check(record.endEpochMillis > record.startEpochMillis, "Record ${record.id} ends before it starts.")
+            check(record.focus == null || record.focus in 1..5, "Record ${record.id} has a focus outside 1 to 5.")
+        }
+        check(b.plannerDayReviews.map { it.date }.toSet().size == b.plannerDayReviews.size, "A day has two reviews.")
+        for (review in b.plannerDayReviews) {
+            check(review.rating == null || review.rating in 1..5, "The review of ${review.date} has a rating outside 1 to 5.")
+        }
     }
 
     /** The version-3 tables: the same reference checks, plus the uniqueness the food tables enforce. */

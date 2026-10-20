@@ -195,3 +195,92 @@ data class CalendarLink(
     val uid: String,
     val contentHash: String,
 )
+
+// ---- The day record (docs/PLAN.md §12.8, stage P3) ----
+
+/** The categories the app knows by meaning, whatever the user renames them to. */
+enum class CategoryKey { STUDY, CLASS, EXERCISE, SOCIAL, COOKING, TRAVEL, CHORES, REST, PHONE, SLEEP, OTHER }
+
+/** What a chunk of the day was spent on: "Study", "Lecture or class", or one of the user's own. */
+data class TimeCategory(
+    val id: Long = 0,
+    val name: String,
+    val colorArgb: Long,
+    val systemKey: CategoryKey? = null,
+    /** Chunks of this category can carry a focus rating (study and classes). */
+    val ratesFocus: Boolean = false,
+    val archived: Boolean = false,
+    val sortOrder: Int = 0,
+)
+
+/** A stretch of time with an id, so the day's edits can treat records and plans alike. */
+interface TimeChunk<T : TimeChunk<T>> {
+    val id: Long
+    val start: Instant
+    val end: Instant
+
+    fun withTimes(start: Instant, end: Instant): T
+
+    fun withId(id: Long): T
+}
+
+/** Where a plan block came from. */
+enum class PlanOrigin { USER, SUGGESTION, HABIT }
+
+/** How a plan block went. */
+enum class Outcome { DONE, PARTLY, SKIPPED }
+
+/** Time planned ahead: "Study EC101, 14:00–15:30". Its [outcome] is worked out from the record unless overridden. */
+data class PlanBlock(
+    override val id: Long = 0,
+    override val start: Instant,
+    override val end: Instant,
+    val categoryId: Long,
+    val moduleId: Long? = null,
+    val taskId: Long? = null,
+    val habitId: Long? = null,
+    val topicId: Long? = null,
+    val origin: PlanOrigin = PlanOrigin.USER,
+    val outcomeOverride: Outcome? = null,
+    val note: String = "",
+    val createdAt: Instant = Instant.EPOCH,
+) : TimeChunk<PlanBlock> {
+    override fun withTimes(start: Instant, end: Instant) = copy(start = start, end = end)
+
+    override fun withId(id: Long) = copy(id = id)
+}
+
+/** How a record chunk was made. */
+enum class RecordOrigin { MANUAL, TIMER, CONFIRMED }
+
+/**
+ * Time recorded: what really happened. [planBlockId] or [sourceKey] (a class "entry:12:2026-10-20", an event
+ * "event:345:1729425600000") say what it confirmed.
+ */
+data class RecordChunk(
+    override val id: Long = 0,
+    override val start: Instant,
+    override val end: Instant,
+    val categoryId: Long,
+    val moduleId: Long? = null,
+    val taskId: Long? = null,
+    val planBlockId: Long? = null,
+    val sourceKey: String? = null,
+    /** 1 to 5, for categories that rate focus. */
+    val focus: Int? = null,
+    val note: String = "",
+    val origin: RecordOrigin = RecordOrigin.MANUAL,
+    val createdAt: Instant = Instant.EPOCH,
+) : TimeChunk<RecordChunk> {
+    override fun withTimes(start: Instant, end: Instant) = copy(start = start, end = end)
+
+    override fun withId(id: Long) = copy(id = id)
+}
+
+/** The end-of-day review of [date]: finished or not, with an optional rating (1 to 5) and note. */
+data class DayReview(
+    val date: LocalDate,
+    val finishedAt: Instant? = null,
+    val rating: Int? = null,
+    val note: String = "",
+)
