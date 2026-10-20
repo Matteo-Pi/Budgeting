@@ -1,5 +1,6 @@
 package io.github.matteopi.budgeting.ui
 
+import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
@@ -55,6 +56,7 @@ class DayRecordTest : UiTest() {
 
     private fun segment(title: String) = tagged(DayTags.SEGMENT, title)
 
+    @OptIn(ExperimentalTestApi::class)
     @Test
     fun theReviewFillsInConfirmsAndFinishesYesterday() {
         seedPlannerSection()
