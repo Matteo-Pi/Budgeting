@@ -103,10 +103,10 @@ class AccountHistoryMappingTest {
         val sep = history(october).months.last()
         assertEquals("September 2026 · in £0.00 · out £0.00 · ends at £0.00", sep.headerText)
 
-        val big = history(listOf(tx(657_930, d(9, 30), kind = TxKind.OPENING_BALANCE, label = "Opening balance"))).months.single()
+        val big = history(listOf(tx(486_215, d(9, 30), kind = TxKind.OPENING_BALANCE, label = "Opening balance"))).months.single()
         assertEquals(Money.ZERO, big.moneyIn)
         assertEquals(Money.ZERO, big.moneyOut)
-        assertEquals(Money(657_930), big.endBalance)
+        assertEquals(Money(486_215), big.endBalance)
     }
 
     @Test

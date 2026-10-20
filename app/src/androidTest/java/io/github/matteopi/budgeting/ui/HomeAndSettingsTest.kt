@@ -57,8 +57,8 @@ class HomeAndSettingsTest : UiTest() {
         waitForText("Across the accounts you include in safe-to-spend")
         waitForExists(hasTextMatching(Regex("£[0-9,]+ a day.*")), "the per-day line under the hero")
         waitForText("50 days to Student loan")
-        expectAccountRow("Lloyds current", "£6,579.30")
-        expectAccountRow("Santander Savings", "£400.00")
+        expectAccountRow("Lloyds current", "£4,862.15")
+        expectAccountRow("Santander Savings", "£350.00")
         expectAccountRow("Santander current", gbp(budget.santanderPence))
         waitForText("Next 8 weeks · All accounts")
         waitForText("Recent activity")
@@ -83,13 +83,13 @@ class HomeAndSettingsTest : UiTest() {
         assertTrue(exists(menuItem("All accounts")) && exists(menuItem("Lloyds current")) && exists(menuItem("Santander current")))
         shot("home-04-your-money-menu")
         tapMenuItem("Santander Savings")
-        expectYourMoney("£400.00")
+        expectYourMoney("£350.00")
         waitForText("Next 8 weeks · Santander Savings")
         shot("home-05-your-money-savings")
 
         openYourMoneyMenu("Santander Savings")
         tapMenuItem("Lloyds current")
-        expectYourMoney("£6,579.30")
+        expectYourMoney("£4,862.15")
         waitForText("Next 8 weeks · Lloyds current")
         shot("home-06-your-money-lloyds")
 
@@ -312,16 +312,16 @@ class HomeAndSettingsTest : UiTest() {
         waitFor("the buffer to be saved") { budgetSettingsNow().buffer == Money.pounds(250) }
         shot("settings-07-overdraft-zero-point")
         tapBack()
-        expectYourMoney(gbp(budget.totalPence + 150_000))
+        expectYourMoney(gbp(budget.totalPence + budget.lloydsOverdraftPence))
         waitForText("above your overdraft limit")
-        expectAccountRow("Lloyds current", gbp(budget.lloydsPence + 150_000))
-        expectAccountRow("Santander Savings", "£400.00")
+        expectAccountRow("Lloyds current", gbp(budget.lloydsPence + budget.lloydsOverdraftPence))
+        expectAccountRow("Santander Savings", "£350.00")
         waitForText("above overdraft", substring = true)
         shot("home-08-overdraft-zero-point")
 
         // The account detail shows both the shown and the raw balance.
-        tap(hasText("Lloyds current") and hasText(gbp(budget.lloydsPence + 150_000)) and hasClickAction(), "the Lloyds row")
-        waitForText("Raw balance: £6,579.30")
+        tap(hasText("Lloyds current") and hasText(gbp(budget.lloydsPence + budget.lloydsOverdraftPence)) and hasClickAction(), "the Lloyds row")
+        waitForText("Raw balance: £4,862.15")
         shot("home-09-detail-with-raw-balance")
         tapBack()
 

@@ -34,15 +34,16 @@ object DataTestSupport {
     const val SANTANDER_SAVINGS = "Santander Savings"
     const val SANTANDER_CURRENT = "Santander current"
 
-    /** The user's real balances, in pence. */
-    val LLOYDS_BALANCE = Money(657_930)
-    val SAVINGS_BALANCE = Money(40_000)
-    val SANTANDER_BALANCE = Money(50_000)
+    /** Made-up balances, in pence. */
+    val LLOYDS_BALANCE = Money(486_215)
+    val SAVINGS_BALANCE = Money(35_000)
+    val SANTANDER_BALANCE = Money(30_000)
+    val LLOYDS_OVERDRAFT = Money.pounds(1_200)
 
-    /** £6,579.30 + £400.00 + £500.00. */
-    val POOL_TOTAL = Money(747_930)
+    /** £4,862.15 + £350.00 + £300.00. */
+    val POOL_TOTAL = Money(551_215)
 
-    /** The user's three accounts, as created by [seedThreeAccountBudget]. */
+    /** The three accounts, as created by [seedThreeAccountBudget]. */
     data class ThreeAccountBudget(
         val lloyds: Account,
         val santanderSavings: Account,
@@ -114,13 +115,13 @@ object DataTestSupport {
     }
 
     /**
-     * The user's real budget: Lloyds current £6,579.30 with a £1,500 overdraft, Santander Savings
-     * £400 and Santander current £500, all in the safe-to-spend pool (total £7,479.30), each opened
+     * A made-up budget: Lloyds current £4,862.15 with a £1,200 overdraft, Santander Savings
+     * £350 and Santander current £300, all in the safe-to-spend pool (total £5,512.15), each opened
      * today. Lloyds is created first, so it becomes the default account.
      */
     suspend fun seedThreeAccountBudget(): ThreeAccountBudget {
         val lloyds = createAccount(
-            LLOYDS, AccountType.CURRENT, overdraft = Money.pounds(1_500), opening = LLOYDS_BALANCE, sortOrder = 0,
+            LLOYDS, AccountType.CURRENT, overdraft = LLOYDS_OVERDRAFT, opening = LLOYDS_BALANCE, sortOrder = 0,
         )
         val savings = createAccount(SANTANDER_SAVINGS, AccountType.SAVINGS, opening = SAVINGS_BALANCE, sortOrder = 1)
         val santander = createAccount(SANTANDER_CURRENT, AccountType.CURRENT, opening = SANTANDER_BALANCE, sortOrder = 2)

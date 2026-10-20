@@ -61,7 +61,7 @@ class ForecastServiceTest {
     }
 
     @Test
-    fun theUsersThreeAccountsGiveExactlyTheirTotalAndNoShortfall() = runBlocking<Unit> {
+    fun threeAccountsGiveExactlyTheirTotalAndNoShortfall() = runBlocking<Unit> {
         val budget = DataTestSupport.seedThreeAccountBudget()
 
         val ready = awaitReady("the three-account pool") {
@@ -69,8 +69,8 @@ class ForecastServiceTest {
         }
 
         val result = ready.result
-        assertEquals(Money(747_930), result.poolBalanceNow, "£6,579.30 + £400.00 + £500.00")
-        assertEquals(Money.pounds(1_500), result.poolOverdraft)
+        assertEquals(Money(551_215), result.poolBalanceNow, "£4,862.15 + £350.00 + £300.00")
+        assertEquals(DataTestSupport.LLOYDS_OVERDRAFT, result.poolOverdraft)
         assertEquals(Money.ZERO, result.floor, "the default zero point is an empty account")
         assertEquals(
             setOf(DataTestSupport.LLOYDS, DataTestSupport.SANTANDER_SAVINGS, DataTestSupport.SANTANDER_CURRENT),
@@ -80,13 +80,13 @@ class ForecastServiceTest {
 
         assertEquals(3, result.accountForecasts.size)
         val forecastById = result.accountForecasts.associateBy { it.accountId }
-        assertEquals(Money(657_930), forecastById.getValue(budget.lloyds.id).balanceNow)
-        assertEquals(Money(40_000), forecastById.getValue(budget.santanderSavings.id).balanceNow)
-        assertEquals(Money(50_000), forecastById.getValue(budget.santanderCurrent.id).balanceNow)
-        assertEquals(Money.pounds(1_500), forecastById.getValue(budget.lloyds.id).overdraft)
+        assertEquals(DataTestSupport.LLOYDS_BALANCE, forecastById.getValue(budget.lloyds.id).balanceNow)
+        assertEquals(DataTestSupport.SAVINGS_BALANCE, forecastById.getValue(budget.santanderSavings.id).balanceNow)
+        assertEquals(DataTestSupport.SANTANDER_BALANCE, forecastById.getValue(budget.santanderCurrent.id).balanceNow)
+        assertEquals(DataTestSupport.LLOYDS_OVERDRAFT, forecastById.getValue(budget.lloyds.id).overdraft)
         assertTrue(result.accountForecasts.all { it.inPool })
 
-        assertTrue(result.safeToSpend.shortfall.isZero, "£7,479.30 covers the £100 buffer: no 'short' warning")
+        assertTrue(result.safeToSpend.shortfall.isZero, "£5,512.15 covers the £100 buffer: no 'short' warning")
         assertTrue(result.safeToSpend.weekly.isPositive, "and there is something to spend")
         assertNotNull(result.risk, "the full model (with Monte Carlo) ran")
     }
@@ -145,7 +145,7 @@ class ForecastServiceTest {
         container.settingsStore.setZeroPoint(ZeroPoint.OVERDRAFT_LIMIT)
 
         val after = awaitReady("the overdraft zero point") { it.input.settings.zeroPoint == ZeroPoint.OVERDRAFT_LIMIT }
-        assertEquals(Money.pounds(-1_500), after.result.floor, "£0 is now the overdraft limit")
+        assertEquals(-DataTestSupport.LLOYDS_OVERDRAFT, after.result.floor, "£0 is now the overdraft limit")
         assertEquals(DataTestSupport.POOL_TOTAL, after.result.poolBalanceNow, "raw balances never change with the zero point")
         assertTrue(
             after.result.safeToSpend.weekly > before.result.safeToSpend.weekly,
@@ -166,7 +166,7 @@ class ForecastServiceTest {
         val second = awaitReady("a snapshot with the new transaction") { it.input.transactions.size == 4 }
         assertEquals(DataTestSupport.POOL_TOTAL - Money(10_000), second.result.poolBalanceNow)
         assertEquals(
-            Money(40_000),
+            DataTestSupport.SANTANDER_BALANCE - Money(10_000),
             second.result.accountForecasts.single { it.accountId == budget.santanderCurrent.id }.balanceNow,
         )
         assertTrue(second.input.transactions.any { it.label == "Big shop" })
@@ -186,8 +186,8 @@ class ForecastServiceTest {
         val ready = awaitReady("a snapshot with the transfer") { it.input.transactions.size == 5 }
         assertEquals(DataTestSupport.POOL_TOTAL, ready.result.poolBalanceNow)
         val byId = ready.result.accountForecasts.associateBy { it.accountId }
-        assertEquals(Money(647_930), byId.getValue(budget.lloyds.id).balanceNow)
-        assertEquals(Money(50_000), byId.getValue(budget.santanderSavings.id).balanceNow)
+        assertEquals(DataTestSupport.LLOYDS_BALANCE - Money.pounds(100), byId.getValue(budget.lloyds.id).balanceNow)
+        assertEquals(DataTestSupport.SAVINGS_BALANCE + Money.pounds(100), byId.getValue(budget.santanderSavings.id).balanceNow)
     }
 
     @Test

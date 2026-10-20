@@ -102,9 +102,9 @@ class AccountsTest : UiTest() {
     fun accountDetailShowsBalancesAndTransfersMoneyBetweenAccounts() {
         val budget = seedStandardBudget()
         launchHome()
-        openAccountFromHome("Lloyds current", "£6,579.30")
-        expectDetailBalance("£6,579.30")
-        waitForText("Overdraft limit: £1,500.00")
+        openAccountFromHome("Lloyds current", "£4,862.15")
+        expectDetailBalance("£4,862.15")
+        waitForText("Overdraft limit: £1,200.00")
         waitForText("Reconciliation history")
         waitForText("No balance checks yet.")
         shot("accounts-07-detail")
@@ -119,7 +119,7 @@ class AccountsTest : UiTest() {
         tapInDialog("Transfer")
         waitUntilGone(txt("Transfer from Lloyds current"), "the transfer dialog")
 
-        expectDetailBalance("£6,329.30")
+        expectDetailBalance("£4,612.15")
         waitForExists(
             hasText("Top up savings") and hasText("Lloyds current → Santander Savings"),
             "the transfer in the account's recent activity",
@@ -129,8 +129,8 @@ class AccountsTest : UiTest() {
         // Home: both balances changed, the total is untouched (a transfer is not spending).
         tapBack()
         expectYourMoney(budget.total)
-        expectAccountRow("Lloyds current", "£6,329.30")
-        expectAccountRow("Santander Savings", "£650.00")
+        expectAccountRow("Lloyds current", "£4,612.15")
+        expectAccountRow("Santander Savings", "£600.00")
         shot("accounts-10-home-after-transfer")
 
         // It shows once in Activity.
@@ -145,22 +145,22 @@ class AccountsTest : UiTest() {
         launchHome()
         // No balance has been checked yet, so Home nudges.
         waitForText("You haven't checked a balance", substring = true)
-        openAccountFromHome("Lloyds current", "£6,579.30")
+        openAccountFromHome("Lloyds current", "£4,862.15")
 
         tapText("Update balance")
         waitForText("Enter the balance your bank app shows for Lloyds current.")
-        assertFieldValue("Balance", "6579.30")
+        assertFieldValue("Balance", "4862.15")
         waitForText("nothing to record", substring = true)
         shot("accounts-11-update-balance-matches")
 
-        type("Balance", "6500")
-        waitForText("The app thought £6,579.30. The £79.30 difference will be recorded as Untracked.")
+        type("Balance", "4800")
+        waitForText("The app thought £4,862.15. The £62.15 difference will be recorded as Untracked.")
         shot("accounts-12-update-balance-preview")
         tapInDialog("Confirm")
         waitUntilGone(txt("Enter the balance your bank app shows", substring = true), "the update-balance dialog")
 
-        expectDetailBalance("£6,500.00")
-        waitForText("-£79.30 adjustment")
+        expectDetailBalance("£4,800.00")
+        waitForText("-£62.15 adjustment")
         waitForText(budget.today.asShortText() + " " + budget.today.year)
         waitForExists(hasText("Balance update") and hasText("Lloyds current · Reconciliation"), "the reconciliation entry")
         shot("accounts-13-detail-after-update")
@@ -169,7 +169,7 @@ class AccountsTest : UiTest() {
         goToTab("Activity")
         tapText("Category")
         tapMenuItem("Untracked")
-        waitForExists(hasText("Balance update") and hasText("-£79.30"), "the Balance update row")
+        waitForExists(hasText("Balance update") and hasText("-£62.15"), "the Balance update row")
         waitForNoText("Tesco")
         tap(hasText("Balance update") and hasClickAction(), "the Balance update row")
         waitForText("Edit transaction")
@@ -180,7 +180,7 @@ class AccountsTest : UiTest() {
 
         // Home has the new total and the nudge is gone now that a balance was checked.
         goToTab("Home")
-        expectYourMoney(gbp(budget.totalPence - 7_930))
+        expectYourMoney(gbp(budget.totalPence - 6_215))
         waitForNoText("You haven't checked a balance", substring = true)
         shot("accounts-15-home-after-update")
     }
@@ -189,7 +189,7 @@ class AccountsTest : UiTest() {
     fun editRenameAndArchiveAnAccount() {
         val budget = seedStandardBudget()
         launchHome()
-        openAccountFromHome("Santander Savings", "£400.00")
+        openAccountFromHome("Santander Savings", "£350.00")
         tapIcon("Edit account")
         waitForText("Edit account")
         assertFieldValue("Name", "Santander Savings")
@@ -201,7 +201,7 @@ class AccountsTest : UiTest() {
         type("Name", "Santander Saver")
         tap(hasText("Save") and hasClickAction() and isEnabled(), "Save")
         waitForText("Santander Saver")
-        expectDetailBalance("£400.00")
+        expectDetailBalance("£350.00")
 
         // Archive: the account leaves Home and the total.
         tapIcon("Edit account")
@@ -209,9 +209,9 @@ class AccountsTest : UiTest() {
         tapText("Archive")
         waitUntilGone(txt("Edit account"), "the edit screen")
         goToTab("Home")
-        expectYourMoney(gbp(budget.totalPence - 40_000))
-        waitUntilGone(accountRow("Santander Saver", "£400.00"), "the archived account's row")
-        expectAccountRow("Lloyds current", "£6,579.30")
+        expectYourMoney(gbp(budget.totalPence - budget.savingsPence))
+        waitUntilGone(accountRow("Santander Saver", "£350.00"), "the archived account's row")
+        expectAccountRow("Lloyds current", "£4,862.15")
         shot("accounts-17-home-after-archive")
     }
 
@@ -219,7 +219,7 @@ class AccountsTest : UiTest() {
     fun deleteAnAccountAfterConfirmation() {
         val budget = seedStandardBudget()
         launchHome()
-        openAccountFromHome("Santander Savings", "£400.00")
+        openAccountFromHome("Santander Savings", "£350.00")
         tapIcon("Edit account")
         waitForText("Edit account")
         tapText("Delete account")
@@ -235,8 +235,8 @@ class AccountsTest : UiTest() {
         waitForNoText("Delete this account?")
 
         goToTab("Home")
-        expectYourMoney(gbp(budget.totalPence - 40_000), HEAVY_TIMEOUT_MS)
-        waitUntilGone(accountRow("Santander Savings", "£400.00"), "the deleted account's row")
+        expectYourMoney(gbp(budget.totalPence - budget.savingsPence), HEAVY_TIMEOUT_MS)
+        waitUntilGone(accountRow("Santander Savings", "£350.00"), "the deleted account's row")
         val names = blocking { appContainer.accountRepository.observeAccounts().first().map { it.name } }
         assertTrue("Santander Savings must be gone from the database: $names", "Santander Savings" !in names)
         shot("accounts-19-home-after-delete")

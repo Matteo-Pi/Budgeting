@@ -397,6 +397,8 @@ class SeededBudget(
     val lloydsPence: Long,
     val savingsPence: Long,
     val santanderPence: Long,
+    /** Lloyds current's overdraft limit, in pence. */
+    val lloydsOverdraftPence: Long,
 ) {
     val totalPence: Long get() = lloydsPence + savingsPence + santanderPence
     val total: String get() = gbp(totalPence)
@@ -404,23 +406,23 @@ class SeededBudget(
 
 /**
  * A realistic 3-account budget with 12 weeks of history, used by most tests:
- *  - Lloyds current (overdraft GBP 1,500) GBP 6,579.30; Santander Savings GBP 400.00 (both untouched);
- *  - Santander current: GBP 500.00 opening, then every week groceries -42.50, eating out -18.00,
- *    transport -12.00, wages +120.00 and, every other week, nights out -25.00 => GBP 920.00 today;
+ *  - Lloyds current (overdraft GBP 1,200) GBP 4,862.15; Santander Savings GBP 350.00 (both untouched);
+ *  - Santander current: GBP 300.00 opening, then every week groceries -42.50, eating out -18.00,
+ *    transport -12.00, wages +120.00 and, every other week, nights out -25.00 => GBP 720.00 today;
  *  - terms Autumn (today-30..today+45) and Spring (today+90..today+160);
- *  - rent -550 monthly from Lloyds starting in 10 days; two student-loan instalments (+1,600, to be
+ *  - rent -480 monthly from Lloyds starting in 10 days; two student-loan instalments (+1,450, to be
  *    confirmed) in 50 and 150 days.
- * Total money today: GBP 7,899.30. Onboarding is marked done, so the app starts on Home.
+ * Total money today: GBP 5,932.15. All the figures are made up. Onboarding is marked done, so the app starts on Home.
  */
 fun seedStandardBudget(): SeededBudget {
     val today = LocalDate.now()
     seedOnboardingDone()
     val start = today.minusDays(84)
-    val lloyds = seedAccount("Lloyds current", AccountType.CURRENT, 657_930, overdraftPence = 150_000, openedOn = start)
-    val savings = seedAccount("Santander Savings", AccountType.SAVINGS, 40_000, openedOn = start)
-    val santander = seedAccount("Santander current", AccountType.CURRENT, 50_000, openedOn = start)
+    val lloyds = seedAccount("Lloyds current", AccountType.CURRENT, 486_215, overdraftPence = 120_000, openedOn = start)
+    val savings = seedAccount("Santander Savings", AccountType.SAVINGS, 35_000, openedOn = start)
+    val santander = seedAccount("Santander current", AccountType.CURRENT, 30_000, openedOn = start)
 
-    var santanderPence = 50_000L
+    var santanderPence = 30_000L
     fun spend(pence: Long, date: LocalDate, category: String, label: String) {
         seedTransaction(santander, pence, date, category, label)
         santanderPence += pence
@@ -436,11 +438,11 @@ fun seedStandardBudget(): SeededBudget {
 
     seedTerm("Autumn", today.minusDays(30), today.plusDays(45))
     seedTerm("Spring", today.plusDays(90), today.plusDays(160))
-    seedRecurring("Rent", lloyds, "Rent & bills", -55_000, Frequency.MONTHLY, today.plusDays(10))
-    seedScheduled("Student loan", santander, "Student loan", 160_000, today.plusDays(50), isMajorIncome = true)
-    seedScheduled("Student loan", santander, "Student loan", 160_000, today.plusDays(150), isMajorIncome = true)
+    seedRecurring("Rent", lloyds, "Rent & bills", -48_000, Frequency.MONTHLY, today.plusDays(10))
+    seedScheduled("Student loan", santander, "Student loan", 145_000, today.plusDays(50), isMajorIncome = true)
+    seedScheduled("Student loan", santander, "Student loan", 145_000, today.plusDays(150), isMajorIncome = true)
 
-    return SeededBudget(today, lloyds, savings, santander, 657_930, 40_000, santanderPence)
+    return SeededBudget(today, lloyds, savings, santander, 486_215, 35_000, santanderPence, 120_000)
 }
 
 // ---------------------------------------------------------------------------------------------

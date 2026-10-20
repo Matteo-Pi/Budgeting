@@ -143,7 +143,7 @@ object SantanderPdfFixture {
             Draw("-£485.21", 359.7f, 423.3f, 1, rightAligned = true),
             Draw("Your balance at close of business 10th Oct 2026", 54.9f, 435.6f, 1),
             Draw("£14.79", 359.7f, 435.6f, 1, rightAligned = true),
-            Draw("Your overdraft limit is £1,500.00. Arranged overdraft interest rate is 0.00% EAR", 54.9f, 454.1f, 1),
+            Draw("Your overdraft limit is £1,200.00. Arranged overdraft interest rate is 0.00% EAR", 54.9f, 454.1f, 1),
             Draw("Continued on reverse....", 300.0f, 800.0f, 1),
             Draw("Page number: 1 of 2", 480.0f, 812.0f, 1),
             // Page 2: the page header and the "Average balance" decoy table.

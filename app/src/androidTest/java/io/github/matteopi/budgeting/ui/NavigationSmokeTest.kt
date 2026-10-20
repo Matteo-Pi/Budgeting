@@ -113,8 +113,8 @@ class NavigationSmokeTest : UiTest() {
         backTo("Recent activity")
 
         // An account: detail, then its edit screen.
-        expectAccountRow("Lloyds current", "£6,579.30")
-        tap(hasText("Lloyds current") and hasText("£6,579.30") and hasClickAction(), "the Lloyds row")
+        expectAccountRow("Lloyds current", "£4,862.15")
+        tap(hasText("Lloyds current") and hasText("£4,862.15") and hasClickAction(), "the Lloyds row")
         waitForExists(hasTestTag(ACCOUNT_BALANCE_TAG), "the account detail")
         arrive("account-detail", "Reconciliation history")
         tapIcon("Edit account")

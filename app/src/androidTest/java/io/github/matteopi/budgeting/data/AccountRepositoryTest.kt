@@ -28,17 +28,17 @@ class AccountRepositoryTest {
     @Test
     fun createAccountWritesAnOpeningBalanceTransaction() = runBlocking<Unit> {
         val date = today.minusDays(3)
-        val account = createAccount("Lloyds current", opening = Money(657_930), date = date)
+        val account = createAccount("Lloyds current", opening = Money(486_215), date = date)
 
         val ledger = transactions().filter { it.accountId == account.id }
         assertEquals(1, ledger.size, "an account starts with exactly one transaction")
         val opening = ledger.single()
         assertEquals(TxKind.OPENING_BALANCE, opening.kind)
-        assertEquals(Money(657_930), opening.amount)
+        assertEquals(Money(486_215), opening.amount)
         assertEquals(date, opening.date)
         assertNull(opening.categoryId, "an opening balance has no category")
         assertNull(opening.transferGroupId)
-        assertEquals(Money(657_930), DataTestSupport.balance(account.id))
+        assertEquals(Money(486_215), DataTestSupport.balance(account.id))
     }
 
     @Test
@@ -54,7 +54,7 @@ class AccountRepositoryTest {
             name = "Santander Savings",
             type = AccountType.SAVINGS,
             overdraft = Money.ZERO,
-            opening = Money(40_000),
+            opening = Money(35_000),
             includeInPool = false,
             sortOrder = 7,
         )
@@ -68,14 +68,14 @@ class AccountRepositoryTest {
 
     @Test
     fun overdraftLimitIsStoredAndCanBeChanged() = runBlocking<Unit> {
-        val lloyds = createAccount("Lloyds current", overdraft = Money.pounds(1_500), opening = Money(657_930))
-        assertEquals(Money.pounds(1_500), lloyds.overdraftLimit)
+        val lloyds = createAccount("Lloyds current", overdraft = Money.pounds(1_200), opening = Money(486_215))
+        assertEquals(Money.pounds(1_200), lloyds.overdraftLimit)
         // The overdraft is a limit, not money: it must not show up in the balance.
-        assertEquals(Money(657_930), DataTestSupport.balance(lloyds.id))
+        assertEquals(Money(486_215), DataTestSupport.balance(lloyds.id))
 
         container.accountRepository.update(lloyds.copy(overdraftLimit = Money.pounds(2_000)))
         assertEquals(Money.pounds(2_000), DataTestSupport.accountById(lloyds.id).overdraftLimit)
-        assertEquals(Money(657_930), DataTestSupport.balance(lloyds.id))
+        assertEquals(Money(486_215), DataTestSupport.balance(lloyds.id))
     }
 
     @Test

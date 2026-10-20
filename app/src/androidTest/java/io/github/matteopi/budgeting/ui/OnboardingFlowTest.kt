@@ -15,7 +15,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * The user's real first-run scenario, entirely through the UI: three accounts, terms, student loan,
+ * A realistic first-run scenario (with made-up figures), entirely through the UI: three accounts, terms, student loan,
  * rent, a couple of weekly estimates - then Home must show the true total, a positive
  * safe-to-spend and no "short" message (regression for "Your money GBP 0" plus "short").
  */
@@ -39,11 +39,11 @@ class OnboardingFlowTest : UiTest() {
         waitForText("No accounts yet", substring = true)
         shot("onboarding-02-accounts-empty")
 
-        // Lloyds current: typed by hand, with a GBP 1,500 overdraft.
+        // Lloyds current: typed by hand, with a GBP 1,200 overdraft.
         tapText("Add account")
         type("Name", "Lloyds current")
-        type(accountsLabelBalance, "6579.30")
-        type("Overdraft limit", "1500")
+        type(accountsLabelBalance, "4862.15")
+        type("Overdraft limit", "1200")
         shot("onboarding-03-add-account-lloyds")
         tapInDialog("Save")
         waitUntilGone(dialogButton("Save"), "the add-account dialog")
@@ -54,7 +54,7 @@ class OnboardingFlowTest : UiTest() {
         type("Name", "Santander Savings")
         choose("Type", "Savings account")
         assertFieldValue("Type", "Savings account")
-        type(accountsLabelBalance, "400")
+        type(accountsLabelBalance, "350")
         type("Overdraft limit", "0")
         shot("onboarding-04-add-account-savings")
         tapInDialog("Save")
@@ -64,7 +64,7 @@ class OnboardingFlowTest : UiTest() {
         // Santander current: from the suggestion chip.
         tapText("Santander current")
         assertFieldValue("Name", "Santander current")
-        type(accountsLabelBalance, "500")
+        type(accountsLabelBalance, "300")
         tapInDialog("Save")
         waitUntilGone(dialogButton("Save"), "the add-account dialog")
         waitFor("all three account cards") { count(txt("Current account")) >= 2 && count(txt("Savings account")) >= 1 }
@@ -108,35 +108,35 @@ class OnboardingFlowTest : UiTest() {
         shot("onboarding-10-money-in-before")
         pickDate("Date", shown = today, target = today.plusDays(200), index = 1)
         pickDate("Date", shown = today, target = today.plusDays(300), index = 2)
-        type("Amount (£)", "1600", index = 0)
-        type("Amount (£)", "1600", index = 1)
-        type("Amount (£)", "1600", index = 2)
+        type("Amount (£)", "1450", index = 0)
+        type("Amount (£)", "1450", index = 1)
+        type("Amount (£)", "1450", index = 2)
         shot("onboarding-11-money-in-filled")
         tapText("Save the three instalments")
         waitForText("Instalments saved.")
         shot("onboarding-12-money-in-saved")
         tapText("Next")
 
-        // 6. Regular costs: rent GBP 550 monthly, from the suggestion chip, with the default start date (today).
+        // 6. Regular costs: rent GBP 480 monthly, from the suggestion chip, with the default start date (today).
         waitForText("Rent, phone, subscriptions", substring = true)
         tapText("Rent")
         assertFieldValue("Label", "Rent")
-        type("Amount (£)", "550")
+        type("Amount (£)", "480")
         assertFieldValue("Category", "Rent & bills")
         shot("onboarding-13-regular-costs-form")
         tapText("Add cost")
-        waitForText("-£550.00")
+        waitForText("-£480.00")
         shot("onboarding-14-regular-costs-added")
         tapText("Next")
 
         // 7. Weekly spending estimates: a couple of numbers and one "I don't spend on this".
         waitForText("Weekly spending estimates")
-        type("In term", "45", index = 0)
-        type("In the holidays", "40", index = 0)
+        type("In term", "35", index = 0)
+        type("In the holidays", "30", index = 0)
         type("In term", "20", index = 1)
         type("In the holidays", "25", index = 1)
         tapText("I don't spend on this", index = 2)
-        assertFieldValue("In term", "45", index = 0)
+        assertFieldValue("In term", "35", index = 0)
         assertFieldValue("In term", "0", index = 2)
         shot("onboarding-15-estimates")
         tapText("Next")
@@ -156,7 +156,7 @@ class OnboardingFlowTest : UiTest() {
 
         // Home: the true total, a positive safe-to-spend, and no shortfall message.
         waitForExists(hasTestTag(YOUR_MONEY_TAG), "Home's 'Your money' figure", HEAVY_TIMEOUT_MS)
-        expectYourMoney("£7,479.30")
+        expectYourMoney("£5,512.15")
         waitFor("a positive safe-to-spend per week on Home", HEAVY_TIMEOUT_MS) { (safeToSpendPerWeek() ?: 0L) > 0L }
         assertTrue(
             "Home must not claim a shortfall.\n${screenDump()}",
@@ -165,9 +165,9 @@ class OnboardingFlowTest : UiTest() {
         // Every balance was just typed in and nothing could have been logged last week: no nagging.
         assertNeverShows(txt("You haven't checked a balance", substring = true), "the balance-check nudge")
         assertNeverShows(txt("Quiet week", substring = true), "the quiet-week alert")
-        expectAccountRow("Lloyds current", "£6,579.30")
-        expectAccountRow("Santander Savings", "£400.00")
-        expectAccountRow("Santander current", "£500.00")
+        expectAccountRow("Lloyds current", "£4,862.15")
+        expectAccountRow("Santander Savings", "£350.00")
+        expectAccountRow("Santander current", "£300.00")
         // Recent activity is below the fold: scroll Home's list down to it first.
         waitForExists(txt("Opening balance"), "Recent activity")
         waitFor("the three opening balances in Recent activity") { count(txt("Opening balance")) >= 3 }
@@ -177,7 +177,7 @@ class OnboardingFlowTest : UiTest() {
         blocking { appContainer.postingService.postDue(LocalDate.now()) }
         val rentPosted = blocking { appContainer.transactionRepository.observeAll().first().any { it.label == "Rent" } }
         assertEquals("Rent must not be posted for dates before it was set up", false, rentPosted)
-        expectYourMoney("£7,479.30")
+        expectYourMoney("£5,512.15")
 
         // Settings > About agrees with what Home shows (both come from the same forecast snapshot).
         openSettings()
@@ -185,7 +185,7 @@ class OnboardingFlowTest : UiTest() {
         scrollIntoView(txt("Forecast updated", substring = true))
         val diagnostics = firstText(txt("Forecast updated", substring = true)).orEmpty()
         assertTrue("About says: $diagnostics", diagnostics.contains("3 accounts"))
-        assertTrue("About says: $diagnostics", diagnostics.contains("total £7,479.30"))
+        assertTrue("About says: $diagnostics", diagnostics.contains("total £5,512.15"))
         shot("onboarding-20-settings-about")
     }
 

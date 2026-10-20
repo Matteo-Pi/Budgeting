@@ -92,7 +92,7 @@ object ForecastDiagnostics {
     private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ENGLISH)
 
     /**
-     * e.g. "Forecast updated 00:04:12 for Tue 29 Sep · 3 accounts · total £7,479.30". The total is
+     * e.g. "Forecast updated 00:04:12 for Tue 29 Sep · 3 accounts · total £5,512.15". The total is
      * what the *forecast* believes the pool holds, so it can be compared with the account rows.
      */
     fun describe(state: ForecastState, zone: ZoneId = ZoneId.systemDefault()): String = when (state) {

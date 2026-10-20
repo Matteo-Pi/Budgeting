@@ -68,7 +68,7 @@ class PlanTest : UiTest() {
         waitForText("Add recurring")
 
         type("Label", "Rent")
-        type("Amount (£)", "550")
+        type("Amount (£)", "480")
         choose("Category", "Rent & bills")
         val start = today.minusDays(10)
         pickDate("Start date", shown = today, target = start)
@@ -78,7 +78,7 @@ class PlanTest : UiTest() {
         shot("plan-03-recurring-past-start")
         tap(saveButton(), "Save")
 
-        waitForExists(hasText("Rent") and hasText("-£550.00") and hasText("Next: ${start.plusMonths(1).asShortText()}"), "the Rent row")
+        waitForExists(hasText("Rent") and hasText("-£480.00") and hasText("Next: ${start.plusMonths(1).asShortText()}"), "the Rent row")
         shot("plan-04-recurring-list")
 
         // The stored rule counts as posted through today; even the start-of-app posting run adds nothing.
