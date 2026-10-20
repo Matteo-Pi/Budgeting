@@ -3,10 +3,13 @@ package io.github.matteopi.budgeting.ui.planner.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import io.github.matteopi.budgeting.core.model.TermPeriod
 import io.github.matteopi.budgeting.core.planner.model.Module
 import io.github.matteopi.budgeting.core.planner.todo.BreakdownTemplate
 import io.github.matteopi.budgeting.core.planner.todo.BreakdownTemplates
+import io.github.matteopi.budgeting.data.repo.PlanRepository
 import io.github.matteopi.budgeting.data.repo.planner.ModuleRepository
+import io.github.matteopi.budgeting.data.settings.PlannerCalendarSettings
 import io.github.matteopi.budgeting.data.settings.PlannerReminderSettings
 import io.github.matteopi.budgeting.data.settings.SettingsStore
 import io.github.matteopi.budgeting.ui.settings.budgetViewModelFactory
@@ -24,11 +27,14 @@ data class PlannerSettingsUiState(
     val modules: List<Module> = emptyList(),
     val templates: List<BreakdownTemplate> = BreakdownTemplates.defaults,
     val reminders: PlannerReminderSettings = PlannerReminderSettings(),
+    val terms: List<TermPeriod> = emptyList(),
+    val calendars: PlannerCalendarSettings = PlannerCalendarSettings(),
 )
 
 /** The Planner's settings (docs/PLAN.md §12.11), its modules and its breakdown templates. */
 class PlannerSettingsViewModel(
     private val moduleRepository: ModuleRepository,
+    planRepository: PlanRepository,
     private val settingsStore: SettingsStore,
     private val plannerUpdater: PlannerUpdater,
     private val plannerAlarms: PlannerAlarms,
@@ -38,7 +44,9 @@ class PlannerSettingsViewModel(
         moduleRepository.observeModules(),
         settingsStore.breakdownTemplates,
         settingsStore.plannerReminders,
-    ) { modules, templates, reminders -> PlannerSettingsUiState(false, modules, templates, reminders) }
+        planRepository.observeTermPeriods(),
+        settingsStore.plannerCalendars,
+    ) { modules, templates, reminders, terms, calendars -> PlannerSettingsUiState(false, modules, templates, reminders, terms, calendars) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PlannerSettingsUiState())
 
     /** False when Android refuses exact alarms. */
@@ -87,7 +95,7 @@ class PlannerSettingsViewModel(
 
     companion object {
         val Factory: ViewModelProvider.Factory = budgetViewModelFactory {
-            PlannerSettingsViewModel(it.moduleRepository, it.settingsStore, it.plannerUpdater, it.plannerAlarms)
+            PlannerSettingsViewModel(it.moduleRepository, it.planRepository, it.settingsStore, it.plannerUpdater, it.plannerAlarms)
         }
     }
 }

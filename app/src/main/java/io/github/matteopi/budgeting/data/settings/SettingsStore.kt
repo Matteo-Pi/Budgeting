@@ -18,6 +18,7 @@ import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
@@ -287,6 +288,15 @@ class SettingsStore(context: Context) {
         dataStore.edit { it[PlannerKeys.ALARM_FIRED] = at?.toEpochMilli() ?: -1L }
     }
 
+    /** The phone calendars the Planner shows and writes to (device-specific: not in backups). */
+    val plannerCalendars: Flow<PlannerCalendarSettings> = dataStore.data.map { prefs ->
+        PlannerSettingsCodec.decodeCalendars(prefs[PlannerKeys.CALENDARS])
+    }.distinctUntilChanged()
+
+    suspend fun setPlannerCalendars(settings: PlannerCalendarSettings) {
+        dataStore.edit { it[PlannerKeys.CALENDARS] = PlannerSettingsCodec.encodeCalendars(settings) }
+    }
+
     /** The Planner preferences a backup carries, as entries of its `appSettings` map. */
     suspend fun plannerBackupMap(): Map<String, String> {
         val prefs = dataStore.data.first()
@@ -311,6 +321,7 @@ class SettingsStore(context: Context) {
         val REMINDERS = stringPreferencesKey("planner_reminders")
         val TEMPLATES = stringPreferencesKey("planner_templates")
         val ALARM_FIRED = longPreferencesKey("planner_alarm_fired")
+        val CALENDARS = stringPreferencesKey("planner_calendars")
     }
 
     private object FoodKeys {

@@ -4,7 +4,9 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import io.github.matteopi.budgeting.work.WorkScheduler
+import io.github.matteopi.budgeting.work.planner.CalendarSyncWorker
 import io.github.matteopi.budgeting.work.planner.PlannerNotifications
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class BudgetApp : Application() {
@@ -24,6 +26,10 @@ class BudgetApp : Application() {
         }
         // The alarm is lost when the app is force-stopped; setting it again on every start keeps it.
         container.appScope.launch { container.plannerAlarms.reschedule() }
+        // Writing back catches up on what changed in the calendar or the app while it was closed.
+        container.appScope.launch {
+            if (container.settingsStore.plannerCalendars.first().writeTo != null) CalendarSyncWorker.enqueue(this@BudgetApp)
+        }
 
         WorkScheduler.schedule(this)
     }

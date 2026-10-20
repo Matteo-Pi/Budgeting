@@ -315,9 +315,9 @@ class BackupCodecTest {
     }
 
     @Test
-    fun `current version is 5`() {
-        assertEquals(5, BackupV1.CURRENT_VERSION)
-        assertEquals(5, BackupMapper.toBackup(BackupData(), exportedAt = "now").version)
+    fun `current version is 6`() {
+        assertEquals(6, BackupV1.CURRENT_VERSION)
+        assertEquals(6, BackupMapper.toBackup(BackupData(), exportedAt = "now").version)
     }
 
     @Test

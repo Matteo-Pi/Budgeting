@@ -2227,7 +2227,7 @@ Six changes the user asked for once the section was built. Room goes to **versio
   - `MigrationTest` 3 → 4.
 - **After the first green build**, commit `4.json` from `refs/ci/room-schemas`.
 
-## 12. Planner: to-do list, timetable, habits and study planner (planned 2026-10-19, not started)
+## 12. Planner: to-do list, timetable, habits and study planner (planned 2026-10-19; being built in stages, §13.10)
 
 Goal: a third section, **Planner**, next to Budgeting and Recipes, for organising the user's time as
 a student. It has:
@@ -3053,8 +3053,9 @@ fields). A value that doesn't parse falls back to the defaults, never a crash.
   - applies `CalendarSync.diff` with `applyBatch` in batches of 50;
   - fills `CALENDAR_ID`, `DTSTART`, `DTEND`, `TITLE`, `EVENT_LOCATION`, `DESCRIPTION` ("Added by the
     Budgeting app's Planner"), `EVENT_TIMEZONE`, `UID_2445` and `AVAILABILITY`.
-- **Safety**: it never touches an event it didn't write. *Remove what the app added* deletes the linked events,
-  after a confirm.
+- **Safety**: it never touches an event it didn't write: an event is the app's when it has a Planner UID, or when
+  it is linked and still carries the app's description (a link restored from another phone may hold an id that is
+  one of this phone's own events). *Remove what the app added* deletes the linked events, after a confirm.
 
 **Reminders** (`work/planner/`, P1 onwards)
 - **One alarm at a time.** `PlannerAlarms.reschedule()` asks `ReminderPlan.next` for the earliest reminder and
@@ -3222,6 +3223,10 @@ For each stage:
 A stage is done only then; then the user installs it.
 
 **P1: the Planner section, To-do and Settings (Room 5, backup 5)**
+**Status (2026-10-20)**: built and published as build 68 (CI run 68: the build, update check and publish are green,
+412 of 414 device tests). The two failures were test steps in `TodoTest`, not the app: Material clears an extended
+floating button's text from accessibility (the Planner's add buttons now name their icon, as the shopping list's
+does), and the Upcoming chip reads "Upcoming (1)". Both are fixed in the P2 push. `5.json` is committed.
 - **Core**: models (modules, tasks, checklist, completions), `TaskRepeats`, `TaskViews`, `TaskQuickAdd`,
   `TaskRules`, `DeadlineStatus` (work and days left), `BreakdownTemplates`, `PlannerText`, `ReminderPlan`
   (tasks), backup 5.
@@ -3246,6 +3251,11 @@ A stage is done only then; then the user installs it.
       time.
 
 **P2: the Timetable and Google Calendar (Room 6, backup 6)**
+**Status (2026-10-20)**: built, pushed with P1's test fixes; waiting for CI. Beyond the list below, Today gains an
+*On today* list (the day's classes, cancelled ones struck through, and calendar events), and the daily worker
+brings a written calendar up to date. `CalendarAccess.appEvents` counts a linked event id as the app's only while
+the event still carries the app's description, so a link restored from another phone can never touch one of this
+phone's own events.
 - **Core**: `TeachingWeeks`, `WeekList`, `Timetable`, `Clashes`, `Lanes`, `TermCopy`, `EntryRules`,
   `CalendarSync`, backup 6.
 - **App**:

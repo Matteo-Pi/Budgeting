@@ -11,10 +11,13 @@ import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.Receipt
 import io.github.matteopi.budgeting.core.model.TxKind
 import io.github.matteopi.budgeting.core.planner.model.ChecklistItem
+import io.github.matteopi.budgeting.core.planner.model.EntryException
 import io.github.matteopi.budgeting.core.planner.model.Module
 import io.github.matteopi.budgeting.core.planner.model.Task
 import io.github.matteopi.budgeting.core.planner.model.TaskCompletion
 import io.github.matteopi.budgeting.core.planner.model.TaskKind
+import io.github.matteopi.budgeting.core.planner.model.TimetableEntry
+import io.github.matteopi.budgeting.core.planner.model.WeekPattern
 import io.github.matteopi.budgeting.core.recipes.BaseUnit
 import io.github.matteopi.budgeting.core.recipes.Ingredient
 import io.github.matteopi.budgeting.core.recipes.Nutrition
@@ -34,8 +37,10 @@ import io.github.matteopi.budgeting.data.repo.toLineEntities
 import io.github.matteopi.budgeting.data.repo.toModel
 import io.github.matteopi.budgeting.data.repo.toPortionEntities
 import io.github.matteopi.budgeting.data.repo.toStepEntities
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -572,6 +577,87 @@ class MigrationTest {
             assertNull(dao.getTask(stepId))
             assertTrue(dao.getAllChecklistItems().isEmpty())
             assertTrue(dao.getAllCompletions().isEmpty())
+        } finally {
+            db.close()
+        }
+    }
+
+    // ---- 5 -> 6: the timetable and calendar links (docs/PLAN.md §13.5) ---------------------------------
+
+    private val timetableTables = listOf("planner_entries", "planner_entry_exceptions", "planner_calendar_links")
+
+    @Test
+    fun migratingFromVersion5To6KeepsThePlannerAndAddsEmptyTimetableTables() {
+        createVersion3Database()
+        helper.runMigrationsAndValidate(DB_NAME, 5, true).use { db ->
+            db.execSQL(
+                "INSERT INTO planner_modules (id, code, code_key, name, color_argb, weekly_target_minutes, weight, archived, sort_order) " +
+                    "VALUES (1, 'EC101', 'ec101', 'Economics', NULL, 300, 2, 0, 0)",
+            )
+        }
+
+        val db = helper.runMigrationsAndValidate(DB_NAME, 6, true)
+
+        assertVersion2RowsSurvived(db)
+        assertEquals(listOf("EC101"), db.strings("SELECT code FROM planner_modules"))
+        val tables = db.strings("SELECT name FROM sqlite_master WHERE type = 'table'")
+        for (table in timetableTables) {
+            assertTrue(table in tables, "the $table table exists; have $tables")
+            assertEquals(listOf(0L), db.longs("SELECT COUNT(*) FROM $table"), "$table starts empty")
+        }
+        assertEquals(
+            setOf(Triple("planner_modules", "module_id", "SET NULL"), Triple("term_periods", "term_id", "SET NULL")),
+            db.foreignKeys("planner_entries").toSet(),
+        )
+        assertEquals(listOf(Triple("planner_entries", "entry_id", "CASCADE")), db.foreignKeys("planner_entry_exceptions"))
+
+        db.execSQL(
+            "INSERT INTO planner_entries (id, title, kind, module_id, location, room, contact, color_argb, note, weekday, " +
+                "start_minute, end_minute, pattern, weeks, once_date, term_id, in_holidays, archived, created_at_millis) VALUES " +
+                "(1, 'EC101 Lecture', 'LECTURE', 1, 'Campus', '2.14', '', NULL, '', 1, 540, 600, 'WEEKS', '1-5', NULL, NULL, 0, 0, 1000)",
+        )
+        db.execSQL("INSERT INTO planner_entry_exceptions (entry_id, date, cancelled, start_minute, end_minute, room) VALUES (1, $day, 1, NULL, NULL, NULL)")
+        assertEquals(listOf(1L), db.longs("SELECT COUNT(*) FROM planner_entry_exceptions"))
+        db.close()
+    }
+
+    @Test
+    fun migratingStraightFromVersion1To6RunsAllFiveAutoMigrations() {
+        createVersion1Database()
+
+        val db = helper.runMigrationsAndValidate(DB_NAME, 6, true)
+
+        assertEquals(listOf(1L, 2L, 3L), db.longs("SELECT id FROM transactions ORDER BY id"))
+        val tables = db.strings("SELECT name FROM sqlite_master WHERE type = 'table'")
+        for (table in listOf("receipts", "products") + foodTables + "owned_items" + plannerTables + timetableTables) {
+            assertTrue(table in tables, "the $table table exists; have $tables")
+        }
+        db.close()
+    }
+
+    @Test
+    fun theVersion6FileOpensWithTheRealDatabaseClassAndTheTimetableTablesWork() = runBlocking<Unit> {
+        createVersion3Database()
+        helper.runMigrationsAndValidate(DB_NAME, 6, true).close()
+
+        val db = Room.databaseBuilder(context, BudgetDatabase::class.java, DB_NAME).build()
+        try {
+            val moduleId = db.plannerDao().insertModule(Module(code = "EC101", name = "Economics").toEntity())
+            val dao = db.timetableDao()
+            val entry = TimetableEntry(title = "EC101 Lecture", moduleId = moduleId, weekday = DayOfWeek.MONDAY,
+                start = LocalTime.of(9, 0), end = LocalTime.of(10, 0), pattern = WeekPattern.TeachingWeeks(setOf(1, 2, 3, 5)))
+            val entryId = dao.insertEntry(entry.toEntity())
+            assertEquals(entry.copy(id = entryId), dao.getEntry(entryId)?.toModel())
+            val date = LocalDate.of(2026, 10, 19)
+            dao.setException(EntryException(entryId = entryId, date = date, room = "B12").toEntity())
+            dao.setException(EntryException(entryId = entryId, date = date, cancelled = true).toEntity())
+            assertEquals(listOf(true), dao.getExceptions().map { it.toModel().cancelled }, "one change per date, the latest")
+
+            // Deleting the module keeps the entry for every module; deleting the entry takes its changes.
+            db.plannerDao().deleteModule(moduleId)
+            assertNull(dao.getEntry(entryId)?.moduleId)
+            dao.deleteEntry(entryId)
+            assertTrue(dao.getExceptions().isEmpty())
         } finally {
             db.close()
         }

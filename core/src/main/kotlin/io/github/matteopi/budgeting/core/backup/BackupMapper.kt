@@ -31,7 +31,10 @@ import io.github.matteopi.budgeting.core.model.SinkingFund
 import io.github.matteopi.budgeting.core.model.SinkingFundStatus
 import io.github.matteopi.budgeting.core.model.TermPeriod
 import io.github.matteopi.budgeting.core.model.Transaction
+import io.github.matteopi.budgeting.core.planner.model.CalendarLink
 import io.github.matteopi.budgeting.core.planner.model.ChecklistItem
+import io.github.matteopi.budgeting.core.planner.model.EntryException
+import io.github.matteopi.budgeting.core.planner.model.EntryKind
 import io.github.matteopi.budgeting.core.planner.model.DeadlineType
 import io.github.matteopi.budgeting.core.planner.model.Module
 import io.github.matteopi.budgeting.core.planner.model.Priority
@@ -40,7 +43,11 @@ import io.github.matteopi.budgeting.core.planner.model.Task
 import io.github.matteopi.budgeting.core.planner.model.TaskCompletion
 import io.github.matteopi.budgeting.core.planner.model.TaskKind
 import io.github.matteopi.budgeting.core.planner.model.TaskRepeat
+import io.github.matteopi.budgeting.core.planner.model.TimetableEntry
+import io.github.matteopi.budgeting.core.planner.model.WeekPattern
 import io.github.matteopi.budgeting.core.planner.model.Weekdays
+import io.github.matteopi.budgeting.core.planner.timetable.WeekList
+import io.github.matteopi.budgeting.core.planner.timetable.WeekListResult
 import io.github.matteopi.budgeting.core.model.TxKind
 import io.github.matteopi.budgeting.core.model.ZeroPoint
 import io.github.matteopi.budgeting.core.recipes.BaseUnit
@@ -60,6 +67,7 @@ import io.github.matteopi.budgeting.core.recipes.ShoppingEntry
 import io.github.matteopi.budgeting.core.recipes.ShoppingMark
 import io.github.matteopi.budgeting.core.recipes.StepKind
 import io.github.matteopi.budgeting.core.recipes.VegKind
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -124,6 +132,13 @@ object BackupMapper {
             plannerCompletions = data.plannerCompletions.map {
                 PlannerCompletionDto(it.id, it.taskId, it.dueDate?.toString(), it.completedAt.toEpochMilli())
             },
+            plannerEntries = data.plannerEntries.map { it.toDto() },
+            plannerEntryExceptions = data.plannerEntryExceptions.map {
+                PlannerEntryExceptionDto(it.id, it.entryId, it.date.toString(), it.cancelled, it.start?.let(::minuteOf), it.end?.let(::minuteOf), it.room)
+            },
+            plannerCalendarLinks = data.plannerCalendarLinks.map {
+                PlannerCalendarLinkDto(it.id, it.itemKey, it.calendarId, it.eventId, it.uid, it.contentHash)
+            },
             settings = data.settings.toDto(),
             appSettings = appSettings,
         )
@@ -172,6 +187,13 @@ object BackupMapper {
             },
             plannerCompletions = backup.plannerCompletions.map {
                 TaskCompletion(it.id, it.taskId, it.dueDate?.let(LocalDate::parse), Instant.ofEpochMilli(it.completedAtEpochMillis))
+            },
+            plannerEntries = backup.plannerEntries.map { it.toModel() },
+            plannerEntryExceptions = backup.plannerEntryExceptions.map {
+                EntryException(it.id, it.entryId, LocalDate.parse(it.date), it.cancelled, it.startMinute?.let(::timeOf), it.endMinute?.let(::timeOf), it.room)
+            },
+            plannerCalendarLinks = backup.plannerCalendarLinks.map {
+                CalendarLink(it.id, it.itemKey, it.calendarId, it.eventId, it.uid, it.contentHash)
             },
             settings = backup.settings.toModel(),
         )
@@ -602,4 +624,69 @@ private fun PlannerTaskDto.toModel(checklist: List<ChecklistItem>) = Task(
     createdAt = Instant.ofEpochMilli(createdAtEpochMillis),
     sortOrder = sortOrder,
     checklist = checklist,
+)
+
+// ---- Planner (version 6) ------------------------------------------------------------------------
+
+private fun minuteOf(time: LocalTime): Int = time.hour * 60 + time.minute
+
+/** A minute of the day as a time; [BackupCodec] has already checked it is inside the day. */
+private fun timeOf(minute: Int): LocalTime = LocalTime.of(minute / 60, minute % 60)
+
+/** How a [WeekPattern] is written: its kind, and the weeks or the date when it has them. */
+internal fun WeekPattern.kindName(): String = when (this) {
+    WeekPattern.EveryWeek -> "EVERY"
+    is WeekPattern.TeachingWeeks -> "WEEKS"
+    WeekPattern.OddWeeks -> "ODD"
+    WeekPattern.EvenWeeks -> "EVEN"
+    is WeekPattern.Once -> "ONCE"
+}
+
+private fun TimetableEntry.toDto() = PlannerEntryDto(
+    id = id,
+    title = title,
+    kind = kind.name,
+    moduleId = moduleId,
+    location = location,
+    room = room,
+    contact = contact,
+    colorArgb = colorArgb,
+    note = note,
+    weekday = weekday.value,
+    startMinute = minuteOf(start),
+    endMinute = minuteOf(end),
+    pattern = pattern.kindName(),
+    weeks = (pattern as? WeekPattern.TeachingWeeks)?.let { WeekList.format(it.weeks) } ?: "",
+    onceDate = (pattern as? WeekPattern.Once)?.date?.toString(),
+    termId = termId,
+    inHolidays = inHolidays,
+    archived = archived,
+    createdAtEpochMillis = createdAt.toEpochMilli(),
+)
+
+private fun PlannerEntryDto.toModel() = TimetableEntry(
+    id = id,
+    title = title,
+    kind = EntryKind.valueOf(kind),
+    moduleId = moduleId,
+    location = location,
+    room = room,
+    contact = contact,
+    colorArgb = colorArgb,
+    note = note,
+    weekday = DayOfWeek.of(weekday),
+    start = timeOf(startMinute),
+    end = timeOf(endMinute),
+    pattern = when (pattern) {
+        "EVERY" -> WeekPattern.EveryWeek
+        "WEEKS" -> WeekPattern.TeachingWeeks((WeekList.parse(weeks) as? WeekListResult.Ok)?.weeks ?: emptySet())
+        "ODD" -> WeekPattern.OddWeeks
+        "EVEN" -> WeekPattern.EvenWeeks
+        "ONCE" -> WeekPattern.Once(LocalDate.parse(requireNotNull(onceDate) { "A once-only entry needs its date" }))
+        else -> throw IllegalArgumentException("Unknown week pattern $pattern")
+    },
+    termId = termId,
+    inHolidays = inHolidays,
+    archived = archived,
+    createdAt = Instant.ofEpochMilli(createdAtEpochMillis),
 )

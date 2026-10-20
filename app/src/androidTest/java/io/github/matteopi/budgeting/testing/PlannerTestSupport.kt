@@ -5,10 +5,13 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
+import io.github.matteopi.budgeting.core.planner.model.EntryException
 import io.github.matteopi.budgeting.core.planner.model.Module
 import io.github.matteopi.budgeting.core.planner.model.Task
+import io.github.matteopi.budgeting.core.planner.model.TimetableEntry
 import io.github.matteopi.budgeting.data.settings.AppSection
 import io.github.matteopi.budgeting.ui.planner.components.PlannerTags
+import io.github.matteopi.budgeting.ui.planner.timetable.TimetableTags
 import java.time.LocalDate
 
 /*
@@ -37,3 +40,10 @@ fun taskRow(title: String): SemanticsMatcher = hasTestTag(PlannerTags.TASK_ROW) 
 
 /** Ticks (or unticks) the task row showing [title]. */
 fun UiTest.tickTask(title: String) = tap(isToggleable() and hasAnyAncestor(taskRow(title)), "the tick box of '$title'")
+
+fun seedEntry(entry: TimetableEntry): Long = blocking { appContainer.timetableRepository.save(entry) }
+
+fun timetableExceptions(): List<EntryException> = blocking { appContainer.timetableRepository.getExceptions() }
+
+/** A block on the timetable's week grid showing [title]. */
+fun timetableBlock(title: String): SemanticsMatcher = hasTestTag(TimetableTags.ITEM) and hasText(title)

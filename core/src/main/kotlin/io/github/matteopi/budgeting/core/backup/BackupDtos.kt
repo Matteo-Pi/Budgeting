@@ -430,3 +430,50 @@ data class PlannerCompletionDto(
     val dueDate: String?,
     val completedAtEpochMillis: Long,
 )
+
+// ---- Version 6: the Planner's timetable and calendar links (docs/PLAN.md §13.5) -----------------
+
+/** [pattern] is a `WeekPattern` kind (EVERY, WEEKS, ODD, EVEN, ONCE); [weeks] its weeks ("1-5, 7-11"); times in minutes. */
+@Serializable
+data class PlannerEntryDto(
+    val id: Long,
+    val title: String,
+    val kind: String,
+    val moduleId: Long?,
+    val location: String,
+    val room: String,
+    val contact: String,
+    val colorArgb: Long?,
+    val note: String,
+    val weekday: Int,
+    val startMinute: Int,
+    val endMinute: Int,
+    val pattern: String,
+    val weeks: String,
+    val onceDate: String?,
+    val termId: Long?,
+    val inHolidays: Boolean,
+    val archived: Boolean,
+    val createdAtEpochMillis: Long,
+)
+
+@Serializable
+data class PlannerEntryExceptionDto(
+    val id: Long,
+    val entryId: Long,
+    val date: String,
+    val cancelled: Boolean,
+    val startMinute: Int?,
+    val endMinute: Int?,
+    val room: String?,
+)
+
+@Serializable
+data class PlannerCalendarLinkDto(
+    val id: Long,
+    val itemKey: String,
+    val calendarId: Long,
+    val eventId: Long,
+    val uid: String,
+    val contentHash: String,
+)

@@ -2,6 +2,7 @@ package io.github.matteopi.budgeting
 
 import android.content.Context
 import androidx.room.Room
+import io.github.matteopi.budgeting.data.calendar.CalendarAccess
 import io.github.matteopi.budgeting.data.db.BudgetDatabase
 import io.github.matteopi.budgeting.data.repo.AccountRepository
 import io.github.matteopi.budgeting.data.repo.BackupRepository
@@ -18,17 +19,22 @@ import io.github.matteopi.budgeting.data.repo.SnapshotRepository
 import io.github.matteopi.budgeting.data.repo.TransactionRepository
 import io.github.matteopi.budgeting.data.repo.planner.ModuleRepository
 import io.github.matteopi.budgeting.data.repo.planner.TaskRepository
+import io.github.matteopi.budgeting.data.repo.planner.TimetableRepository
 import io.github.matteopi.budgeting.data.settings.SettingsStore
 import io.github.matteopi.budgeting.domain.Clock
 import io.github.matteopi.budgeting.domain.ForecastService
 import io.github.matteopi.budgeting.domain.PostingService
+import io.github.matteopi.budgeting.domain.planner.PlannerCalendar
+import io.github.matteopi.budgeting.domain.planner.PlannerCalendarSync
 import io.github.matteopi.budgeting.ui.food.timers.CookingTimers
 import io.github.matteopi.budgeting.widget.WidgetUpdater
+import io.github.matteopi.budgeting.work.planner.CalendarSyncWorker
 import io.github.matteopi.budgeting.work.planner.PlannerAlarms
 import io.github.matteopi.budgeting.work.planner.PlannerUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 
 /**
  * Manual dependency-injection root, created once in [BudgetApp.onCreate] and reachable via
@@ -50,8 +56,14 @@ class AppContainer(context: Context) {
     val cookingTimers = CookingTimers(appScope)
     val widgetUpdater = WidgetUpdater(context.applicationContext, appScope)
 
-    /** After Planner writes: the reminder alarm follows (docs/PLAN.md §13.5). [plannerAlarms] is built below. */
-    val plannerUpdater: PlannerUpdater = PlannerUpdater(appScope) { plannerAlarms.reschedule() }
+    /**
+     * After Planner writes (docs/PLAN.md §13.5): the reminder alarm follows, and with writing back on, the calendar
+     * sync. [plannerAlarms] is built below.
+     */
+    val plannerUpdater: PlannerUpdater = PlannerUpdater(appScope) {
+        plannerAlarms.reschedule()
+        if (settingsStore.plannerCalendars.first().writeTo != null) CalendarSyncWorker.enqueue(context.applicationContext)
+    }
 
     val accountRepository = AccountRepository(
         database = database,
@@ -137,6 +149,32 @@ class AppContainer(context: Context) {
         plannerUpdater = plannerUpdater,
     )
 
+    val timetableRepository: TimetableRepository = TimetableRepository(
+        database = database,
+        timetableDao = database.timetableDao(),
+        clock = clock,
+        plannerUpdater = plannerUpdater,
+    )
+
+    /** The phone's calendars (docs/PLAN.md §13.7): read offline, and written to only when the user turns it on. */
+    val calendarAccess = CalendarAccess(context.applicationContext)
+
+    val plannerCalendar = PlannerCalendar(
+        access = calendarAccess,
+        settingsStore = settingsStore,
+        timetableRepository = timetableRepository,
+        clock = clock,
+    )
+
+    val plannerCalendarSync = PlannerCalendarSync(
+        access = calendarAccess,
+        settingsStore = settingsStore,
+        taskRepository = taskRepository,
+        timetableRepository = timetableRepository,
+        planRepository = planRepository,
+        clock = clock,
+    )
+
     /** The Planner's single reminder alarm (docs/PLAN.md §13.7). */
     val plannerAlarms: PlannerAlarms = PlannerAlarms(
         context = context.applicationContext,
@@ -165,6 +203,7 @@ class AppContainer(context: Context) {
         receiptDao = database.receiptDao(),
         foodDao = database.foodDao(),
         plannerDao = database.plannerDao(),
+        timetableDao = database.timetableDao(),
         settingsStore = settingsStore,
         widgetUpdater = widgetUpdater,
         plannerUpdater = plannerUpdater,

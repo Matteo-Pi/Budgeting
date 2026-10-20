@@ -39,12 +39,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.matteopi.budgeting.data.settings.PlannerCalendarSettings
 import io.github.matteopi.budgeting.ui.planner.components.TimeField
 import io.github.matteopi.budgeting.work.planner.PlannerNotifications
 
 /**
- * The Planner's settings (docs/PLAN.md §12.11), opened from the gear on every Planner tab. Stage P1: modules,
- * breakdown templates and reminders; later builds add the day, calendars, the day record and study suggestions.
+ * The Planner's settings (docs/PLAN.md §12.11), opened from the gear on every Planner tab: modules, breakdown
+ * templates, term dates, calendars and reminders; later builds add the day, the day record and study suggestions.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,6 +53,8 @@ fun PlannerSettingsScreen(
     onBack: () -> Unit,
     onOpenModules: () -> Unit,
     onOpenTemplates: () -> Unit,
+    onOpenTermDates: () -> Unit,
+    onOpenCalendars: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PlannerSettingsViewModel = viewModel(factory = PlannerSettingsViewModel.Factory),
 ) {
@@ -91,6 +94,22 @@ fun PlannerSettingsScreen(
                 title = "Breakdown templates",
                 detail = state.templates.joinToString(", ") { it.name },
                 onClick = onOpenTemplates,
+            )
+            HorizontalDivider()
+
+            Text("Timetable", style = MaterialTheme.typography.titleMedium)
+            LinkRow(
+                title = "Term dates",
+                detail = when (state.terms.size) {
+                    0 -> "None yet. Add them so classes can follow teaching weeks and skip the holidays."
+                    else -> state.terms.sortedBy { it.startDate }.joinToString(", ") { it.name } + " (shared with Budgeting)"
+                },
+                onClick = onOpenTermDates,
+            )
+            LinkRow(
+                title = "Calendars",
+                detail = calendarsSummary(state.calendars),
+                onClick = onOpenCalendars,
             )
             HorizontalDivider()
 
@@ -134,6 +153,16 @@ fun PlannerSettingsScreen(
             )
         }
     }
+}
+
+private fun calendarsSummary(settings: PlannerCalendarSettings): String {
+    val read = when (settings.read.size) {
+        0 -> "No calendars linked"
+        1 -> "Showing ${settings.read.single().name}"
+        else -> "Showing ${settings.read.size} calendars"
+    }
+    val write = settings.writeTo?.let { " · writing to ${it.name}" } ?: ""
+    return read + write
 }
 
 private fun appSettingsIntent(packageName: String) =

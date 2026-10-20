@@ -104,6 +104,15 @@ sealed interface Route {
     @Serializable data object Modules : Route
     /** The breakdown templates for splitting deadlines into steps. */
     @Serializable data object Templates : Route
+
+    /** Add ([entryId] null) or edit a timetable entry. */
+    @Serializable data class EntryEdit(val entryId: Long? = null) : Route
+
+    /** Which phone calendars the Planner shows, and writing back. */
+    @Serializable data object PlannerCalendars : Route
+
+    /** The same term dates as Budgeting's, reached from the Planner so it keeps its own bottom bar. */
+    @Serializable data object PlannerTermDates : Route
 }
 
 /**
@@ -142,6 +151,9 @@ val plannerRoutes: List<KClass<out Route>> = listOf(
     Route.PlannerSettings::class,
     Route.Modules::class,
     Route.Templates::class,
+    Route.EntryEdit::class,
+    Route.PlannerCalendars::class,
+    Route.PlannerTermDates::class,
 )
 
 /** True if this destination is one of [plannerRoutes]. */

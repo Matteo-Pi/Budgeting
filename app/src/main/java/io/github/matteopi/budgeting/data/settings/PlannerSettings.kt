@@ -19,6 +19,22 @@ data class PlannerReminderSettings(
     val taskTime: LocalTime get() = LocalTime.of((taskMinute / 60).coerceIn(0, 23), (taskMinute % 60).coerceIn(0, 59))
 }
 
+/** A calendar the user chose, kept with its account and name so it can be found again if its id changes. */
+@Serializable
+data class CalendarChoice(val id: Long, val account: String, val name: String)
+
+/**
+ * Which phone calendars the Planner shows, and where it writes (docs/PLAN.md §12.5): [writeTo] is null while writing
+ * back is off (the default). Device-specific, so not in backups.
+ */
+@Serializable
+data class PlannerCalendarSettings(
+    val read: List<CalendarChoice> = emptyList(),
+    val writeTo: CalendarChoice? = null,
+    /** With writing back on, the timetable's classes go into [writeTo] too. */
+    val writeTimetable: Boolean = false,
+)
+
 /** Reading and writing the Planner's JSON settings: a value that doesn't parse gives the defaults, never a crash. */
 object PlannerSettingsCodec {
 
@@ -44,4 +60,9 @@ object PlannerSettingsCodec {
             ?: BreakdownTemplates.defaults
 
     fun encodeTemplates(templates: List<BreakdownTemplate>): String = json.encodeToString(templatesSerializer, templates)
+
+    fun decodeCalendars(text: String?): PlannerCalendarSettings =
+        text?.let { runCatching { json.decodeFromString(PlannerCalendarSettings.serializer(), it) }.getOrNull() } ?: PlannerCalendarSettings()
+
+    fun encodeCalendars(settings: PlannerCalendarSettings): String = json.encodeToString(PlannerCalendarSettings.serializer(), settings)
 }

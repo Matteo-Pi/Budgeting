@@ -16,7 +16,7 @@ sealed class BackupDecodeResult {
     data class Failure(val errors: List<String>) : BackupDecodeResult()
 }
 
-/** JSON encode/decode for [BackupV1] (versions 1 to 5), with validation. See docs/PLAN.md §5.17. */
+/** JSON encode/decode for [BackupV1] (versions 1 to 6), with validation. See docs/PLAN.md §5.17. */
 object BackupCodec {
 
     private val json = Json {
@@ -181,8 +181,9 @@ object BackupCodec {
     }
 
     /**
-     * The version-5 Planner tables: references, the unique module codes (without case), steps one level deep, and a
-     * time of day inside the day. `LocalTime.of` would otherwise throw on a corrupted minute.
+     * The Planner tables (versions 5 and 6): references, the unique module codes (without case), steps one level deep,
+     * one change per entry and date, one link per item, and times inside the day (`LocalTime.of` would otherwise throw
+     * on a corrupted minute).
      */
     private fun validatePlanner(b: BackupV1, check: (Boolean, String) -> Unit) {
         val moduleIds = b.plannerModules.map { it.id }.toSet()
@@ -208,6 +209,34 @@ object BackupCodec {
         for (completion in b.plannerCompletions) {
             check(completion.taskId in tasksById, "Done log entry ${completion.id} refers to a missing task ${completion.taskId}.")
         }
+
+        // Version 6: the timetable and the calendar links.
+        val termIds = b.termPeriods.map { it.id }.toSet()
+        val entryIds = b.plannerEntries.map { it.id }.toSet()
+        check(entryIds.size == b.plannerEntries.size, "Two timetable entries have the same id.")
+        val day = 0 until 24 * 60
+        for (entry in b.plannerEntries) {
+            entry.moduleId?.let { check(it in moduleIds, "Timetable entry ${entry.id} refers to a missing module $it.") }
+            entry.termId?.let { check(it in termIds, "Timetable entry ${entry.id} refers to a missing term $it.") }
+            check(entry.weekday in 1..7, "Timetable entry ${entry.id} has no weekday.")
+            check(entry.startMinute in day && entry.endMinute in day, "Timetable entry ${entry.id} has a time outside the day.")
+            check(entry.pattern != "ONCE" || entry.onceDate != null, "Timetable entry ${entry.id} is once only but has no date.")
+        }
+        check(
+            b.plannerEntryExceptions.map { it.entryId to it.date }.toSet().size == b.plannerEntryExceptions.size,
+            "A timetable entry has two changes on the same date.",
+        )
+        for (exception in b.plannerEntryExceptions) {
+            check(exception.entryId in entryIds, "A timetable change refers to a missing entry ${exception.entryId}.")
+            check(
+                (exception.startMinute == null || exception.startMinute in day) && (exception.endMinute == null || exception.endMinute in day),
+                "A timetable change has a time outside the day.",
+            )
+        }
+        check(
+            b.plannerCalendarLinks.map { it.itemKey }.toSet().size == b.plannerCalendarLinks.size,
+            "Two calendar links are for the same item.",
+        )
     }
 
     /** The version-3 tables: the same reference checks, plus the uniqueness the food tables enforce. */

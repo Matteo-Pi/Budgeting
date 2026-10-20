@@ -4,12 +4,16 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import io.github.matteopi.budgeting.ui.plan.TermDatesScreen
 import io.github.matteopi.budgeting.ui.planner.components.PlannerComingSoonScreen
+import io.github.matteopi.budgeting.ui.planner.settings.CalendarsScreen
 import io.github.matteopi.budgeting.ui.planner.settings.ModulesScreen
 import io.github.matteopi.budgeting.ui.planner.settings.PlannerSettingsScreen
 import io.github.matteopi.budgeting.ui.planner.settings.TemplatesScreen
 import io.github.matteopi.budgeting.ui.planner.task.TaskDetailScreen
 import io.github.matteopi.budgeting.ui.planner.task.TaskEditScreen
+import io.github.matteopi.budgeting.ui.planner.timetable.EntryEditScreen
+import io.github.matteopi.budgeting.ui.planner.timetable.TimetableScreen
 import io.github.matteopi.budgeting.ui.planner.today.TodayScreen
 import io.github.matteopi.budgeting.ui.planner.todo.TodoScreen
 
@@ -28,14 +32,22 @@ fun NavGraphBuilder.plannerDestinations(navController: NavHostController) {
                     launchSingleTop = true
                 }
             },
+            onOpenTimetable = {
+                navController.navigate(Route.Timetable) {
+                    popUpTo<Route.Today>()
+                    launchSingleTop = true
+                }
+            },
             onAddTask = { navController.navigate(Route.TaskEdit()) },
         )
     }
     composable<Route.Timetable> {
-        PlannerComingSoonScreen(
-            title = "Timetable",
-            message = "Your weekly timetable, with your Google Calendar beside it, comes in the next build of the Planner.",
+        TimetableScreen(
             onOpenSettings = openSettings,
+            onOpenCalendars = { navController.navigate(Route.PlannerCalendars) },
+            onAddEntry = { navController.navigate(Route.EntryEdit()) },
+            onEditEntry = { id -> navController.navigate(Route.EntryEdit(entryId = id)) },
+            onOpenTask = openTask,
         )
     }
     composable<Route.Todo> {
@@ -90,6 +102,8 @@ fun NavGraphBuilder.plannerDestinations(navController: NavHostController) {
             onBack = { navController.popBackStack() },
             onOpenModules = { navController.navigate(Route.Modules) },
             onOpenTemplates = { navController.navigate(Route.Templates) },
+            onOpenTermDates = { navController.navigate(Route.PlannerTermDates) },
+            onOpenCalendars = { navController.navigate(Route.PlannerCalendars) },
         )
     }
     composable<Route.Modules> {
@@ -97,5 +111,19 @@ fun NavGraphBuilder.plannerDestinations(navController: NavHostController) {
     }
     composable<Route.Templates> {
         TemplatesScreen(onBack = { navController.popBackStack() })
+    }
+    composable<Route.EntryEdit> { backStackEntry ->
+        val args = backStackEntry.toRoute<Route.EntryEdit>()
+        EntryEditScreen(
+            entryId = args.entryId,
+            onBack = { navController.popBackStack() },
+            onSaved = { navController.popBackStack() },
+        )
+    }
+    composable<Route.PlannerCalendars> {
+        CalendarsScreen(onBack = { navController.popBackStack() })
+    }
+    composable<Route.PlannerTermDates> {
+        TermDatesScreen(onBack = { navController.popBackStack() })
     }
 }

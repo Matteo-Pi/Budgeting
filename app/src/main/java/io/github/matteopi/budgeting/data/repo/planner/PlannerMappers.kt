@@ -1,7 +1,10 @@
 package io.github.matteopi.budgeting.data.repo.planner
 
+import io.github.matteopi.budgeting.core.planner.model.CalendarLink
 import io.github.matteopi.budgeting.core.planner.model.ChecklistItem
 import io.github.matteopi.budgeting.core.planner.model.DeadlineType
+import io.github.matteopi.budgeting.core.planner.model.EntryException
+import io.github.matteopi.budgeting.core.planner.model.EntryKind
 import io.github.matteopi.budgeting.core.planner.model.Module
 import io.github.matteopi.budgeting.core.planner.model.Priority
 import io.github.matteopi.budgeting.core.planner.model.RepeatKind
@@ -9,12 +12,20 @@ import io.github.matteopi.budgeting.core.planner.model.Task
 import io.github.matteopi.budgeting.core.planner.model.TaskCompletion
 import io.github.matteopi.budgeting.core.planner.model.TaskKind
 import io.github.matteopi.budgeting.core.planner.model.TaskRepeat
+import io.github.matteopi.budgeting.core.planner.model.TimetableEntry
+import io.github.matteopi.budgeting.core.planner.model.WeekPattern
 import io.github.matteopi.budgeting.core.planner.model.Weekdays
+import io.github.matteopi.budgeting.core.planner.timetable.WeekList
+import io.github.matteopi.budgeting.core.planner.timetable.WeekListResult
 import io.github.matteopi.budgeting.data.db.dao.TaskWithChecklist
+import io.github.matteopi.budgeting.data.db.entities.planner.CalendarLinkEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.ChecklistItemEntity
+import io.github.matteopi.budgeting.data.db.entities.planner.EntryExceptionEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.ModuleEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.TaskCompletionEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.TaskEntity
+import io.github.matteopi.budgeting.data.db.entities.planner.TimetableEntryEntity
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -133,3 +144,88 @@ fun TaskCompletion.toEntity() = TaskCompletionEntity(
     dueDate = dueDate?.toEpochDay(),
     completedAtMillis = completedAt.toEpochMilli(),
 )
+
+// ---- The timetable (version 6) ------------------------------------------------------------------
+
+private fun patternOf(kind: String, weeks: String, onceDate: Long?): WeekPattern = when (kind) {
+    "WEEKS" -> WeekPattern.TeachingWeeks((WeekList.parse(weeks) as? WeekListResult.Ok)?.weeks ?: emptySet())
+    "ODD" -> WeekPattern.OddWeeks
+    "EVEN" -> WeekPattern.EvenWeeks
+    // A once-only entry that lost its date can't be placed; it reads as weekly rather than breaking the list.
+    "ONCE" -> onceDate?.let { WeekPattern.Once(LocalDate.ofEpochDay(it)) } ?: WeekPattern.EveryWeek
+    else -> WeekPattern.EveryWeek
+}
+
+private fun WeekPattern.kindName(): String = when (this) {
+    WeekPattern.EveryWeek -> "EVERY"
+    is WeekPattern.TeachingWeeks -> "WEEKS"
+    WeekPattern.OddWeeks -> "ODD"
+    WeekPattern.EvenWeeks -> "EVEN"
+    is WeekPattern.Once -> "ONCE"
+}
+
+fun TimetableEntryEntity.toModel() = TimetableEntry(
+    id = id,
+    title = title,
+    kind = enumOr(kind, EntryKind.OTHER),
+    moduleId = moduleId,
+    location = location,
+    room = room,
+    contact = contact,
+    colorArgb = colorArgb,
+    note = note,
+    weekday = DayOfWeek.of(weekday.coerceIn(1, 7)),
+    start = timeOf(startMinute) ?: LocalTime.MIDNIGHT,
+    end = timeOf(endMinute) ?: LocalTime.MIDNIGHT,
+    pattern = patternOf(pattern, weeks, onceDate),
+    termId = termId,
+    inHolidays = inHolidays,
+    archived = archived,
+    createdAt = Instant.ofEpochMilli(createdAtMillis),
+)
+
+fun TimetableEntry.toEntity() = TimetableEntryEntity(
+    id = id,
+    title = title.trim(),
+    kind = kind.name,
+    moduleId = moduleId,
+    location = location.trim(),
+    room = room.trim(),
+    contact = contact.trim(),
+    colorArgb = colorArgb,
+    note = note.trim(),
+    weekday = weekday.value,
+    startMinute = minuteOf(start),
+    endMinute = minuteOf(end),
+    pattern = pattern.kindName(),
+    weeks = (pattern as? WeekPattern.TeachingWeeks)?.let { WeekList.format(it.weeks) } ?: "",
+    onceDate = (pattern as? WeekPattern.Once)?.date?.toEpochDay(),
+    termId = termId,
+    inHolidays = inHolidays,
+    archived = archived,
+    createdAtMillis = createdAt.toEpochMilli(),
+)
+
+fun EntryExceptionEntity.toModel() = EntryException(
+    id = id,
+    entryId = entryId,
+    date = LocalDate.ofEpochDay(date),
+    cancelled = cancelled,
+    start = timeOf(startMinute),
+    end = timeOf(endMinute),
+    room = room,
+)
+
+fun EntryException.toEntity() = EntryExceptionEntity(
+    id = id,
+    entryId = entryId,
+    date = date.toEpochDay(),
+    cancelled = cancelled,
+    startMinute = start?.let(::minuteOf),
+    endMinute = end?.let(::minuteOf),
+    room = room?.trim()?.takeIf { it.isNotEmpty() },
+)
+
+fun CalendarLinkEntity.toModel() = CalendarLink(id, itemKey, calendarId, eventId, uid, contentHash)
+
+fun CalendarLink.toEntity() = CalendarLinkEntity(id, itemKey, calendarId, eventId, uid, contentHash)

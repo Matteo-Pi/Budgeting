@@ -22,7 +22,8 @@ import kotlinx.coroutines.flow.first
 /**
  * Runs once a day (docs/PLAN.md §6.8): posts due AUTO recurring/scheduled items; once a day
  * (guarded by `lastSnapshotDate`) saves an accuracy snapshot of the full forecast; refreshes the
- * widget; and posts the weekly balance-check reminder when it's due ([ReminderRule]).
+ * widget; posts the weekly balance-check reminder when it's due ([ReminderRule]); and, with the Planner writing
+ * to a calendar, brings that calendar up to date.
  */
 class DailyWorker(
     context: Context,
@@ -65,6 +66,9 @@ class DailyWorker(
         if (shouldRemind) {
             postReminderNotification(applicationContext)
         }
+
+        // Writing back adds the days that came into range and drops what ended (docs/PLAN.md §13.7).
+        if (container.settingsStore.plannerCalendars.first().writeTo != null) container.plannerCalendarSync.sync()
 
         return Result.success()
     }
