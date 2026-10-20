@@ -16,6 +16,8 @@ Contents
 9. Open items and future work
 10. Receipts and item prices
 11. Food: recipes, cooking and shopping (the Recipes section)
+12. Planner: what it includes (to-do list, timetable, habits, day record, study planner)
+13. Planner: how it is built
 
 ---
 
@@ -50,6 +52,7 @@ All data stays on the phone. No server, no login, no bank connection.
 | Widget | Shows safe-to-spend/week and days until next money in; "+" opens quick add; optional one-tap preset buttons. |
 | Laptop | Maybe later. Keep all logic in the pure-Kotlin `core` module so it could be reused; do nothing else for it now. |
 | Food (2026-10-17) | A recipe book, shopping list and cooking view live in this app as their own **Food** section (§11), costed from receipt prices. Offline first: the only network use is an optional, off-by-default barcode lookup that sends just the barcode number to Open Food Facts. |
+| Planner (2026-10-19) | A third section, **Planner** (§12, §13): to-do list, timetable, habits, a day record split into chunks, free time, study suggestions and insights. Google Calendar is read offline from the phone's own calendar store; writing back is an option, off by default. |
 
 ### Glossary
 - **Pool**: the accounts with `includeInSafeToSpend = true`. Forecasts are for the pool's summed balance.
@@ -2236,8 +2239,7 @@ a student. It has:
 - insights: free time, suggested study time, and what the time actually went on, so the user can see where it is lost.
 
 Like the rest of the app it works offline, keeps everything on the phone, uses no AI, and explains
-every number it shows. This section says *what* v1 will include; how to build it is planned once the
-open questions in §12.13 are answered.
+every number it shows. This section says *what* v1 will include; §13 says how it is built.
 
 ### 12.1 Decisions
 | Topic | Decision |
@@ -2247,8 +2249,8 @@ open questions in §12.13 are answered.
 | Other calendars | In v1, any other calendar account already on the phone (Outlook, Samsung), which works the same way. The university timetable, `.ics` files and web addresses come after v1 (§12.12). |
 | Writing to Google Calendar | An option in Planner settings, off by default. When on, accepted study blocks and timed tasks go into a calendar the user picks. |
 | Study suggestions | Rule-based, shaped by the user's preferences. They can be switched off completely, or for a day or a module. |
-| The day record | The user splits the whole day into chunks of their own and says what each was. It can be filled in from the moment the day starts, and an end-of-day review finishes it (§12.8). No nudges during the day. Nothing is recorded behind the user's back, and v1 doesn't read phone usage. |
-| Habits | Their own tab (§12.9). Of the other ideas, only habits are in v1; the rest wait (§12.12). |
+| The day record | The user splits the whole day into chunks of their own and says what each was. It can be filled in as the day goes and planned ahead from the moment the day starts, and an end-of-day review finishes it (§12.8). Where a day starts and ends is the user's choice. No nudges during the day. Nothing is recorded behind the user's back, and v1 doesn't read phone usage. |
+| Habits | Their own tab (§12.9), with limits as an option, counting by hand or from the day record (or both), streaks, and optional suggested slots. Of the other ideas, only habits are in v1; the rest wait (§12.12). |
 | Term dates | The same term dates as Budgeting, so the timetable, the suggestions, the habits and the insights know term from holidays. |
 | Privacy | Everything stays on the phone, and backups include it. Calendar data is read only from calendars the user picks. |
 
@@ -2265,7 +2267,7 @@ Five bottom tabs, each its own screen, plus a separate settings screen:
 - **To-do**: tasks and deadlines (§12.3).
 - **Habits**: the habits, today's ticks, streaks and history (§12.9).
 - **Insights**: free time, study time, where time went, habits, and the weekly review (§12.10).
-- **Settings**: its own screen, opened from a gear icon in the top bar of every Planner tab, as in the other two sections (§12.11).
+- **Settings**: its own screen, opened from a gear icon in the top bar of every Planner tab (§12.11). Not a sixth tab.
 
 ### 12.3 To-do list
 - **Tasks**:
@@ -2337,16 +2339,20 @@ Five bottom tabs, each its own screen, plus a separate settings screen:
 - **Re-planning**: a missed or shortened block puts its time back into the remaining plan and moves later suggestions, instead of leaving a gap.
 - **Revision mode**: before exams, topics come back at growing intervals (spaced repetition), and harder or more heavily weighted modules get more time.
 - **Learning from the record**: once there is history, blocks are suggested at the times the user actually studies and focuses best (§12.8). This can be switched off.
+- **Habit slots** (an option per habit, §12.9): habits such as the gym can get suggested slots too, placed after the deadlines' study.
 
 ### 12.8 The day record and the end-of-day review
 - **The day record**:
   - The whole day, from the day's start to its end, as a strip of chunks on the Today timeline.
-  - It is open from the moment the day starts. The user can fill it in as the day goes, or plan the whole day in the morning and correct it later.
+  - It is open from the moment the day starts. The user can fill it in as the day goes, plan the whole day in the morning and correct it later, or both.
+  - **Where a day starts and ends** is a setting:
+    - from that weekday's wake time to its sleep time (the default; sleep isn't recorded);
+    - or a fixed cut-off, such as 04:00 to 04:00, so a late night still counts as the day before (sleep is then part of the record).
   - Earlier days can be opened from the Today tab's date and filled in or changed at any time.
 - **Custom chunks**:
   - Split a chunk at any time with a tap, drag the boundary between two chunks, or type exact start and end times.
   - Merge neighbours, and copy or delete a chunk.
-  - Chunks can be any length, and times snap to a step set in settings (for example 5 minutes).
+  - Chunks can be any length. Dragging a boundary moves it in **15-minute** steps; typed times can be any minute.
 - **What a chunk holds**:
   - A category, picked with one tap: study, lecture or class, exercise, social, cooking and eating, travel, chores, rest, phone and scrolling, sleep, other. The categories can be renamed, recoloured and added to.
   - Optionally the module (for study and classes) and a short note.
@@ -2369,17 +2375,20 @@ Five bottom tabs, each its own screen, plus a separate settings screen:
 ### 12.9 Habits (own tab)
 - **A habit** has a name, a colour and a goal:
   - on chosen days, or a number of times per week ("gym 3 times a week");
-  - or an amount per day or week, in minutes ("read 20 minutes a day") or a count.
+  - or an amount per day or week, in minutes ("read 20 minutes a day") or a count;
+  - or, as an option, a **limit**: at most an amount per day or week ("phone and scrolling under 1 h a day").
 - **Counting**, chosen per habit:
   - ticked by hand on the Habits tab, on Today, or from the habit's reminder;
-  - or counted from the day record by a category, so the habit fills itself in (for example 30 minutes or more of "exercise" counts as a gym visit).
+  - or counted from the day record by a category, so the habit fills itself in (for example 30 minutes or more of "exercise" counts as a gym visit);
+  - or both. A day then counts the larger of the two, so a session that is ticked and also recorded isn't counted twice.
 - **The Habits tab**:
   - Today's habits with a tick, then this week's progress on each ("gym 2 of 3").
   - Each habit's history: a calendar grid, the completion rate per week and month, and the current and best streak.
-- **Streaks** (optional per habit):
+- **Streaks** (on by default, can be turned off per habit):
   - Weekly goals count their streaks in weeks.
   - "Skip today" (ill, away) and planned rest days don't break a streak.
 - **Reminders**: optional per habit, at a time ("read at 21:30").
+- **Suggested slots** (off by default): *Suggest a time* gives the habit free-time slots of a chosen length in a chosen part of the day, like study (§12.7).
 - **Term-aware**: a habit can be for term time only, or paused (for exams or holidays). Paused days don't count against it.
 - **Insights** show how habits are going (§12.10).
 
@@ -2403,12 +2412,12 @@ Five bottom tabs, each its own screen, plus a separate settings screen:
   - Then plan the next week, accepting or adjusting the suggested blocks in one place.
 
 ### 12.11 Settings (own screen)
-- **The day**: wake and sleep times (by weekday), when the day record starts and ends, meal slots, travel buffers, and the minimum useful gap.
+- **The day**: wake and sleep times (by weekday), where the day record starts and ends (wake to sleep, or a fixed cut-off), meal slots, travel buffers, and the minimum useful gap.
 - **Calendars**:
   - Which phone calendars count.
   - Writing back: on or off (off by default), the calendar to write to, and removing what was written.
 - **Study suggestions**: on or off, per module, and the preferences in §12.7.
-- **Day record**: the categories, the snapping step, and the end-of-day review's time (or off).
+- **Day record**: the categories, and the end-of-day review's time (or off).
 - **Notifications**: task reminders, habit reminders, the end-of-day review and the weekly review.
 - **Modules and term**: the modules, their colours and weekly targets. The term dates are shared with Budgeting and can be changed from either.
 
@@ -2438,7 +2447,7 @@ Five bottom tabs, each its own screen, plus a separate settings screen:
 - Recording without the user knowing.
 - Taking over the university's own systems.
 
-### 12.13 Answers and open questions
+### 12.13 Answers
 **Answers (2026-10-19)**:
 - To-do, Insights and Settings are separate, and Habits is its own tab.
 1. The section is called **Planner**.
@@ -2449,18 +2458,914 @@ Five bottom tabs, each its own screen, plus a separate settings screen:
 6. Of the other ideas, only habits.
 7. Part-time work: not now.
 
-**Open questions** (asked 2026-10-19):
-1. **Settings**: its own screen from a gear on every Planner tab, keeping five bottom tabs like the other sections, or a sixth bottom tab? Six fit, but the labels get cramped.
-2. **Filling in the day**: as it goes, planned in the morning and corrected at night, or both? (The plan allows both.)
-3. **Where a day starts and ends**: at the wake and sleep times, or a fixed cut-off such as 04:00, so a late night counts as the day before?
-4. **Chunk step**: 5, 10, 15 or 30 minutes?
-5. **Habits**: which kinds (times a week, minutes a day, limits such as "phone under 1 h a day")? Ticked, counted from the day record, or both? Streaks?
-6. **Habit slots**: should habits like the gym get suggested free-time slots, as study does?
-7. **Google Calendar**: is it already syncing on the phone, and which calendars matter?
-8. **Order of building**, each stage an installable build. Proposed:
-   1. the Planner section, To-do and Settings;
-   2. the Timetable and the Google Calendar link;
-   3. Today with the day record and the end-of-day review;
-   4. Habits;
-   5. free time and study suggestions;
-   6. Insights and the weekly review.
+**Answers (2026-10-20)**:
+1. Settings: a gear icon on every Planner tab, keeping five bottom tabs.
+2. Filling in the day: both, as it goes and planned ahead.
+3. Where a day starts and ends: the user chooses (a setting).
+4. Dragging snaps to 15 minutes.
+5. Habits: limits as an option; counting by hand, from the day record, or both; streaks, yes.
+6. Habit slots: an option.
+7. Google Calendar: skipped for now; checked when stage P2 is built.
+8. The order of building: P1 to P6 as in §13.10.
+
+No open questions block the build.
+
+---
+
+## 13. Planner: how it is built (planned 2026-10-20, not started)
+
+How §12 is coded. It follows the rest of this file:
+- the logic in `core` (pure Kotlin, tested locally);
+- Room and DataStore in `app`;
+- screens built from pure mapping functions;
+- additive migrations only.
+
+It is built in six stages, **P1 to P6** (§13.10). Each stage is an installable build, published through the
+usual `update-check` → `publish` gate.
+
+### 13.1 Rules for this code
+**Where things live**
+- **Logic in core.** Everything that decides something is a pure function in `core/.../planner/`, tested on the
+  JVM: dates, occurrences, free time, chunk edits, outcomes, habits, suggestions, insights, reminders and
+  calendar sync plans. The app only reads, writes, schedules and draws.
+- **No clock or zone inside core.** Every function takes `now: Instant`, `today: LocalDate` and `zone: ZoneId`.
+  It never calls `Instant.now()` or `ZoneId.systemDefault()`, so every test is repeatable and every DST case can
+  be written down.
+- **No new libraries.** Calendars use `CalendarContract`, reminders `AlarmManager`, and the widget Glance.
+  Compose, Room, WorkManager, DataStore and kotlinx.serialization are already in the build, so the APK hardly
+  grows.
+
+**Data**
+- **Store only what the user decides.** Stored: tasks, entries, plans, records, ticks, reviews, dismissals,
+  settings, and the links to written calendar events. Never stored: free time, suggestions, outcomes,
+  progress, streaks, deadline status, insights and waiting chunks. They are worked out from the stored rows
+  each time, so they can never go stale or disagree.
+- **One user action = one database transaction.** Pure *edit plan* functions decide which rows to insert,
+  update and delete (as `TransferEdits` does for transactions). The DAO code stays trivial, the rules are
+  unit-tested, and every plan carries its inverse for **Undo**.
+- **Bounded reads.** Screens query a range: `observeRecords(from, to)` and `observeTasks(open or due in range)`.
+  Only Insights (the period it shows) and backups read more.
+
+**Screens**
+- **ViewModels** follow §7:
+  `combine(...).mapLatest { withContext(Dispatchers.Default) { Mapping.build(...) } }.stateIn(viewModelScope,
+  WhileSubscribed(5_000), Loading)`.
+  - Each screen's mapping is a pure function in `…Mapping.kt` with a JVM test.
+  - No logic in composables.
+- **A cheap "now".** `Clock.minuteFlow` ticks once a minute and only while something collects it. Only the
+  light *now* parts (the now line, waiting chunks, the running timer) depend on it. Occurrences, calendar
+  reads, free time and suggestions depend on data and the date only. They are shared through `PlannerService`
+  (§13.9), so they are computed once for every screen and the widget.
+- **Smooth drawing.**
+  - UI models are `@Immutable` data classes, and lazy lists have stable keys.
+  - The day canvas and the week grid are custom `Layout`s, with positions computed in core as minutes.
+  - A drag changes only local state, drawn through `Modifier.offset { }` and `graphicsLayer`. It is written
+    once, on release, so nothing recomposes the whole screen per frame.
+  - There are no lazy lists inside vertical scrolls.
+
+**Errors and accessibility**
+- **Nothing crashes on the outside world.**
+  - Calendar reads and writes, alarms and notifications catch the errors the platform documents
+    (`SecurityException`, `IllegalArgumentException`, a null cursor).
+  - They turn each into a typed state the screen explains: *Calendar permission needed*, *Calendar not
+    available*, *Reminders may be a few minutes late*.
+  - Expected failures are results, not exceptions.
+- **Validation in core.** `TaskRules`, `EntryRules`, `ChunkRules` and `HabitRules` return field errors; forms
+  keep *Save* disabled until they are empty. Foreign keys and unique indices back them up.
+- **Accessibility as in §7.**
+  - Content descriptions such as "Study, EC101, 14:00 to 15:30", and 48 dp touch targets.
+  - Chunk boundaries have custom accessibility actions, *Move earlier by 15 minutes* and *Move later by 15
+    minutes*. Device tests use them instead of flaky drags.
+
+### 13.2 Time: instants, dates and days
+**How time is stored**
+- **Moments** (a chunk's start, a plan block's end, a completion) are `Instant`s, stored as epoch millis.
+  - Clock changes and time-zone moves then never corrupt the record: a 25-hour day simply has 25 hours.
+- **Calendar dates** (a due date, a habit tick, a review) are `LocalDate`, stored as epoch day.
+- **Times of day** (09:00 every Monday, a reminder at 21:30) are `LocalTime`, stored as minutes after midnight.
+  They are turned into instants for a given date and zone only when needed.
+  - A time in the spring-forward gap moves forward by the gap (`ZonedDateTime.of`), so 01:30 becomes 02:30.
+- **Weeks** start on Monday.
+- **The grid**: drags snap to the 15-minute grid of the local clock (`Snap.STEP_MINUTES = 15`), and typed times
+  keep their minute.
+
+**Days** (`DayWindows`, from `DaySettings`)
+- **Record window** `recordWindow(date)`:
+  - `WAKE_SLEEP` (the default): from that weekday's wake time to its sleep time. A sleep time at or before the
+    wake time is on the next date.
+  - `FIXED`: from the cut-off on that date to the cut-off on the next (default 04:00).
+- **Waking window** `wakingWindow(date)`: always wake to sleep. Free time uses it in both modes.
+- **The current day** `currentDay(now)`: the date whose record window holds `now`.
+  - `FIXED`: the date of `now − cut-off`.
+  - `WAKE_SLEEP`, before today's wake time: yesterday if yesterday's window is still open (sleep after
+    midnight), else today ("Your day starts at 08:00").
+- **No day key**: chunks and plan blocks belong to no day. A day shows whatever overlaps its window, clipped to
+  it, so changing the day setting never loses or moves anything.
+
+**Clock** (`domain/Clock`) gains:
+- `zone()`: read on every call, so a zone change applies straight away.
+- `minuteFlow`: emits `now`, then at each minute boundary. It waits at most 60 s at a time, for the same reason
+  as `todayFlow`.
+
+**Checkpoints** (`DayWindowsTest`, zone Europe/London)
+- `FIXED` 04:00:
+  - Sat 28 Mar 2026 is **23 h** long (the clocks go forward that night).
+  - Sat 24 Oct 2026 is **25 h** long.
+- `WAKE_SLEEP`, wake 08:00, sleep 01:00:
+  - Fri 23 Oct 2026 runs 08:00 Fri to 01:00 Sat, **17 h**.
+  - At 00:30 Sat the current day is Fri 23. At 02:00 Sat it is Sat 24, before its start.
+- Sleep 01:30 on Sat 28 Mar 2026 ends the window at **02:30 BST**.
+
+### 13.3 Core models (`core/.../planner/model/`)
+Plain immutable data classes; ids are `Long` (0 = not saved).
+
+| Model | Fields |
+|---|---|
+| `Module` | code ("EC101"), name, colour, weekly target minutes?, weight (1–3: how much it counts / how hard), archived |
+| `Task` | title, notes, kind (`TASK`/`DEADLINE`), deadline type? (`ASSIGNMENT`/`EXAM`/`APPLICATION`/`OTHER`), due date?, due time?, length? (an exam's), estimate minutes?, priority (`NONE`/`LOW`/`MEDIUM`/`HIGH`), module id?, tags, repeat?, reminder?, parent id? (a step of a deadline), location?, completed at?, created at, sort order |
+| `TaskRepeat` | `DAILY`, `WEEKLY`, `EVERY_N_DAYS`, `WEEKDAYS`; interval; weekdays |
+| `TaskReminder` | `AtTime(minutesBefore)` for timed tasks, `OnDay(time)` for untimed ones |
+| `ChecklistItem` | task id, position, text, done |
+| `TaskCompletion` | task id, the due date it completed, completed at: the Done log, repeats included |
+| `TimetableEntry` | title, kind (`LECTURE`/`SEMINAR`/`LAB`/`TUTORIAL`/`SPORT`/`SOCIETY`/`OTHER`), module id?, location, room, contact, colour?, note, weekday, start, end, pattern, term id? (null = every term), in holidays, archived |
+| `WeekPattern` | `EveryWeek`, `TeachingWeeks(weeks: Set<Int>)`, `OddWeeks`, `EvenWeeks`, `Once(date)` |
+| `EntryException` | entry id, date, cancelled, or a new start/end/room for that date |
+| `Occurrence` | one dated class: entry id, date, start/end instants, title, kind, module, location, room, colour, changed? |
+| `CalendarInstance` | event id, calendar id, title, location, start/end instants, all-day, busy, colour (read from the phone) |
+| `TimeCategory` | name, colour, system key? (`STUDY`, `CLASS`, `EXERCISE`, `SOCIAL`, `COOKING`, `TRAVEL`, `CHORES`, `REST`, `PHONE`, `SLEEP`, `OTHER`), rates focus, archived, sort order |
+| `PlanBlock` | start, end, category id, module id?, task id?, habit id?, topic id?, origin (`USER`/`SUGGESTION`/`HABIT`), outcome override?, note |
+| `RecordChunk` | start, end, category id, module id?, task id?, plan block id?, source key? ("entry:12:2026-10-20", "event:345:1729425600000"), focus (1–5)?, note, origin (`MANUAL`/`TIMER`/`CONFIRMED`) |
+| `DayReview` | date, finished at?, rating (1–5)?, note |
+| `Habit` | name, colour, goal, counting (`MANUAL`/`RECORD`/`BOTH`), category id?, minimum minutes (a record chunk at least this long counts as once), streaks, reminder time?, term time only, paused from/until?, suggest slot, slot minutes, slot window, start date, archived, sort order |
+| `HabitGoal` | kind (`ON_DAYS`/`TIMES_PER_WEEK`/`AT_LEAST`/`AT_MOST`), target, unit (`TIMES`/`MINUTES`/`COUNT`), period (`DAY`/`WEEK`), days |
+| `HabitEntry` | habit id, date, amount, skipped |
+| `RevisionTopic` | exam task id, name, difficulty (1–3), sort order |
+| `CalendarLink` | item key, calendar id, event id, UID, content hash: one event the app wrote |
+
+The default categories (`DefaultTimeCategories`) all carry system keys. The rules can therefore find "phone" or
+"travel" even after the user renames them. `STUDY` and `CLASS` rate focus.
+
+### 13.4 Core algorithms
+Each is an `object` with pure functions and a test class of the same name plus `Test`. Checkpoints are exact
+expected values for those tests.
+
+#### To-do (`planner/todo/`, P1)
+**`TaskRepeats.next(due, repeat, completedOn)`**
+- Steps from `due` by the rule until the date is after `completedOn`, so a task done late doesn't come back
+  for the days already missed.
+- `WEEKDAYS` gives the next chosen weekday; `EVERY_N_DAYS` adds n; `WEEKLY` adds 7 × interval.
+- Completing a repeating task writes a `TaskCompletion` and moves `dueDate` on. Undo reverses both.
+
+**`TaskViews`**: the To-do filters.
+- **Groups**: Today (due today, timed first), Overdue (open, due before today), Upcoming (by day for 14 days,
+  then by week), No date, By module, and Done (completions, newest first).
+- **Order inside a group**: time, then priority (high first), then sort order.
+- A step shows its deadline's title under its own.
+
+**`TaskQuickAdd.parse(text, today, modules)`**
+- **Result**: `QuickAdd(title, dueDate?, dueTime?, estimateMinutes?, moduleId?, tags, priority, spans)`. The
+  spans are highlighted in the preview.
+- **Tokens**: case-insensitive and in any order. The first of each kind counts; the rest stay in the title.
+  - **Date**:
+    - "today", "tomorrow", "tmrw" or "tmr";
+    - weekday names and 3-letter forms: the coming one, today included;
+    - "23/10" or "23/10/2026" (day first), "23 oct", "oct 23" or "23rd oct". A past day/month means next year.
+  - **Time**: "3pm", "3:30pm", "15:00", "noon", "midday". A bare number is never a time.
+  - **Estimate**: "2h", "90m", "45min", "1h30", "1.5h", "2 hrs".
+  - **Module or tag**: "#EC101" is the module with that code, else the tag "EC101".
+  - **Priority**: "!", "!!", "!!!" for low, medium, high.
+- A connector word left at the end ("for", "at", "on", "by") is dropped. Text in quotes is always title.
+
+**`DeadlineStatus.of(...)`** (P1 shows work left and days left; P3 adds the on-track part)
+- **Work left**:
+  - with steps: the sum over open steps of (estimate − study recorded on the step), each at least 0;
+  - without: estimate − study recorded on the deadline.
+  - "Study recorded" is the minutes of record chunks with that task id.
+- **Status**:
+  - `DONE` or `OVERDUE`, or `NO_ESTIMATE` when there is nothing to measure;
+  - else, against the unplanned free time before the target date (due − finish-early days):
+    - `ON_TRACK`: work left ≤ half the free time;
+    - `TIGHT`: ≤ all of it;
+    - `AT_RISK`: more than all of it.
+- The screen shows both numbers ("6 h left · 9 h free before Thu") and the reason for the half: other work and
+  rest need time too.
+
+**Other parts**
+- **`BreakdownTemplates`**: Essay, Lab report, Presentation and Exam revision. Each is a list of steps with
+  shares of the time and offsets before the due date. The user's edits are stored in settings, and the defaults
+  are in core.
+- **`TaskRules`**:
+  - The title is not blank.
+  - A due time, a repeat or a reminder needs a due date.
+  - An estimate is 5 min to 200 h, and an exam has a length.
+
+**Checkpoints** (`TaskQuickAddTest`, today Tue 20 Oct 2026; at least 40 fixtures, plus a seeded random test
+where no input throws):
+
+| Text | Result |
+|---|---|
+| "Econ essay draft fri 3pm 2h #EC101" | "Econ essay draft", Fri 23 Oct, 15:00, 120 min, EC101 |
+| "Pay rent tomorrow !!!" | "Pay rent", Wed 21 Oct, high |
+| "Read ch 3 for 45min" | "Read ch 3", 45 min |
+| "Submit form by 23/10 5pm" | "Submit form", Fri 23 Oct, 17:00 |
+| "Call 3 shops" | "Call 3 shops", nothing else |
+| "Gym tue" | "Gym", Tue 20 Oct (today) |
+| "\"Plan for Friday\" fri" | "Plan for Friday", Fri 23 Oct |
+
+#### Timetable (`planner/timetable/`, P2)
+**Expanding the timetable**
+- **`TeachingWeeks.number(date, term)`**: week 1 is the Monday on or before the term's start.
+- **`WeekList`**:
+  - `parse("1-5, 7–11")` gives {1…5, 7…11}, with an error for empty, reversed or out-of-range parts.
+  - `format` gives the shortest form back.
+- **`Timetable.occurrences(entries, exceptions, terms, dates, zone)`**: for each date, each entry on that weekday
+  whose pattern matches.
+  - **Which dates count**:
+    - The date's term must be the entry's term (any term when it has none). Outside terms, only entries marked
+      *in holidays* count.
+    - `TeachingWeeks`, `OddWeeks` and `EvenWeeks` use the week number; `Once` matches its date only.
+  - **Exceptions**: cancel that date or change its times or room.
+  - The result is sorted by start. It costs days × entries, and `PlannerService` caches it per week.
+
+**Checking and laying out**
+- **`Clashes.find(occurrences, travel)`**:
+  - overlaps on the same day;
+  - "tight" pairs, where the gap is shorter than the travel time between their locations.
+- **`Lanes.assign(items)`**: side-by-side lanes for overlapping items (greedy, per overlap cluster). The week
+  grid and day canvas use them as they are.
+- **`TermCopy.rows(entries, from, to)`**: the entries copied into another term.
+- **`EntryRules`**:
+  - The end comes after the start.
+  - Chosen weeks parse.
+  - `Once` needs a date in a term, unless *in holidays* is on.
+
+**Checkpoints** (autumn term Mon 28 Sep – Fri 11 Dec 2026)
+- A Monday entry on weeks "1–5, 7–11" has **10 occurrences**: 28 Sep, 5/12/19/26 Oct, 9/16/23/30 Nov and 7 Dec.
+  There is none on 2 Nov (week 6, reading week).
+- The same entry on odd weeks has **6**.
+- A 09:00 lecture on Mon 26 Oct (after the clocks go back) is still at 09:00 local.
+
+#### The day record (`planner/day/`, P3)
+**`DayTimeline.build(window, now, records, plans, occurrences, instances)`**
+- **Segments**, in order and never overlapping:
+  - `Recorded(chunk)`;
+  - `Waiting(source)`: a past plan block, class or busy event that nothing has recorded yet;
+  - `Unrecorded(interval)`: the past, with nothing;
+  - `Planned(source)`: the future: plan blocks, classes, events;
+  - `Free(interval)`: the future, with nothing.
+- **Precedence**: records > plan blocks > classes > events. A lower one shows only where the higher ones leave
+  room.
+- **Events left out**: all-day and *free* events, and events the app wrote itself (their ids are in
+  `calendar_links`).
+
+**`DayEdits`** returns `EditPlan(inserts, updates, deletes, inverse)` for one layer: records, or plan blocks.
+- **Which layer**: a new chunk that starts before `now` is a record; one that starts at or after `now` is a plan
+  block.
+- **The edits**:
+  - `place(draft)`: the new chunk wins.
+    - Overlapped neighbours are trimmed, a neighbour it falls inside is split in two, and fully covered ones are
+      deleted.
+    - The sheet first says "This replaces Social 18:00–18:30".
+  - `split(chunk, at)`: `at` is snapped and strictly inside the chunk. The right half is a new row with the same
+    fields.
+  - `moveBoundary(left, right, to)`:
+    - moves a shared edge, or one chunk's edge into a gap;
+    - snapped, kept inside the window, and each side keeps at least 15 minutes.
+  - `merge(a, b)`: neighbours, or separated only by unrecorded time. The result keeps `a`'s fields.
+  - `confirm(waiting)` / `confirmAll(day)`: records copying the source's category, module and task. Each carries
+    `planBlockId` or `sourceKey` and `CONFIRMED`, and is clipped to unrecorded time.
+  - `delete(chunk)`.
+- **Default categories when confirming a class**: `CLASS` for lectures, seminars, labs and tutorials,
+  `EXERCISE` for sport, `SOCIAL` for societies, `OTHER` for the rest. Events default to `OTHER`.
+- **Invariants**, checked after every edit in `DayEditsTest` (10,000 random edit sequences with fixed seeds):
+  - no two chunks of a layer overlap;
+  - each chunk is at least 5 minutes long and ends after it starts; a trimmed leftover under 5 minutes is deleted
+    instead;
+  - each chunk stays inside the window it was edited in (only timer chunks may cross a day boundary);
+  - applying `inverse` gives back the rows exactly.
+
+**`PlanOutcome.of(block, records)`**
+- Applies once the block has ended.
+- The share of the block covered by records of the same category (and module, if set) gives `DONE` at 0.8 or
+  more, `PARTLY` at 0.25 or more, and `SKIPPED` below that.
+- An override wins.
+
+**`ChunkRules`**: the end comes after the start; the category is set; focus is 1–5 and only for categories that
+rate it.
+
+**Checkpoint**: a plan block 14:00–15:30 *Study EC101*, against records 14:00–14:50 *Study EC101* and 14:50–15:30
+*Social*, covers 50 / 90 = 0.56, so it is **PARTLY**.
+
+#### Free time (`planner/freetime/`, P3; its settings screen in P5)
+**`FreeTime.compute(wakingWindow, busy, meals, travel, minGapMinutes, zone)`**
+1. **Busy items**: classes, busy timed events and exams, sorted.
+2. **Travel buffers**:
+   - before an item whose location differs from the previous located item (or from home, for the first);
+   - after the last located item, to get home.
+   - Items without a location don't move "where you are".
+   - `TravelTimes.between(a, b)` is 0 for the same place. From home it is the place's own time, else the default;
+     between two different places it is the default.
+3. **Meal slots** count as busy.
+4. Merge everything, subtract it from the waking window, and drop gaps shorter than the minimum.
+
+`unplanned = free − plan blocks`. Today shows both: "3 h 20 m free (1 h planned)".
+
+**Checkpoints** (Mon 2 Nov 2026)
+- **Setup**:
+  - Wake 08:00, sleep 23:00.
+  - Lectures at Campus 10:00–11:00 and 14:00–16:00.
+  - Lunch 12:30–13:15.
+  - Campus is 25 min from home; the default buffer is 15 min; the minimum gap is 30 min.
+- **Result**: free 08:00–09:35, 11:00–12:30, 13:15–14:00 and 16:25–23:00, which is **625 min (10 h 25 m)**.
+- **Adding a dentist 17:00–17:30 in Town** (a place with no time of its own) gives 08:00–09:35, 11:00–12:30,
+  13:15–14:00, 16:00–16:45 and 17:45–23:00, which is **590 min**.
+
+#### Habits (`planner/habits/`, P4)
+**`HabitProgress.evaluate(habit, entries, records, reviews, terms, dayWindows, range, today)`**
+- **Result**:
+  - each day's state: `DONE`, `MISSED`, `SKIPPED`, `REST` (not a chosen day), `PAUSED` (paused, or outside term
+    for term-only habits), `PENDING` (today or later) or `NOT_REVIEWED`;
+  - the amounts;
+  - this period's progress ("2 of 3");
+  - the current and best streak.
+- **A day's amount**:
+  - by hand: the entry's amount;
+  - from the record: in the day's record window, the number of chunks of the category at least the minimum
+    length (times), or their minutes;
+  - both: the larger of the two.
+- **Success**:
+  - `ON_DAYS`: each chosen day has at least 1.
+  - `TIMES_PER_WEEK`: the week reaches n.
+  - `AT_LEAST`: the day (chosen days) or week reaches the target.
+  - `AT_MOST`: the amount stays at or under the target. It is judged only once the period is over, and for
+    record-counted habits only on reviewed days; unreviewed days are `NOT_REVIEWED`, which is neutral.
+- **Weekly targets with skipped or paused days**: round(target × active days ÷ 7). A week whose target rounds to 0
+  is neutral.
+- **Streaks**:
+  - day habits count successful scheduled days in a row; week habits count successful weeks.
+  - `REST`, `SKIPPED`, `PAUSED` and `NOT_REVIEWED` are neutral; `MISSED` breaks a streak; the current day or
+    week never breaks one.
+  - Days before the habit's start don't count.
+
+**`HabitRules`**: a positive target; days chosen for `ON_DAYS`; a category for record counting.
+
+**Checkpoints** (today Tue 20 Oct 2026)
+- **Gym 3 times a week**, by hand, from Mon 5 Oct, ticked 5, 7, 9, 12, 14, 16 and 19 Oct:
+  - this week is 1 of 3 (pending);
+  - **current streak 2 weeks**, best 2.
+- **Read 20 minutes a day**, from Mon 12 Oct: done on the 12th and 13th, skipped the 14th, done the 15th to the
+  19th. That gives a **streak of 7 days**.
+- **Phone at most 60 min a day**, from the record, from Fri 16 Oct:
+  - reviewed days of 40, 55 and 75 min on the 16th to 18th; the 19th not reviewed.
+  - **Current streak 0** (broken on the 18th), best 2.
+- **Both counting**: a ticked gym visit that is also recorded as 60 min of exercise (minimum 30) counts **once**.
+- **Weekly target with skipped days**: gym 3 times a week with 2 days skipped makes that week's target
+  **round(3 × 5 ÷ 7) = 2**.
+
+#### Study suggestions (`planner/suggest/`, P5)
+**`StudyPlanner.suggest(input)`**
+- **Input**: `now`, the next 14 days' unplanned free intervals, the demands, `StudyPrefs`, dismissed keys,
+  days off, switched-off modules, and an optional `FocusProfile`.
+- **Demands** (`Demands.from`), placed in this order:
+  1. **Deadlines**, earliest target date first. Work left minus study already planned for them. Latest date:
+     due − finish-early days.
+  2. **Due revision topics** (exam mode; below).
+  3. **Habit slots**: habits with *Suggest a time* on, for the times still needed this week, in the habit's
+     window.
+  4. **Module weekly targets**: target − studied − planned this week. Latest date: Sunday.
+- **Candidate slots**:
+  - free intervals before the demand's latest date and not before `now`, rounded up to the 15-minute grid;
+  - avoided times and days off cut out;
+  - scored +2 inside a preferred time;
+  - with learning on and at least 5 samples in a time-of-day bucket, (that bucket's mean focus − 3) × 1 is
+    added.
+  - Highest score first, then earliest.
+- **Carving blocks**:
+  - length = min(longest block, the slot's time left, the day's cap left, the week's cap left, the demand's
+    remainder rounded up to 15 min);
+  - a length under the shortest block (30 min) is used only for a demand's last piece, as 30 min if that fits;
+  - a break follows each block inside the same slot;
+  - a carved block leaves the free time for the next demand.
+- **Output**: `Suggestion(key, interval, demand, reason)`.
+  - The reason carries the numbers ("EC101 essay due Fri: 6 h left, 9 h free before then").
+  - key = demand key + start, so a dismissed suggestion stays dismissed while the next run may offer another
+    time.
+- **Properties**:
+  - deterministic, with no randomness, so suggestions don't flicker between runs;
+  - never overlap busy or planned time;
+  - keep every cap.
+- **Re-planning needs no code of its own**: a skipped block lowers what was studied, so the next run places the
+  remainder.
+
+**Revision** (`SpacedRepetition.nextDue(topic, reviews)`)
+- **Intervals**: 1, 3, 7, 14 and 30 days after the last review, × 1.3 for easy topics and × 0.7 for hard ones
+  (at least 1 day).
+- **Reviews** are counted from the topic's plan blocks that came out `DONE` or `PARTLY`. Nothing is stored, so
+  the count can't drift.
+- Revision starts 21 days before the exam (a setting), with 45-minute blocks.
+
+**`FocusProfile.from(records, plans, zone)`**: the mean focus and skip rate of study per 2-hour time-of-day
+bucket, for weekdays and weekends separately, with the sample counts.
+
+**Checkpoint**
+- **Setup**:
+  - Now is Tue 20 Oct 2026 12:00.
+  - The EC101 essay is due Fri 23 Oct 17:00, with 6 h estimated and nothing studied. Finish 1 day early, so the
+    latest date is Thu.
+  - Preferred 09:00–18:00; longest block 90, break 15, shortest 30, at most 180 min a day.
+  - Free: Tue 13:00–17:00, Wed 09:00–12:00, Thu 14:00–16:00 (9 h).
+- **Result**:
+  - Tue 13:00–14:30 and 14:45–16:15 (the day's cap);
+  - Wed 09:00–10:30 and 10:45–12:00;
+  - Thu 14:00–14:30 (the last 15 min, made 30).
+  - That is **375 min**.
+
+#### Insights (`planner/insights/`, P6)
+**Totals**
+- `TimeInsights`: minutes per category per day, week and month from the records, clipped to the record windows.
+  Each comes with the change against the previous period of the same length.
+- `StudyInsights`:
+  - per module, against its target;
+  - plan outcomes (done, partly, skipped) by start time (morning, afternoon, evening), weekday and length
+    (≤ 45, 46–75, > 75 min).
+- `FocusInsights`: the mean focus by time-of-day bucket and by block length.
+- `HabitInsights`: the completion rate over 4 weeks, the streaks, and the weekday most often missed.
+
+**`EfficiencyRules`**: one function per tip. Each returns `Tip(text, numbers)` or null. Each fires on its own
+fixture and stays quiet on a control fixture.
+1. **Best hours**:
+   - a bucket's mean focus is at least 0.7 above the overall mean (5+ samples);
+   - and at least 30 % of study is in buckets at least 0.7 below it.
+2. **Shorter blocks**:
+   - blocks over 75 min rate at least 0.7 lower than blocks of 45 min or less;
+   - or they are skipped at least 40 % of the time.
+3. **Gaps between classes**:
+   - a gap of 45–120 min between classes recurs for 3+ weeks;
+   - and it is mostly recorded as phone or rest.
+4. **Commute revision**: at least 3 h of travel a week.
+5. **Batching chores**: 5 or more chore chunks a week, averaging under 20 min.
+6. **Phone time**: at least 1.5 h a day on average, or up 25 % or more on the week before.
+
+**`WeeklyReview.build`**: last week planned against actual, the top 3 categories outside sleep and class, the
+habits, the deadlines in the next 14 days, and next week's suggestions grouped by day.
+
+#### Calendar sync and reminders (`planner/calendar/`, P2; `planner/reminders/`, P1 onwards)
+**`CalendarSync.diff(desired, links, existing)`** returns `SyncPlan(inserts, updates, deletes, relinks)`.
+- **Desired events**:
+  - accepted study blocks from today on;
+  - tasks with a due time;
+  - with *Write the timetable too*, the occurrences of the current and next term.
+- **UIDs**: each desired event has a stable UID, `planner-<kind>-<id>[-<date>]@budgeting`.
+- **Matching**:
+  - Existing events are found by link, or by UID when the link is missing (after a restore or a new phone). Then
+    they are re-linked, not written twice.
+  - Unchanged events (same content hash) are left alone.
+  - Events in the past are never deleted.
+
+**`ReminderPlan`**
+- **`next(now, inputs)`**: the earliest coming reminder. Inputs:
+  - **task reminders**: the due time minus the offset, or the day's reminder time for untimed tasks (default
+    09:00);
+  - **habit reminders**: scheduled days not yet done;
+  - **reviews**: the end-of-day review (if that day isn't finished) and the weekly review;
+  - **widget refreshes**: the next class start or end.
+- **`dueBetween(lastFired, now)`**: what to post now.
+  - Anything more than 12 h late (the phone was off) is dropped.
+  - Each item fires once.
+
+**Checkpoints**
+- "Submit form", due Fri 23 Oct 17:00 with *1 hour before*, fires at **16:00**.
+- An untimed task due that day fires at **09:00**.
+- A finished day gives no review reminder.
+- A reminder 13 h late is dropped.
+
+### 13.5 Data (`app`, Room 5 → 9, one additive `@AutoMigration` per stage)
+Tables are prefixed `planner_` (Budgeting already has `categories`). Columns are primitives as in §6.1:
+- instants as `*_millis`, dates as epoch days, times of day as `*_minute`;
+- enums as names, weekday sets as bitmasks (Monday = bit 0).
+
+Every stage adds only new tables or nullable columns. It adds `MigrationTest` n → n+1 and 1 → n, and commits
+`n.json` from `refs/ci/room-schemas` after its first green build.
+
+| Version (stage) | Table | Columns (besides `id`) | Keys and indices |
+|---|---|---|---|
+| 5 (P1) | planner_modules | code, code_key (lower case), name, color_argb, weekly_target_minutes?, weight, archived, sort_order | unique code_key |
+| 5 | planner_tasks | title, notes, kind, deadline_type?, due_date?, due_minute?, length_minutes?, estimate_minutes?, priority, module_id?, tags, repeat_kind?, repeat_interval, repeat_days, reminder_kind?, reminder_value?, parent_id?, location?, completed_at_millis?, created_at_millis, sort_order | module_id → modules SET NULL; parent_id → tasks CASCADE; indices due_date, module_id, parent_id, completed_at_millis |
+| 5 | planner_checklist_items | task_id, position, text, done | task_id → tasks CASCADE |
+| 5 | planner_task_completions | task_id, due_date?, completed_at_millis | task_id → tasks CASCADE; index completed_at_millis |
+| 6 (P2) | planner_entries | title, kind, module_id?, location, room, contact, color_argb?, note, weekday, start_minute, end_minute, pattern, weeks, once_date?, term_id?, in_holidays, archived, created_at_millis | module_id → modules SET NULL; term_id → term_periods SET NULL |
+| 6 | planner_entry_exceptions | entry_id, date, cancelled, start_minute?, end_minute?, room? | entry_id → entries CASCADE; unique (entry_id, date) |
+| 6 | planner_calendar_links | item_key, calendar_id, event_id, uid, content_hash | unique item_key; index event_id |
+| 7 (P3) | planner_categories | name, color_argb, system_key?, rates_focus, archived, sort_order | unique system_key; seeded on first use |
+| 7 | planner_plan_blocks | start_millis, end_millis, category_id, module_id?, task_id?, habit_id?, topic_id?, origin, outcome_override?, note, created_at_millis | category_id → categories (NO ACTION); module_id, task_id SET NULL; indices start_millis, end_millis, task_id |
+| 7 | planner_records | start_millis, end_millis, category_id, module_id?, task_id?, plan_block_id?, source_key?, focus?, note, origin, created_at_millis | category_id → categories (NO ACTION); module_id, task_id, plan_block_id SET NULL; indices start_millis, end_millis, task_id, plan_block_id, source_key |
+| 7 | planner_day_reviews | date (primary key), finished_at_millis?, rating?, note | |
+| 8 (P4) | planner_habits | name, color_argb, goal_kind, target, unit, period, days, counting, category_id?, min_minutes?, streaks, reminder_minute?, term_only, paused_from?, paused_until?, suggest_slot, slot_minutes?, slot_start_minute?, slot_end_minute?, start_date, archived, sort_order | category_id → categories (NO ACTION) |
+| 8 | planner_habit_entries | habit_id, date, amount, skipped | habit_id → habits CASCADE; unique (habit_id, date) |
+| 9 (P5) | planner_revision_topics | exam_task_id, name, difficulty, sort_order | exam_task_id → tasks CASCADE |
+| 9 | planner_dismissed | key (primary key), dismissed_at_millis | pruned after 30 days |
+
+**Foreign keys and deleting**
+- `plan_blocks.habit_id` and `topic_id` are plain ids with no foreign key. Their tables come in later versions,
+  and adding a foreign key to an existing table needs a rebuild. `HabitRepository` and the topic delete clear
+  them, as `ReceiptRepository` does for `transactions.receipt_id`.
+- Categories and habits are archived, never deleted, while rows point at them.
+- Deleting a task or module keeps the time recorded against it (SET NULL).
+
+**DAOs and range queries**
+- `PlannerDao`: modules, tasks, checklist, completions.
+- `TimetableDao`: entries, exceptions, links.
+- `DayDao`: categories, plan blocks, records, reviews, dismissed.
+- `HabitDao`: habits, entries.
+- A range read is `WHERE start_millis < :to AND end_millis > :from ORDER BY start_millis`, served by the two
+  indices.
+
+**Repositories** (`data/repo/planner/`; core models in, core models out; mappers in `PlannerMappers.kt`):
+- `ModuleRepository`.
+- `TaskRepository`: complete/uncomplete with repeats; delete returning a snapshot for Undo; steps from a
+  template.
+- `TimetableRepository`: entries, exceptions, copy from a term.
+- `DayRepository`:
+  - `apply(editPlan)` and `undo(editPlan)`, in one transaction each;
+  - reviews;
+  - `ensureCategoriesSeeded()`.
+- `HabitRepository`.
+- `SuggestionRepository`: accept as a plan block, dismiss, prune.
+- After every write: `PlannerUpdater.changed()`. Debounced by 500 ms, it refreshes the Planner widget,
+  reschedules the alarm and queues the calendar sync. It mirrors `WidgetUpdater`.
+
+**Backups** (core `backup/`): versions 5 to 9 each add their stage's tables to `BackupV1`.
+- `decode` checks every reference and unique key, as for food.
+- Older files restore with the Planner tables empty.
+- `replaceAll` deletes children first: records, plan blocks, reviews, habit entries, habits, categories,
+  exceptions, entries, links, topics, completions, checklist, tasks, modules. All of these go before
+  `term_periods`.
+- Planner preferences travel in the `appSettings` map (`AppSettingsCodec`). Device-specific values don't:
+  - the chosen calendars;
+  - the calendar written to;
+  - the running timer;
+  - the alarm bookkeeping.
+
+### 13.6 Settings (`SettingsStore`, `PlannerKeys`)
+Grouped preferences are one JSON value each (kotlinx.serialization, `ignoreUnknownKeys`, defaults for missing
+fields). A value that doesn't parse falls back to the defaults, never a crash.
+
+| Key | Holds | Default |
+|---|---|---|
+| `planner_day` | `DaySettings`: mode, cut-off, wake and sleep per weekday | wake to sleep; 08:00–00:00 |
+| `planner_free` | `FreeSettings`: meal slots, default buffer, travel minutes per place, minimum gap | no meals, 15, none, 30 |
+| `planner_study` | `StudyPrefs`: on/off, preferred and avoided times, weekly days off, longest/shortest block, break, caps, finish-early days, learn from record, revision start and block | on, none, none, none, 90/30, 15, 240 a day, 1, on, 21 days / 45 min |
+| `planner_reviews` | end-of-day review on/off and time; weekly review on/off, day and time; untimed task reminder time | on, 21:30; on, Sun 19:00; 09:00 |
+| `planner_templates` | the user's breakdown templates (empty = the defaults) | empty |
+| `planner_calendars` | the chosen calendars, as account + id + name to re-match | none |
+| `planner_write_back` | the calendar written to (empty = off); *Write the timetable too* | off |
+| `planner_days_off` | dates switched off for suggestions (pruned once past) | none |
+| `planner_timer` | the running timer: start, category, module, task | none |
+| `planner_alarm_fired` | the last reminder time posted | none |
+
+### 13.7 Android parts
+**Reading calendars** (`data/calendar/CalendarReader`, P2)
+- **`calendars()`**: `Calendars` rows with id, name, account, colour, access level and visible. A calendar can be
+  written to when its access level is `CAL_ACCESS_CONTRIBUTOR` or higher.
+- **`instances(range, calendarIds)`**:
+  - `Instances.CONTENT_URI` with the range appended, so Android expands repeating events and their exceptions
+    itself (no repeat rules of our own);
+  - cancelled rows skipped;
+  - only the columns used: event id, begin, end, title, location, all day, calendar id, display colour,
+    availability.
+  - All-day instances are dated by UTC midnight, as the provider stores them.
+- **`observe(range, ids)`**: a `callbackFlow` with a `ContentObserver` on the events. Re-queries are conflated and
+  debounced by 500 ms, on `Dispatchers.IO`. It is collected only while a Planner screen or the widget needs it,
+  for the weeks on show plus one each side.
+- **State**: `CalendarState` is `Off`, `NeedsPermission`, `Ready(instances)` or `Unavailable(reason)`.
+  - The permission is checked again on every resume, so revoking it in Android's settings is handled.
+
+**Permissions**
+- `READ_CALENDAR` is asked when the user links calendars; `WRITE_CALENDAR` when writing back is turned on.
+- Each asks with a short reason first. After a permanent refusal it offers *Open app settings*.
+- `POST_NOTIFICATIONS` is asked the first time any Planner reminder is turned on (as for the reconcile reminder).
+
+**Writing to a calendar** (`CalendarWriter` + `CalendarSyncWorker`, P2)
+- **Triggers**: unique work `calendar-sync` (`REPLACE`, 2 s delay as a debounce), after relevant writes and once a
+  day.
+- **What it does**:
+  - reads the links and the target calendar's events with the Planner UIDs;
+  - applies `CalendarSync.diff` with `applyBatch` in batches of 50;
+  - fills `CALENDAR_ID`, `DTSTART`, `DTEND`, `TITLE`, `EVENT_LOCATION`, `DESCRIPTION` ("Added by the
+    Budgeting app's Planner"), `EVENT_TIMEZONE`, `UID_2445` and `AVAILABILITY`.
+- **Safety**: it never touches an event it didn't write. *Remove what the app added* deletes the linked events,
+  after a confirm.
+
+**Reminders** (`work/planner/`, P1 onwards)
+- **One alarm at a time.** `PlannerAlarms.reschedule()` asks `ReminderPlan.next` for the earliest reminder and
+  sets a single alarm. There is no polling, and no pile of alarms to keep in step.
+- **Exact alarms**:
+  - `setExactAndAllowWhileIdle(RTC_WAKEUP)` when `canScheduleExactAlarms()` (always on API < 31), else
+    `setAndAllowWhileIdle`.
+  - The manifest has `SCHEDULE_EXACT_ALARM` (`maxSdkVersion="32"`) and `USE_EXACT_ALARM` (API 33+, granted on
+    install; the Planner is a calendar). Settings says *Reminders may be a few minutes late* only if exact
+    alarms are refused.
+- **`PlannerAlarmReceiver`**: `goAsync()`, then on `appScope`:
+  `dueBetween(lastFired, now)` → post → save `planner_alarm_fired` → reschedule.
+- **`PlannerBootReceiver`**: `BOOT_COMPLETED` (`RECEIVE_BOOT_COMPLETED`), `TIME_SET`, `TIMEZONE_CHANGED` and
+  `MY_PACKAGE_REPLACED` → reschedule. `BudgetApp.onCreate` and `PlannerUpdater` reschedule too.
+- **Notifications**:
+  - **Channels** (created in `BudgetApp`): `planner_reminders` (tasks, habits), `planner_reviews` (end of day,
+    weekly) and `planner_timer` (low importance).
+  - **Actions** (`PlannerActionReceiver`): *Done* on a task, *Done* on a habit, *Stop* on the timer.
+  - **Taps** open `MainActivity` with `ACTION_OPEN_PLANNER` and the target screen. They go through the same
+    pending-route flow shared receipts use (`receiptRequest`, renamed `pendingRoute`).
+
+**The timer** (`domain/planner/PlannerTimer`, P3)
+- **State**: kept in `planner_timer`, so it survives Android stopping the app. It needs no service, because it is
+  only a start time.
+- **Starting** stops a running timer first.
+- **Stopping** places a record chunk from the start to now, with `TIMER`. It wins over what it overlaps, like any
+  new chunk. A run under 5 minutes is dropped, and the app says so.
+- **While it runs**: an ongoing notification with a chronometer and *Stop*, plus the Today card and the widget.
+
+**The Planner widget** (`widget/planner/PlannerWidget`, P3)
+- Glance, `SizeMode.Responsive`.
+- **Small**: the next class with its time and room, and the free time left today.
+- **Wide**: plus up to 3 of today's tasks with ticks (`actionRunCallback`) and a timer start/stop chip.
+- State comes from `PlannerService.widgetState()` and follows the app's theme (as in §6.7).
+- **Refreshed** by `PlannerUpdater` and by the alarm at the next class start or end.
+
+### 13.8 Navigation and the section chooser (P1)
+**Sections**
+- `AppSection` gains `PLANNER`. It is stored by name, so no entry is ever renamed. The `other` property goes.
+- `ui/navigation` maps each section to its first tab: Home, Recipes, Today.
+- **`SectionSwitchButton`** becomes a chooser:
+  - the top-left icon button, *Switch section*, shows the current section's icon and opens a `DropdownMenu`
+    of the other two sections;
+  - each item has the section's icon and a label: *Switch to Budgeting*, *Switch to Recipes*, *Switch to
+    Planner*;
+  - choosing one behaves exactly as the switch does now.
+- **`PlannerBottomBar`** reuses `TabBar`: *Today*, *Timetable*, *To-do*, *Habits*, *Insights*.
+  - Popping up to `Route.Today`.
+  - New `AppIcons` vectors from Material path data: `Today`, `CalendarViewWeek`, `Checklist`, `Repeat`,
+    `Insights`, `EventAvailable` (the section) and `Settings` (the gear).
+
+**Routes**
+- **Tabs**: `Route.Today`, `Timetable`, `Todo`, `Habits`, `PlannerInsights`.
+- **Sub-screens**:
+  - `Day(epochDay, review = false)`;
+  - `TaskEdit(taskId?, parentId?, kind?, text?)`, `TaskDetail(taskId)`;
+  - `EntryEdit(entryId?)`;
+  - `HabitEdit(habitId?)`, `HabitDetail(habitId)`;
+  - `WeeklyReview(weekStart)`;
+  - `PlannerSettings`, `Modules`, `TimeCategories`, `PlannerCalendars`, `PlannerTermDates`.
+    `PlannerTermDates` reuses `TermDatesScreen`, so term dates open inside the Planner with its bar.
+- **`plannerRoutes`** and `isPlannerDestination()` sit beside `foodRoutes`.
+- **`BudgetNavHost`**:
+  - shows the Planner bar on those routes, and none on `Day` (the editor needs the height);
+  - starts at `Route.Today` when the last section was the Planner.
+- The gear (*Planner settings*) is in the top bar of all five Planner tabs.
+
+### 13.9 Services and screens
+**`domain/planner/PlannerService`** (in `AppContainer`, app scope)
+- **Shared flows**:
+  - `dayFlow(date)`: records and plans in the window, the week's cached occurrences, calendar instances,
+    categories and settings. This gives `DayModel(segments, freeDay, totals)`. The minute tick joins only for
+    the current day.
+  - `weekFlow(weekStart)`: occurrences, instances, plan blocks, exams and lanes for the timetable.
+  - `suggestionsFlow` (P5): 14 days ahead, debounced by 300 ms, on `Dispatchers.Default`, with `mapLatest` so
+    stale runs are dropped.
+  - `widgetState()`.
+- Each is `stateIn(appScope, WhileSubscribed(5_000))`, so screens and the widget share one computation, which
+  stops when nothing watches.
+- **Occurrences** are memoised per week and cleared when entries, exceptions or terms change.
+
+**Screens** (`ui/planner/<area>/`: Screen, ViewModel, Mapping with a JVM test)
+- **Today** (`today/`)
+  - **Top bar**: the switch, "Today · Tue 20 Oct" (a date picker opens other days), and the gear.
+  - **List** (lazy, keyed):
+    - the **Now** card: next class and room, running timer, free time left;
+    - *Finish yesterday* (when its review is open);
+    - the day as an agenda: one row per segment, with its time, colour bar, title and a state chip (*Done*,
+      *To confirm*, *Planned*, *Free*, *Not recorded*), and *Edit day*;
+    - tasks for today and overdue, ticked with Undo;
+    - today's habits;
+    - from P5, today's suggestions.
+  - **FAB**: *Start timer* or *Stop timer*.
+  - In P1, Today shows only the tasks, with a line saying the timeline comes in a later build.
+- **Day editor** (`day/`, `Route.Day`)
+  - **The canvas**: a scrolling `TimeCanvas` at 64 dp an hour, so 15 min is 16 dp.
+    - Hour labels on the left.
+    - The main lane: records in the past, plans in the future, *to confirm* chunks dashed, classes and events
+      outlined.
+    - A thin strip to the left of past hours shows what was planned, so planned and actual sit side by side.
+  - **Boundaries**:
+    - each has a 48 dp handle;
+    - a drag moves it in 15-minute steps with a haptic tick and a live time label, and writes once on release;
+    - every edit shows *Undo*.
+  - **The chunk sheet** (`ModalBottomSheet`), opened by a tap:
+    - a one-tap category grid; module and task for study; focus stars; a note;
+    - start and end typed exactly;
+    - *Split here*, *Merge with previous/next*, *Copy to…* and *Delete*;
+    - on *to confirm* chunks: *Happened as planned*, *Change* and *Didn't happen*.
+  - **Review mode** (`review = true`, the notification):
+    - a banner, "3 not recorded · 2 to confirm", with *Next* to step between them;
+    - *Confirm all as planned*;
+    - *Finish day*, with an optional rating and note.
+  - It opens scrolled to now (past days: to the day's start).
+- **Timetable** (`timetable/`)
+  - **Views**: Day, Week and Month.
+    - **Week** is a 7-column custom layout with lanes, paged sideways (`HorizontalPager`, one page each side
+      composed). It shows the term week ("Week 5 · Autumn").
+    - **Month** is a grid with dots.
+  - **Tapping an occurrence** gives its details, *Cancel this week*, *Change this week* and *Edit entry*.
+  - **Actions**: *Copy from last term*, and a clashes badge that opens the list.
+  - **FAB**: *Add to timetable*.
+  - **The entry editor** checks clashes as the user types, and previews the dates *chosen weeks* gives.
+- **To-do** (`todo/`)
+  - **Top**: the quick-add field with chips previewing what it read. Enter saves; *More* opens the editor
+    prefilled.
+  - **Filter chips** and **rows**: tick, title, due, module, estimate, checklist count, deadline status.
+  - A long press gives *Edit*, *Tomorrow* and *Delete*, each with Undo.
+  - **The deadline page**: the countdown, the status card with both numbers, steps (*Add steps from a template*),
+    time recorded, and revision topics for exams (P5).
+- **Habits** (`habits/`)
+  - **Today's habits**: tick, +amount, or *Skip today*, with "2 of 3 this week" and the streak.
+  - **The habit page**: a month calendar, rates, streaks, *Pause* and *Archive*.
+  - **The editor**: the goal kinds, counting, streaks, reminder, *Term time only*, and *Suggest a time*.
+- **Insights** (`insights/`)
+  - Week/Month cards:
+    - where time went (stacked bars by day, then rows with change arrows);
+    - study against targets; planned against done; focus by time of day;
+    - habits; deadlines at risk; tips.
+  - Then *Weekly review*.
+  - The charts reuse `ui/components/charts/`; the `dataviz` skill is read before writing them.
+- **Weekly review** (`review/`)
+  - Last week, then next week's suggestions by day, with *Accept all* and per-item accept, move or dismiss.
+  - *Move* lists the other free slots the planner would use for that demand.
+- **Planner settings** (`settings/`)
+  - §12.11, with sub-screens for modules, categories (rename, colour, add, archive) and calendars.
+  - Term dates (shared with Budgeting).
+
+**Shared components** (`ui/planner/components/`)
+- **Layouts**: `TimeCanvas`, `WeekGrid`.
+- **Fields and pickers**: `TimeField` (typed HH:MM), `WeekdayPicker`, `CategoryGrid`, `ModulePicker`,
+  `DurationField`, `StatusChip`.
+- **`PlannerFormat`**: durations "3 h 20 m", ranges "13:00–14:30", dates "Fri 23 Oct", countdowns "in 3 days".
+  - Its pure parts live in core `PlannerText`, so they are tested once.
+
+### 13.10 Stages
+For each stage:
+- **Before the push**: the core tests pass locally, the diff is re-read adversarially, and it is pushed once
+  (CI takes about 30 minutes).
+- **After it**:
+  - CI is green: core and app JVM tests, every device test, and the update check;
+  - the build is published;
+  - `n.json` is committed with `[skip ci]`.
+
+A stage is done only then; then the user installs it.
+
+**P1: the Planner section, To-do and Settings (Room 5, backup 5)**
+- **Core**: models (modules, tasks, checklist, completions), `TaskRepeats`, `TaskViews`, `TaskQuickAdd`,
+  `TaskRules`, `DeadlineStatus` (work and days left), `BreakdownTemplates`, `PlannerText`, `ReminderPlan`
+  (tasks), backup 5.
+- **App**:
+  - **Navigation**: `AppSection.PLANNER`, the chooser, the Planner bar and routes. Today shows tasks; Timetable,
+    Habits and Insights are placeholders naming the build that brings them.
+  - **Data**: Room 5, `PlannerDao`, `ModuleRepository`, `TaskRepository`.
+  - **Screens**: To-do, the task editor, the deadline page, and Planner settings (modules, reminders,
+    notifications).
+  - **Reminders**: the alarm, boot and action receivers, the channels, and the exact-alarm handling.
+- **Tests**:
+  - **Core**: `TaskQuickAddTest` (with robustness), `TaskRepeatsTest`, `TaskViewsTest`, `DeadlineStatusTest`,
+    `TaskRulesTest`, `ReminderPlanTest`, backup 5 in `BackupCodecTest`.
+  - **JVM**: `TodoMappingTest`, `TaskFormRulesTest`.
+  - **Device**:
+    - `MigrationTest` 4 → 5 and 1 → 5; `data/TaskRepositoryTest`; the Planner rows in
+      `BackupRoundTripTest`;
+    - `SectionSwitchTest` updated for the chooser (all three ways, and the last section reopening);
+    - `ui/TodoTest` (`todo-*`): the checkpoint line quick-added; a task completed and undone; a weekly task
+      moving on; a deadline split with the Essay template; the Done log;
+    - `data/PlannerAlarmsTest`: the next alarm time, and the receiver posting a due reminder with an injected
+      time.
+
+**P2: the Timetable and Google Calendar (Room 6, backup 6)**
+- **Core**: `TeachingWeeks`, `WeekList`, `Timetable`, `Clashes`, `Lanes`, `TermCopy`, `EntryRules`,
+  `CalendarSync`, backup 6.
+- **App**:
+  - **Data**: Room 6, `TimetableDao`, `TimetableRepository`.
+  - **Calendars**: `CalendarReader`, `CalendarWriter`, `CalendarSyncWorker`, and the permission flows.
+  - **Screens**: Timetable (day, week, month), the entry editor and occurrence sheet, *Copy from last term*,
+    Settings → Calendars, `PlannerTermDates`. Exams (P1 deadlines with a time) appear on the timetable.
+- **Tests**:
+  - **Core**: `TimetableTest` (the term checkpoints, holidays, exceptions, the clock-change week),
+    `WeekListTest`, `ClashesTest`, `LanesTest`, `CalendarSyncTest` (insert, unchanged, update, delete,
+    re-link by UID).
+  - **Device**:
+    - `MigrationTest` 5 → 6; `data/TimetableRepositoryTest`;
+    - `data/CalendarProviderTest`, on a local calendar the test creates as a sync adapter (`ACCOUNT_TYPE_LOCAL`,
+      permissions granted by the test rule):
+      - a repeating event with one changed occurrence, an all-day event and a cancelled one, read back through
+        `CalendarReader`;
+      - a write and re-sync with no duplicates;
+      - links removed and then re-linked by UID;
+    - `ui/TimetableTest` (`timetable-*`): the week grid with entries and a linked event, chosen weeks skipping
+      reading week, cancelling one week, the clash warning.
+
+**P3: Today, the day record and the review (Room 7, backup 7)**
+- **Core**: `DayWindows`, `Intervals`, `Snap`, `DayTimeline`, `DayEdits`, `PlanOutcome`, `ChunkRules`,
+  `FreeTime`, the on-track part of `DeadlineStatus`, `DefaultTimeCategories`, `ReminderPlan` (reviews and
+  widget), backup 7.
+- **App**:
+  - **Data**: Room 7, `DayDao`, `DayRepository`.
+  - **Services**: `PlannerService` (day and week), `Clock.minuteFlow` and `zone()`, `PlannerTimer` with its
+    notification.
+  - **Screens**: Today in full, the day editor with review mode, *Finish yesterday*, and settings for the day,
+    categories and review time.
+  - **Widget**: the Planner widget.
+- **Tests**:
+  - **Core**: `DayWindowsTest`, `IntervalsTest`, `DayTimelineTest`, `DayEditsTest` (each edit, its inverse, and
+    the random-sequence invariants), `PlanOutcomeTest`, `FreeTimeTest` (both checkpoints), `ReminderPlanTest`
+    (reviews).
+  - **JVM**: `TodayMappingTest`, `TimeCanvasMathTest` (minutes to dp, snapping, handle hit areas).
+  - **Device**:
+    - `MigrationTest` 6 → 7;
+    - `data/DayRepositoryTest`: apply and undo; the timer's chunk trimming an overlap; changing the day setting
+      losing nothing;
+    - `ui/DayRecordTest` (`day-*`), on a past date:
+      - the day split into chunks with the sheet;
+      - a boundary moved by the accessibility action;
+      - exact typed times;
+      - a class confirmed, and *Confirm all*;
+      - *Finish day* with a rating;
+      - plan blocks seeded through the repository, confirmed as planned;
+    - `ui/TodayTest`;
+    - `widget/PlannerWidgetTest` (both sizes).
+
+**P4: Habits (Room 8, backup 8)**
+- **Core**: `HabitProgress`, `HabitRules`, `ReminderPlan` (habits), backup 8.
+- **App**: Room 8, `HabitDao`, `HabitRepository`, the Habits tab, the habit page and editor, habits on Today, and
+  the notification's *Done*.
+- **Tests**:
+  - **Core**: `HabitProgressTest` (every checkpoint, term-only pauses, each goal kind) and a seeded random test
+    that streaks never go negative or past the history.
+  - **Device**: `MigrationTest` 7 → 8; `data/HabitRepositoryTest`; `ui/HabitsTest` (`habits-*`):
+    - gym 3 times a week, ticked to a streak;
+    - an exercise chunk in the day record ticking a record-counted habit;
+    - a limit habit going over.
+
+**P5: free time settings and study suggestions (Room 9, backup 9)**
+- **Core**: `StudyPrefs`, `Demands`, `StudyPlanner`, `SpacedRepetition`, `FocusProfile`, habit slots, backup 9.
+- **App**:
+  - **Data**: Room 9, `SuggestionRepository`.
+  - **Settings**: meals, buffers, travel times, minimum gap, study preferences, days off.
+  - **Suggestions** on Today and as ghost blocks on the timetable, with accept, move and dismiss.
+  - **Exam mode**: revision topics on the exam's page.
+  - **Writing back**: accepted blocks written to Google when it is on.
+- **Tests**:
+  - **Core**:
+    - `StudyPlannerTest`: the checkpoint; caps; avoided times; days off; a switched-off module; dismissals;
+      determinism; re-planning after a skipped block; and a random-week property test that suggestions never
+      overlap busy or planned time;
+    - `SpacedRepetitionTest`, `FocusProfileTest`.
+  - **Device**: `MigrationTest` 8 → 9; `ui/SuggestionsTest` (`suggest-*`):
+    - accept → the block on Today and in the day editor;
+    - dismiss;
+    - a day off clearing the day.
+
+**P6: Insights and the weekly review (no schema change)**
+- **Core**: `TimeInsights`, `StudyInsights`, `FocusInsights`, `HabitInsights`, `EfficiencyRules`,
+  `WeeklyReview`, `ReminderPlan` (weekly).
+- **App**: the Insights tab, the weekly review screen and its notification.
+- **Tests**:
+  - **Core**: each rule on its fixture and its control, and the totals across a clock-change week.
+  - **Device**: `ui/PlannerInsightsTest` (`planner-insights-*`): three seeded weeks giving every card, and the
+    weekly review's *Accept all*.
+
+### 13.11 Testing notes
+- **Core tests**:
+  - Fixed dates in Europe/London, including both clock changes.
+  - Each random suite uses fixed seeds and states its invariants, like the forecast stress tests.
+  - The Planner core is expected to add 300 or more tests over the six stages.
+- **Device tests**:
+  - Seeds and helpers in `testing/PlannerTestSupport.kt` (`seedPlanner`, `seedDay`, `seedHabit`).
+  - Days in the past, so `now` never matters, and `UiTest.tap`, `scrollIntoView` and the other §8 conventions.
+  - The day editor's boundaries are moved with their custom accessibility actions, never with gestures:
+    `performCustomAccessibilityActionWithLabel`, or the action's lambda read from the node's semantics.
+  - `seedPlanner` turns calendar writing off and leaves no alarm behind (`PlannerAlarms.cancel()` after each
+    test).
+- **CI time**:
+  - Planner device tests go in both shards by class. Data tests are quick; UI tests are few and cover one flow
+    each.
+  - If a full run passes about 40 minutes, the shards are rebalanced before anything is cut. No test is ever
+    skipped.
+
+### 13.12 Risks and how they are handled
+| Risk | Handling |
+|---|---|
+| Phone makers' calendar providers differ | Only standard `CalendarContract` columns; read errors become `CalendarState.Unavailable`, not crashes. The first real use on the user's phone is the check (stage P2). |
+| Reminders late on Android 14+ | `USE_EXACT_ALARM`, with an inexact fallback and a note in settings; one alarm at a time keeps well inside Android's limits. |
+| Battery | No polling: one alarm, observers only while collected, and the minute tick only while Today or the widget shows the current day. |
+| Clock changes and travel | Moments stored as instants, the zone read on every use, and the alarm rescheduled on time and zone changes; tests on both UK clock-change days. |
+| Changing the day setting | Chunks have no day key, so nothing is lost or moved. |
+| Duplicate events after a restore or a new phone | Every written event carries a stable UID, and sync re-links by UID before writing anything. |
+| Data growth | About 15 records a day (about 5,500 a year): indexed range reads. Insights read only the period shown. |
+| Fiddly drags | 48 dp handles, a time label while dragging, typed times as the exact way, Undo on every edit, and accessibility actions. |
+| Migrations | Additive only, one per stage, each with a `MigrationTest`; never destructive. |
+| Changing the section switch | `SectionSwitchTest` is updated in P1, in the same change. |
