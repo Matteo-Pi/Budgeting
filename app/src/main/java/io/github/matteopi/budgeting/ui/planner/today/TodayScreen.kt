@@ -64,7 +64,8 @@ fun TodayScreen(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = onAddTask,
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                // Material clears the extended button's text from accessibility, so the icon carries its name.
+                icon = { Icon(Icons.Default.Add, contentDescription = "Add task") },
                 text = { Text("Add task") },
             )
         },
