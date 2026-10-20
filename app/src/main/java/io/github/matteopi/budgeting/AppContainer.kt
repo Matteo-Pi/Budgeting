@@ -51,7 +51,7 @@ class AppContainer(context: Context) {
     val widgetUpdater = WidgetUpdater(context.applicationContext, appScope)
 
     /** After Planner writes: the reminder alarm follows (docs/PLAN.md §13.5). [plannerAlarms] is built below. */
-    val plannerUpdater = PlannerUpdater(appScope) { plannerAlarms.reschedule() }
+    val plannerUpdater: PlannerUpdater = PlannerUpdater(appScope) { plannerAlarms.reschedule() }
 
     val accountRepository = AccountRepository(
         database = database,
@@ -125,12 +125,12 @@ class AppContainer(context: Context) {
         clock = clock,
     )
 
-    val moduleRepository = ModuleRepository(
+    val moduleRepository: ModuleRepository = ModuleRepository(
         plannerDao = database.plannerDao(),
         plannerUpdater = plannerUpdater,
     )
 
-    val taskRepository = TaskRepository(
+    val taskRepository: TaskRepository = TaskRepository(
         database = database,
         plannerDao = database.plannerDao(),
         clock = clock,
@@ -138,7 +138,7 @@ class AppContainer(context: Context) {
     )
 
     /** The Planner's single reminder alarm (docs/PLAN.md §13.7). */
-    val plannerAlarms = PlannerAlarms(
+    val plannerAlarms: PlannerAlarms = PlannerAlarms(
         context = context.applicationContext,
         taskRepository = taskRepository,
         settingsStore = settingsStore,
