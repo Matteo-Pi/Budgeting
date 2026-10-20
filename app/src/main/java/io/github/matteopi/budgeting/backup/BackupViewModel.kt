@@ -39,7 +39,7 @@ class BackupViewModel(private val container: AppContainer) : ViewModel() {
         val backup = BackupMapper.toBackup(
             data = data,
             exportedAt = Instant.now().toString(),
-            appSettings = AppSettingsCodec.encode(appSettings),
+            appSettings = AppSettingsCodec.encode(appSettings) + container.settingsStore.plannerBackupMap(),
         )
         return BackupCodec.encode(backup)
     }
@@ -78,7 +78,9 @@ class BackupViewModel(private val container: AppContainer) : ViewModel() {
         container.settingsStore.setDarkMode(restored.darkMode)
         container.settingsStore.setChartAccountView(restored.chartAccountView)
         container.settingsStore.setBalanceView(restored.balanceView)
+        container.settingsStore.restorePlannerBackupMap(success.appSettings)
         container.widgetUpdater.requestUpdate()
+        container.plannerUpdater.changed()
         _restoreState.value = null
     }
 

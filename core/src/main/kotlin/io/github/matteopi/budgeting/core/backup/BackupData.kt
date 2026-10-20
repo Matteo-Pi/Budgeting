@@ -20,6 +20,9 @@ import io.github.matteopi.budgeting.core.model.ScheduledItem
 import io.github.matteopi.budgeting.core.model.SinkingFund
 import io.github.matteopi.budgeting.core.model.TermPeriod
 import io.github.matteopi.budgeting.core.model.Transaction
+import io.github.matteopi.budgeting.core.planner.model.Module
+import io.github.matteopi.budgeting.core.planner.model.Task
+import io.github.matteopi.budgeting.core.planner.model.TaskCompletion
 import io.github.matteopi.budgeting.core.recipes.Ingredient
 import io.github.matteopi.budgeting.core.recipes.IngredientAliasRecord
 import io.github.matteopi.budgeting.core.recipes.OwnedItem
@@ -60,4 +63,9 @@ data class BackupData(
     val shoppingMarks: List<ShoppingMark> = emptyList(),
     // Backup version 4. Declared last so positional construction of older data keeps working.
     val ownedItems: List<OwnedItem> = emptyList(),
+    // Backup version 5 (the Planner). Declared last so positional construction of older data keeps working.
+    val plannerModules: List<Module> = emptyList(),
+    /** Each with its checklist, in order. */
+    val plannerTasks: List<Task> = emptyList(),
+    val plannerCompletions: List<TaskCompletion> = emptyList(),
 )

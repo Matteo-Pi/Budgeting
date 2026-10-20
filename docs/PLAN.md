@@ -2582,9 +2582,9 @@ Plain immutable data classes; ids are `Long` (0 = not saved).
 | Model | Fields |
 |---|---|
 | `Module` | code ("EC101"), name, colour, weekly target minutes?, weight (1–3: how much it counts / how hard), archived |
-| `Task` | title, notes, kind (`TASK`/`DEADLINE`), deadline type? (`ASSIGNMENT`/`EXAM`/`APPLICATION`/`OTHER`), due date?, due time?, length? (an exam's), estimate minutes?, priority (`NONE`/`LOW`/`MEDIUM`/`HIGH`), module id?, tags, repeat?, reminder?, parent id? (a step of a deadline), location?, completed at?, created at, sort order |
-| `TaskRepeat` | `DAILY`, `WEEKLY`, `EVERY_N_DAYS`, `WEEKDAYS`; interval; weekdays |
-| `TaskReminder` | `AtTime(minutesBefore)` for timed tasks, `OnDay(time)` for untimed ones |
+| `Task` | title, notes, kind (`TASK`/`DEADLINE`), deadline type? (`ASSIGNMENT`/`EXAM`/`APPLICATION`/`OTHER`), due date?, due time?, length? (an exam's), estimate minutes?, priority (`NONE`/`LOW`/`MEDIUM`/`HIGH`), module id?, tags, repeat?, reminder minutes before?, parent id? (a step of a deadline), location?, completed at?, created at, sort order, checklist |
+| `TaskRepeat` | `DAYS` (every n days), `WEEKS` (every n weeks), `WEEKDAYS` (chosen days); interval; weekdays |
+| reminder | minutes before the due moment: the due time, or the default reminder time (09:00) for a task without one. 0 is "at the time" or "on the day", 1440 a day before |
 | `ChecklistItem` | task id, position, text, done |
 | `TaskCompletion` | task id, the due date it completed, completed at: the Done log, repeats included |
 | `TimetableEntry` | title, kind (`LECTURE`/`SEMINAR`/`LAB`/`TUTORIAL`/`SPORT`/`SOCIETY`/`OTHER`), module id?, location, room, contact, colour?, note, weekday, start, end, pattern, term id? (null = every term), in holidays, archived |
@@ -2613,7 +2613,7 @@ expected values for those tests.
 **`TaskRepeats.next(due, repeat, completedOn)`**
 - Steps from `due` by the rule until the date is after `completedOn`, so a task done late doesn't come back
   for the days already missed.
-- `WEEKDAYS` gives the next chosen weekday; `EVERY_N_DAYS` adds n; `WEEKLY` adds 7 × interval.
+- `WEEKDAYS` gives the next chosen weekday; `DAYS` adds n days; `WEEKS` adds 7 × n days.
 - Completing a repeating task writes a `TaskCompletion` and moves `dueDate` on. Undo reverses both.
 
 **`TaskViews`**: the To-do filters.
@@ -2950,7 +2950,7 @@ Every stage adds only new tables or nullable columns. It adds `MigrationTest` n 
 | Version (stage) | Table | Columns (besides `id`) | Keys and indices |
 |---|---|---|---|
 | 5 (P1) | planner_modules | code, code_key (lower case), name, color_argb, weekly_target_minutes?, weight, archived, sort_order | unique code_key |
-| 5 | planner_tasks | title, notes, kind, deadline_type?, due_date?, due_minute?, length_minutes?, estimate_minutes?, priority, module_id?, tags, repeat_kind?, repeat_interval, repeat_days, reminder_kind?, reminder_value?, parent_id?, location?, completed_at_millis?, created_at_millis, sort_order | module_id → modules SET NULL; parent_id → tasks CASCADE; indices due_date, module_id, parent_id, completed_at_millis |
+| 5 | planner_tasks | title, notes, kind, deadline_type?, due_date?, due_minute?, length_minutes?, estimate_minutes?, priority, module_id?, tags, repeat_kind?, repeat_interval, repeat_days, reminder_minutes_before?, parent_id?, location?, completed_at_millis?, created_at_millis, sort_order | module_id → modules SET NULL; parent_id → tasks CASCADE; indices due_date, module_id, parent_id, completed_at_millis |
 | 5 | planner_checklist_items | task_id, position, text, done | task_id → tasks CASCADE |
 | 5 | planner_task_completions | task_id, due_date?, completed_at_millis | task_id → tasks CASCADE; index completed_at_millis |
 | 6 (P2) | planner_entries | title, kind, module_id?, location, room, contact, color_argb?, note, weekday, start_minute, end_minute, pattern, weeks, once_date?, term_id?, in_holidays, archived, created_at_millis | module_id → modules SET NULL; term_id → term_periods SET NULL |

@@ -1,17 +1,14 @@
 package io.github.matteopi.budgeting.data.settings
 
 /**
- * The app's two sections (docs/PLAN.md §11.8): the budget and the recipe book. The last one used opens
- * next time. Persisted by [name], so never rename an entry. Not part of backups.
+ * The app's three sections (docs/PLAN.md §11.8, §13.8): the budget, the recipe book and the planner. The last one
+ * used opens next time. Persisted by [name], so never rename an entry. Not part of backups.
  */
 enum class AppSection {
     BUDGETING,
     RECIPES,
+    PLANNER,
     ;
-
-    /** The section the switch button leads to. */
-    val other: AppSection
-        get() = if (this == BUDGETING) RECIPES else BUDGETING
 
     companion object {
         val DEFAULT: AppSection = BUDGETING

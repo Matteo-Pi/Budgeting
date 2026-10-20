@@ -13,14 +13,21 @@ import androidx.datastore.preferences.preferencesDataStore
 import io.github.matteopi.budgeting.core.model.BudgetSettings
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.ZeroPoint
+import io.github.matteopi.budgeting.core.planner.todo.BreakdownTemplate
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 private val DEFAULT_BUDGET_SETTINGS = BudgetSettings()
+
+/** The `appSettings` map entries a backup uses for the Planner's preferences. */
+const val PLANNER_REMINDERS_BACKUP_KEY = "plannerReminders"
+const val PLANNER_TEMPLATES_BACKUP_KEY = "plannerTemplates"
 
 /** Preferences DataStore named "settings". See docs/PLAN.md §6.3 for the key list. */
 class SettingsStore(context: Context) {
@@ -244,6 +251,66 @@ class SettingsStore(context: Context) {
                 prefs.asMap().keys.filter { it.name.startsWith(FoodKeys.COOKING_TICKS_PREFIX) }
             for (key in keys) prefs.remove(key as Preferences.Key<Any>)
         }
+    }
+
+    // ---- Planner (docs/PLAN.md §13.6) -------------------------------------------------------------
+
+    /** When tasks without a time remind; later stages add the reviews. In backups ([plannerBackupMap]). */
+    val plannerReminders: Flow<PlannerReminderSettings> = dataStore.data.map { prefs ->
+        PlannerSettingsCodec.decodeReminders(prefs[PlannerKeys.REMINDERS])
+    }
+
+    suspend fun setPlannerReminders(settings: PlannerReminderSettings) {
+        dataStore.edit { it[PlannerKeys.REMINDERS] = PlannerSettingsCodec.encodeReminders(settings) }
+    }
+
+    /** The breakdown templates: the user's own, or the defaults. In backups. */
+    val breakdownTemplates: Flow<List<BreakdownTemplate>> = dataStore.data.map { prefs ->
+        PlannerSettingsCodec.decodeTemplates(prefs[PlannerKeys.TEMPLATES])
+    }
+
+    suspend fun setBreakdownTemplates(templates: List<BreakdownTemplate>) {
+        dataStore.edit { it[PlannerKeys.TEMPLATES] = PlannerSettingsCodec.encodeTemplates(templates) }
+    }
+
+    /** *Reset to the defaults*: forgets the user's templates. */
+    suspend fun resetBreakdownTemplates() {
+        dataStore.edit { it.remove(PlannerKeys.TEMPLATES) }
+    }
+
+    /** The last time the Planner's alarm posted reminders (device bookkeeping: not in backups). */
+    val plannerAlarmFired: Flow<Instant?> = dataStore.data.map { prefs ->
+        prefs[PlannerKeys.ALARM_FIRED]?.takeIf { it >= 0 }?.let(Instant::ofEpochMilli)
+    }
+
+    suspend fun setPlannerAlarmFired(at: Instant?) {
+        dataStore.edit { it[PlannerKeys.ALARM_FIRED] = at?.toEpochMilli() ?: -1L }
+    }
+
+    /** The Planner preferences a backup carries, as entries of its `appSettings` map. */
+    suspend fun plannerBackupMap(): Map<String, String> {
+        val prefs = dataStore.data.first()
+        return buildMap {
+            prefs[PlannerKeys.REMINDERS]?.let { put(PLANNER_REMINDERS_BACKUP_KEY, it) }
+            prefs[PlannerKeys.TEMPLATES]?.let { put(PLANNER_TEMPLATES_BACKUP_KEY, it) }
+        }
+    }
+
+    /**
+     * Restores the Planner preferences from a backup's `appSettings` map: present values replace the current ones
+     * (a value that doesn't parse reads as the defaults later), and missing ones are left as they are.
+     */
+    suspend fun restorePlannerBackupMap(map: Map<String, String>) {
+        dataStore.edit { prefs ->
+            map[PLANNER_REMINDERS_BACKUP_KEY]?.let { prefs[PlannerKeys.REMINDERS] = it }
+            map[PLANNER_TEMPLATES_BACKUP_KEY]?.let { prefs[PlannerKeys.TEMPLATES] = it }
+        }
+    }
+
+    private object PlannerKeys {
+        val REMINDERS = stringPreferencesKey("planner_reminders")
+        val TEMPLATES = stringPreferencesKey("planner_templates")
+        val ALARM_FIRED = longPreferencesKey("planner_alarm_fired")
     }
 
     private object FoodKeys {

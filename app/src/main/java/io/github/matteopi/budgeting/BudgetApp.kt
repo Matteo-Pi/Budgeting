@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import io.github.matteopi.budgeting.work.WorkScheduler
+import io.github.matteopi.budgeting.work.planner.PlannerNotifications
 import kotlinx.coroutines.launch
 
 class BudgetApp : Application() {
@@ -15,11 +16,14 @@ class BudgetApp : Application() {
         container = AppContainer(this)
 
         createNotificationChannel()
+        PlannerNotifications.createChannels(this)
 
         container.appScope.launch {
             container.categoryRepository.ensureSeeded()
             container.postingService.postDue(container.clock.today())
         }
+        // The alarm is lost when the app is force-stopped; setting it again on every start keeps it.
+        container.appScope.launch { container.plannerAlarms.reschedule() }
 
         WorkScheduler.schedule(this)
     }

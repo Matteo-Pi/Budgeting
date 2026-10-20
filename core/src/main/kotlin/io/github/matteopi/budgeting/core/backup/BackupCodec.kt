@@ -16,7 +16,7 @@ sealed class BackupDecodeResult {
     data class Failure(val errors: List<String>) : BackupDecodeResult()
 }
 
-/** JSON encode/decode for [BackupV1] (versions 1 to 4), with validation. See docs/PLAN.md §5.17. */
+/** JSON encode/decode for [BackupV1] (versions 1 to 5), with validation. See docs/PLAN.md §5.17. */
 object BackupCodec {
 
     private val json = Json {
@@ -171,12 +171,43 @@ object BackupCodec {
         }
 
         validateFood(b, productIds) { ok, message -> check(ok, message) }
+        validatePlanner(b) { ok, message -> check(ok, message) }
 
         b.settings.defaultAccountId?.let {
             check(it in accountIds, "Settings refer to a missing default account $it.")
         }
 
         return errors
+    }
+
+    /**
+     * The version-5 Planner tables: references, the unique module codes (without case), steps one level deep, and a
+     * time of day inside the day. `LocalTime.of` would otherwise throw on a corrupted minute.
+     */
+    private fun validatePlanner(b: BackupV1, check: (Boolean, String) -> Unit) {
+        val moduleIds = b.plannerModules.map { it.id }.toSet()
+        val tasksById = b.plannerTasks.associateBy { it.id }
+        check(moduleIds.size == b.plannerModules.size, "Two modules have the same id.")
+        check(tasksById.size == b.plannerTasks.size, "Two tasks have the same id.")
+        check(
+            b.plannerModules.map { it.code.trim().lowercase() }.toSet().size == b.plannerModules.size,
+            "Two modules have the same code.",
+        )
+        for (task in b.plannerTasks) {
+            task.moduleId?.let { check(it in moduleIds, "Task ${task.id} refers to a missing module $it.") }
+            task.parentId?.let { parentId ->
+                val parent = tasksById[parentId]
+                check(parent != null, "Task ${task.id} is a step of a missing deadline $parentId.")
+                check(parent?.parentId == null, "Task ${task.id} is a step of a step.")
+            }
+            task.dueMinute?.let { check(it in 0 until 24 * 60, "Task ${task.id} has a time outside the day.") }
+        }
+        for (item in b.plannerChecklist) {
+            check(item.taskId in tasksById, "A checklist item refers to a missing task ${item.taskId}.")
+        }
+        for (completion in b.plannerCompletions) {
+            check(completion.taskId in tasksById, "Done log entry ${completion.id} refers to a missing task ${completion.taskId}.")
+        }
     }
 
     /** The version-3 tables: the same reference checks, plus the uniqueness the food tables enforce. */

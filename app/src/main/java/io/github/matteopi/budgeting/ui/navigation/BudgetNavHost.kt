@@ -67,11 +67,12 @@ import kotlinx.coroutines.launch
 
 /**
  * The app's single NavHost, wrapped in a Scaffold with the bottom bar of the section the screen belongs to
- * (docs/PLAN.md §11.8): [RecipesBottomBar] on the Recipes section's routes ([foodRoutes]), no bar on the
- * cooking view or onboarding, and [BudgetBottomBar] everywhere else.
+ * (docs/PLAN.md §11.8, §13.8): [PlannerBottomBar] on the Planner's routes ([plannerRoutes]), [RecipesBottomBar]
+ * on the Recipes section's ([foodRoutes]), no bar on the cooking view or onboarding, and [BudgetBottomBar]
+ * everywhere else.
  *
  * It also gives every screen the section switch through [LocalSectionSwitch]. Switching clears the back
- * stack and opens the other section's first tab (so Back there leaves the app), then saves the choice
+ * stack and opens the chosen section's first tab (so Back there leaves the app), then saves the choice
  * through `container.settingsStore` so the app opens in that section next time.
  */
 @Composable
@@ -87,14 +88,14 @@ fun BudgetNavHost(
         !destination.hasRoute<Route.Onboarding>() &&
         !destination.hasRoute<Route.Cooking>()
     val inRecipes = destination.isFoodDestination()
+    val inPlanner = destination.isPlannerDestination()
     val context = LocalContext.current
     val onAddTransaction = { context.startActivity(QuickAddActivity.intent(context)) }
 
     val scope = rememberCoroutineScope()
     val switchTo: (AppSection) -> Unit = remember(navController, container, scope) {
         { section: AppSection ->
-            val firstTab: Route = if (section == AppSection.RECIPES) Route.Recipes else Route.Home
-            navController.navigate(firstTab) {
+            navController.navigate(firstTabOf(section)) {
                 popUpTo(navController.graph.id) { inclusive = true }
             }
             scope.launch { container.settingsStore.setAppSection(section) }
@@ -107,7 +108,11 @@ fun BudgetNavHost(
             modifier = modifier,
             bottomBar = {
                 if (showBottomBar) {
-                    if (inRecipes) RecipesBottomBar(navController) else BudgetBottomBar(navController)
+                    when {
+                        inPlanner -> PlannerBottomBar(navController)
+                        inRecipes -> RecipesBottomBar(navController)
+                        else -> BudgetBottomBar(navController)
+                    }
                 }
             },
         ) { innerPadding ->
@@ -379,6 +384,9 @@ fun BudgetNavHost(
                 composable<Route.RecipeSettings> {
                     RecipeSettingsScreen(onBack = { navController.popBackStack() })
                 }
+
+                // ----- The Planner section (docs/PLAN.md §13.8). -----
+                plannerDestinations(navController)
             }
         }
         // A recipe timer that ends says so on whatever screen is showing (docs/PLAN.md §11.11).

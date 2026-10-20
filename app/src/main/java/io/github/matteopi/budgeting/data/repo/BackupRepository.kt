@@ -8,14 +8,19 @@ import io.github.matteopi.budgeting.data.db.dao.CategoryDao
 import io.github.matteopi.budgeting.data.db.dao.FoodDao
 import io.github.matteopi.budgeting.data.db.dao.ImportDao
 import io.github.matteopi.budgeting.data.db.dao.PlanDao
+import io.github.matteopi.budgeting.data.db.dao.PlannerDao
 import io.github.matteopi.budgeting.data.db.dao.PresetDao
 import io.github.matteopi.budgeting.data.db.dao.ReceiptDao
 import io.github.matteopi.budgeting.data.db.dao.ReconciliationDao
 import io.github.matteopi.budgeting.data.db.dao.ScenarioDao
 import io.github.matteopi.budgeting.data.db.dao.SnapshotDao
 import io.github.matteopi.budgeting.data.db.dao.TransactionDao
+import io.github.matteopi.budgeting.data.repo.planner.toChecklistEntities
+import io.github.matteopi.budgeting.data.repo.planner.toEntity
+import io.github.matteopi.budgeting.data.repo.planner.toModel
 import io.github.matteopi.budgeting.data.settings.SettingsStore
 import io.github.matteopi.budgeting.widget.WidgetUpdater
+import io.github.matteopi.budgeting.work.planner.PlannerUpdater
 import kotlinx.coroutines.flow.first
 
 /**
@@ -36,8 +41,10 @@ class BackupRepository(
     private val snapshotDao: SnapshotDao,
     private val receiptDao: ReceiptDao,
     private val foodDao: FoodDao,
+    private val plannerDao: PlannerDao,
     private val settingsStore: SettingsStore,
     private val widgetUpdater: WidgetUpdater,
+    private val plannerUpdater: PlannerUpdater,
 ) {
     suspend fun readAll(): BackupData {
         val scenarios = scenarioDao.observeScenarios().first()
@@ -69,13 +76,23 @@ class BackupRepository(
             shoppingEntries = foodDao.getShoppingEntries().map { it.toModel() },
             shoppingMarks = foodDao.getShoppingMarks().map { it.toModel() },
             ownedItems = foodDao.getOwnedItems().map { it.toModel() },
+            plannerModules = plannerDao.getModules().map { it.toModel() },
+            plannerTasks = plannerDao.getAllTasks().map { it.toModel() },
+            plannerCompletions = plannerDao.getAllCompletions().map { it.toModel() },
         )
     }
 
     /** Deletes every table (children first) then inserts [data] back with its original ids, atomically. */
     suspend fun replaceAll(data: BackupData) {
         database.withTransaction {
-            // The food tables first (shopping list, recipes, then ingredients and their aliases and
+            // The Planner's tables first: the Done log and checklists, steps before their deadlines, then the
+            // tasks and the modules they point at.
+            plannerDao.deleteAllCompletions()
+            plannerDao.deleteAllChecklistItems()
+            plannerDao.deleteAllSteps()
+            plannerDao.deleteAllTasks()
+            plannerDao.deleteAllModules()
+            // The food tables next (shopping list, recipes, then ingredients and their aliases and
             // portions): ingredients point at products, so they must go before the products below.
             foodDao.deleteAllOwnedItems()
             foodDao.deleteAllShoppingMarks()
@@ -146,10 +163,21 @@ class BackupRepository(
             foodDao.insertOwnedItems(data.ownedItems.map { it.toEntity() })
             snapshotDao.insertBalanceSnapshots(data.balanceSnapshots.map { it.toEntity() })
             snapshotDao.insertCategorySnapshots(data.categoryWeekSnapshots.map { it.toEntity() })
+            // The Planner, parents before children: modules, deadlines and other tasks, their steps, then the
+            // checklists and the Done log.
+            plannerDao.insertModules(data.plannerModules.map { it.toEntity() })
+            val (steps, tasks) = data.plannerTasks.partition { it.parentId != null }
+            plannerDao.insertTasks(tasks.map { it.toEntity() })
+            plannerDao.insertTasks(steps.map { it.toEntity() })
+            plannerDao.insertChecklistItems(
+                data.plannerTasks.flatMap { task -> task.toChecklistEntities().map { it.copy(taskId = task.id) } },
+            )
+            plannerDao.insertCompletions(data.plannerCompletions.map { it.toEntity() })
         }
         settingsStore.replaceBudgetSettings(data.settings)
         // Cooking ticks are kept by recipe id, and the restored recipes have other ids.
         settingsStore.clearAllCookingTicks()
         widgetUpdater.requestUpdate()
+        plannerUpdater.changed()
     }
 }

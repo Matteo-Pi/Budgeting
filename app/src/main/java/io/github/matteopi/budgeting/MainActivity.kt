@@ -30,9 +30,13 @@ import io.github.matteopi.budgeting.ui.lock.AppLockState
 import io.github.matteopi.budgeting.ui.lock.LockScreen
 import io.github.matteopi.budgeting.ui.navigation.BudgetNavHost
 import io.github.matteopi.budgeting.ui.navigation.Route
+import io.github.matteopi.budgeting.ui.navigation.firstTabOf
+import io.github.matteopi.budgeting.ui.navigation.isPlannerDestination
+import io.github.matteopi.budgeting.ui.navigation.plannerRoutes
 import io.github.matteopi.budgeting.ui.receipts.ReceiptFiles
 import io.github.matteopi.budgeting.ui.receipts.ReceiptInputKind
 import io.github.matteopi.budgeting.ui.theme.BudgetingTheme
+import io.github.matteopi.budgeting.work.planner.PlannerNotifications
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -41,7 +45,7 @@ import kotlinx.coroutines.launch
 class MainActivity : FragmentActivity() {
 
     /**
-     * A screen to open once the navigation graph is up: the receipt review for a shared receipt, the scan
+     * A screen to open once the navigation graph is up: a task from a Planner reminder, the receipt review for a shared receipt, the scan
      * screen from quick add's "Scan receipt", or the statement import for a shared Santander statement PDF.
      */
     private val receiptRequest = MutableStateFlow<Route?>(null)
@@ -80,11 +84,7 @@ class MainActivity : FragmentActivity() {
                     var startDestination by remember { mutableStateOf<Route?>(null) }
                     LaunchedEffect(settings?.onboardingDone, lastSection) {
                         if (startDestination == null && settings != null && lastSection != null) {
-                            startDestination = when {
-                                !settings.onboardingDone -> Route.Onboarding
-                                lastSection == AppSection.RECIPES -> Route.Recipes
-                                else -> Route.Home
-                            }
+                            startDestination = if (settings.onboardingDone) firstTabOf(lastSection) else Route.Onboarding
                         }
                     }
 
@@ -103,7 +103,16 @@ class MainActivity : FragmentActivity() {
                             val route = receiptRoute
                             if (route != null) {
                                 // Before onboarding there are no accounts to save a receipt into.
-                                if (startDestination != Route.Onboarding) navController.navigate(route)
+                                if (startDestination != Route.Onboarding) {
+                                    if (plannerRoutes.any { it.isInstance(route) } &&
+                                        !navController.currentBackStackEntry?.destination.isPlannerDestination()
+                                    ) {
+                                        // A Planner reminder opens the Planner as a switch would, then the task on top.
+                                        navController.navigate(Route.Today) { popUpTo(navController.graph.id) { inclusive = true } }
+                                        container.appScope.launch { container.settingsStore.setAppSection(AppSection.PLANNER) }
+                                    }
+                                    navController.navigate(route)
+                                }
                                 receiptRequest.value = null
                             }
                         }
@@ -137,6 +146,10 @@ class MainActivity : FragmentActivity() {
     private fun handleReceiptIntent(intent: Intent?) {
         if (intent == null) return
         when (intent.action) {
+            PlannerNotifications.ACTION_OPEN_PLANNER -> {
+                val taskId = intent.getLongExtra(PlannerNotifications.EXTRA_TASK_ID, -1L)
+                receiptRequest.value = if (taskId >= 0) Route.TaskDetail(taskId) else Route.Todo
+            }
             ReceiptFiles.ACTION_SCAN_RECEIPT -> receiptRequest.value = Route.ReceiptScan
             Intent.ACTION_SEND -> {
                 val shared = Intent(intent)

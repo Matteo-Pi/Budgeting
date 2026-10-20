@@ -10,6 +10,11 @@ import androidx.test.platform.app.InstrumentationRegistry
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.Receipt
 import io.github.matteopi.budgeting.core.model.TxKind
+import io.github.matteopi.budgeting.core.planner.model.ChecklistItem
+import io.github.matteopi.budgeting.core.planner.model.Module
+import io.github.matteopi.budgeting.core.planner.model.Task
+import io.github.matteopi.budgeting.core.planner.model.TaskCompletion
+import io.github.matteopi.budgeting.core.planner.model.TaskKind
 import io.github.matteopi.budgeting.core.recipes.BaseUnit
 import io.github.matteopi.budgeting.core.recipes.Ingredient
 import io.github.matteopi.budgeting.core.recipes.Nutrition
@@ -21,11 +26,15 @@ import io.github.matteopi.budgeting.core.recipes.RecipeStep
 import io.github.matteopi.budgeting.core.recipes.Shelf
 import io.github.matteopi.budgeting.core.recipes.StepKind
 import io.github.matteopi.budgeting.data.db.BudgetDatabase
+import io.github.matteopi.budgeting.data.repo.planner.toChecklistEntities
+import io.github.matteopi.budgeting.data.repo.planner.toEntity
+import io.github.matteopi.budgeting.data.repo.planner.toModel
 import io.github.matteopi.budgeting.data.repo.toEntity
 import io.github.matteopi.budgeting.data.repo.toLineEntities
 import io.github.matteopi.budgeting.data.repo.toModel
 import io.github.matteopi.budgeting.data.repo.toPortionEntities
 import io.github.matteopi.budgeting.data.repo.toStepEntities
+import java.time.Instant
 import java.time.LocalDate
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -478,6 +487,91 @@ class MigrationTest {
             db.foodDao().deleteAllRecipeLines()
             db.foodDao().deleteIngredient(1)
             assertTrue(db.foodDao().getOwnedItems().isEmpty(), "deleting the ingredient deletes what is owned")
+        } finally {
+            db.close()
+        }
+    }
+
+    // ---- 4 -> 5: the Planner's to-do list (docs/PLAN.md §13.5) ---------------------------------------
+
+    private val plannerTables = listOf("planner_modules", "planner_tasks", "planner_checklist_items", "planner_task_completions")
+
+    @Test
+    fun migratingFromVersion4To5KeepsEverythingAndAddsEmptyPlannerTables() {
+        createVersion3Database()
+        helper.runMigrationsAndValidate(DB_NAME, 4, true).use { db ->
+            db.execSQL("INSERT INTO owned_items (ingredient_id, quantity, updated_at) VALUES (1, 340.0, 9000)")
+        }
+
+        val db = helper.runMigrationsAndValidate(DB_NAME, 5, true)
+
+        assertVersion2RowsSurvived(db)
+        assertEquals(listOf("Clear honey"), db.strings("SELECT name FROM ingredients"))
+        assertEquals(listOf(1L), db.longs("SELECT COUNT(*) FROM owned_items"))
+        val tables = db.strings("SELECT name FROM sqlite_master WHERE type = 'table'")
+        for (table in plannerTables) {
+            assertTrue(table in tables, "the $table table exists; have $tables")
+            assertEquals(listOf(0L), db.longs("SELECT COUNT(*) FROM $table"), "$table starts empty")
+        }
+        assertEquals(
+            listOf(Triple("planner_modules", "module_id", "SET NULL"), Triple("planner_tasks", "parent_id", "CASCADE")),
+            db.foreignKeys("planner_tasks"),
+        )
+        assertEquals(listOf(Triple("planner_tasks", "task_id", "CASCADE")), db.foreignKeys("planner_checklist_items"))
+        assertEquals(listOf(Triple("planner_tasks", "task_id", "CASCADE")), db.foreignKeys("planner_task_completions"))
+
+        db.execSQL(
+            "INSERT INTO planner_modules (id, code, code_key, name, color_argb, weekly_target_minutes, weight, archived, sort_order) " +
+                "VALUES (1, 'EC101', 'ec101', 'Economics', NULL, 300, 2, 0, 0)",
+        )
+        db.execSQL(
+            "INSERT INTO planner_tasks (id, title, notes, kind, deadline_type, due_date, due_minute, length_minutes, estimate_minutes, " +
+                "priority, module_id, tags, repeat_kind, repeat_interval, repeat_days, reminder_minutes_before, parent_id, location, " +
+                "completed_at_millis, created_at_millis, sort_order) VALUES " +
+                "(1, 'Essay', '', 'DEADLINE', 'ASSIGNMENT', $day, 1020, NULL, 360, 'HIGH', 1, '', NULL, 1, 0, 60, NULL, NULL, NULL, 1000, 0)",
+        )
+        assertEquals(listOf(1L), db.longs("SELECT COUNT(*) FROM planner_tasks"))
+        db.close()
+    }
+
+    @Test
+    fun migratingStraightFromVersion1To5RunsAllFourAutoMigrations() {
+        createVersion1Database()
+
+        val db = helper.runMigrationsAndValidate(DB_NAME, 5, true)
+
+        assertEquals(listOf(1L, 2L, 3L), db.longs("SELECT id FROM transactions ORDER BY id"))
+        val tables = db.strings("SELECT name FROM sqlite_master WHERE type = 'table'")
+        for (table in listOf("receipts", "products") + foodTables + "owned_items" + plannerTables) {
+            assertTrue(table in tables, "the $table table exists; have $tables")
+        }
+        db.close()
+    }
+
+    @Test
+    fun theVersion5FileOpensWithTheRealDatabaseClassAndThePlannerTablesWork() = runBlocking<Unit> {
+        createVersion3Database()
+        helper.runMigrationsAndValidate(DB_NAME, 5, true).close()
+
+        val db = Room.databaseBuilder(context, BudgetDatabase::class.java, DB_NAME).build()
+        try {
+            assertEquals("Clear honey", db.foodDao().getIngredient(1)?.toModel()?.name)
+            val dao = db.plannerDao()
+            val moduleId = dao.insertModule(Module(code = "EC101", name = "Economics").toEntity())
+            val essay = Task(title = "Essay", kind = TaskKind.DEADLINE, dueDate = LocalDate.of(2026, 10, 23), moduleId = moduleId,
+                checklist = listOf(ChecklistItem("Plan"), ChecklistItem("Write")))
+            val essayId = dao.saveTask(essay.toEntity(), essay.toChecklistEntities())
+            val stepId = dao.saveTask(Task(title = "Research", parentId = essayId).toEntity(), emptyList())
+            dao.insertCompletion(TaskCompletion(taskId = stepId, dueDate = null, completedAt = Instant.ofEpochMilli(5_000)).toEntity())
+            assertEquals(listOf("Plan", "Write"), dao.getTask(essayId)?.toModel()?.checklist?.map { it.text })
+
+            // Deleting the module keeps the task with no module; deleting the deadline takes its steps, checklist and Done log.
+            dao.deleteModule(moduleId)
+            assertNull(dao.getTask(essayId)?.toModel()?.moduleId)
+            dao.deleteTask(essayId)
+            assertNull(dao.getTask(stepId))
+            assertTrue(dao.getAllChecklistItems().isEmpty())
+            assertTrue(dao.getAllCompletions().isEmpty())
         } finally {
             db.close()
         }

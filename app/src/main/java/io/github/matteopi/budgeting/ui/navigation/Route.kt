@@ -3,6 +3,7 @@ package io.github.matteopi.budgeting.ui.navigation
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
+import io.github.matteopi.budgeting.data.settings.AppSection
 import kotlin.reflect.KClass
 import kotlinx.serialization.Serializable
 
@@ -76,6 +77,33 @@ sealed interface Route {
     /** [barcode]: a barcode scanned on the Ingredients tab that no ingredient has yet, for a new one. */
     @Serializable data class IngredientEdit(val ingredientId: Long? = null, val barcode: String? = null) : Route
     @Serializable data object RecipeSettings : Route
+
+    // ----- The Planner section (docs/PLAN.md §13.8) -----
+
+    /** The Planner's first tab. */
+    @Serializable data object Today : Route
+    @Serializable data object Timetable : Route
+    @Serializable data object Todo : Route
+    @Serializable data object Habits : Route
+    @Serializable data object PlannerInsights : Route
+
+    /**
+     * Add or edit a task. [parentId] adds a step of that deadline; [kind] (a `TaskKind` name) starts a new one as a
+     * deadline; [text] prefills a new one from the To-do tab's quick-add line.
+     */
+    @Serializable data class TaskEdit(
+        val taskId: Long? = null,
+        val parentId: Long? = null,
+        val kind: String? = null,
+        val text: String? = null,
+    ) : Route
+
+    /** One task's page: its details, checklist, and a deadline's status and steps. */
+    @Serializable data class TaskDetail(val taskId: Long) : Route
+    @Serializable data object PlannerSettings : Route
+    @Serializable data object Modules : Route
+    /** The breakdown templates for splitting deadlines into steps. */
+    @Serializable data object Templates : Route
 }
 
 /**
@@ -98,3 +126,31 @@ val foodRoutes: List<KClass<out Route>> = listOf(
 /** True if this destination is one of [foodRoutes]. */
 fun NavDestination?.isFoodDestination(): Boolean =
     this?.hierarchy?.any { destination -> foodRoutes.any { destination.hasRoute(it) } } == true
+
+/**
+ * Every route of the Planner section: its five tabs and its sub-screens. A destination in this list shows the
+ * Planner's bottom bar.
+ */
+val plannerRoutes: List<KClass<out Route>> = listOf(
+    Route.Today::class,
+    Route.Timetable::class,
+    Route.Todo::class,
+    Route.Habits::class,
+    Route.PlannerInsights::class,
+    Route.TaskEdit::class,
+    Route.TaskDetail::class,
+    Route.PlannerSettings::class,
+    Route.Modules::class,
+    Route.Templates::class,
+)
+
+/** True if this destination is one of [plannerRoutes]. */
+fun NavDestination?.isPlannerDestination(): Boolean =
+    this?.hierarchy?.any { destination -> plannerRoutes.any { destination.hasRoute(it) } } == true
+
+/** The first tab of [section]: where switching to it lands. */
+fun firstTabOf(section: AppSection): Route = when (section) {
+    AppSection.BUDGETING -> Route.Home
+    AppSection.RECIPES -> Route.Recipes
+    AppSection.PLANNER -> Route.Today
+}

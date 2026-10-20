@@ -3,10 +3,11 @@ package io.github.matteopi.budgeting.core.backup
 import kotlinx.serialization.Serializable
 
 /**
- * The whole JSON backup file. The class keeps its version-1 name but holds versions 1 to 4:
+ * The whole JSON backup file. The class keeps its version-1 name but holds versions 1 to 5:
  * version 2 adds the receipt tables and `TransactionDto.receiptId`, version 3 adds the eight food
  * tables (docs/PLAN.md §11.3), version 4 adds what the kitchen has (`ownedItems`) and two ingredient
- * fields (§11.11), and an older file simply decodes with those left empty. See §5.17.
+ * fields (§11.11), version 5 the Planner's modules and to-do list (§13.5), and an older file simply
+ * decodes with those left empty. See §5.17.
  */
 @Serializable
 data class BackupV1(
@@ -44,11 +45,16 @@ data class BackupV1(
     val shoppingMarks: List<ShoppingMarkDto> = emptyList(),
     /** Version 4: what the kitchen has. */
     val ownedItems: List<OwnedItemDto> = emptyList(),
+    /** Version 5: the Planner's modules, tasks, checklists and Done log. */
+    val plannerModules: List<PlannerModuleDto> = emptyList(),
+    val plannerTasks: List<PlannerTaskDto> = emptyList(),
+    val plannerChecklist: List<PlannerChecklistItemDto> = emptyList(),
+    val plannerCompletions: List<PlannerCompletionDto> = emptyList(),
     val settings: SettingsDto,
     val appSettings: Map<String, String> = emptyMap(),
 ) {
     companion object {
         const val FORMAT = "budgeting-backup"
-        const val CURRENT_VERSION = 4
+        const val CURRENT_VERSION = 5
     }
 }

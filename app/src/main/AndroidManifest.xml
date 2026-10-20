@@ -6,6 +6,10 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Recipe timers also start a timer on the phone's clock app (docs/PLAN.md §11.11). A normal permission. -->
     <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
+    <!-- The Planner's reminders (docs/PLAN.md §13.7): one exact alarm at a time, set again after a restart. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:name=".BudgetApp"
@@ -67,6 +71,27 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/safe_to_spend_widget_info" />
+        </receiver>
+
+        <!-- The Planner's reminder alarm and the Done button on its notifications (docs/PLAN.md §13.7). -->
+        <receiver
+            android:name=".work.planner.PlannerAlarmReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".work.planner.PlannerActionReceiver"
+            android:exported="false" />
+        <!-- exported="true": the system sends these; they only set the alarm again. -->
+        <receiver
+            android:name=".work.planner.PlannerBootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
         </receiver>
 
     </application>

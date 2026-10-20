@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.unit.dp
 
 /**
- * Icons for the two sections (docs/PLAN.md §11.8) that the core icon set (`material-icons-core`) does not
+ * Icons for the sections (docs/PLAN.md §11.8, §13.8) that the core icon set (`material-icons-core`) does not
  * have, drawn from the Material icon paths (Apache 2.0) so the large extended icon library is not needed.
  */
 object AppIcons {
@@ -83,6 +83,60 @@ object AppIcons {
             "M16,1H4c-1.1,0 -2,0.9 -2,2v14h2V3h12V1zM19,5H8c-1.1,0 -2,0.9 -2,2v14c0,1.1 0.9,2 2,2h11c1.1,0 2,-0.9 2,-2V7" +
                 "c0,-1.1 -0.9,-2 -2,-2zM19,21H8V7h11v14z",
         )
+    }
+
+    // ---- The Planner (docs/PLAN.md §13.8) ----------------------------------------------------------
+
+    /** A calendar with a tick: the Planner section. */
+    val EventAvailable: ImageVector by lazy {
+        icon(
+            "EventAvailable",
+            "M16.53,11.06L15.47,10l-4.88,4.88 -2.12,-2.12 -1.06,1.06L10.59,17l5.94,-5.94z" +
+                "M19,3h-1L18,1h-2v2L8,3L8,1L6,1v2L5,3c-1.11,0 -1.99,0.9 -1.99,2L3,19c0,1.1 0.89,2 2,2h14" +
+                "c1.1,0 2,-0.9 2,-2L21,5c0,-1.1 -0.9,-2 -2,-2zM19,19L5,19L5,8h14v11z",
+        )
+    }
+
+    /** A calendar page with today marked: the Today tab. */
+    val Today: ImageVector by lazy {
+        icon(
+            "Today",
+            "M19,3h-1V1h-2v2H8V1H6v2H5c-1.11,0 -1.99,0.9 -1.99,2L3,19c0,1.1 0.89,2 2,2h14c1.1,0 2,-0.9 2,-2V5" +
+                "c0,-1.1 -0.9,-2 -2,-2zM19,19H5V8h14v11zM7,10h5v5H7z",
+        )
+    }
+
+    /** A week of columns: the Timetable tab. */
+    val CalendarViewWeek: ImageVector by lazy {
+        icon(
+            "CalendarViewWeek",
+            "M20,4H4C2.9,4 2,4.9 2,6v12c0,1.1 0.9,2 2,2h16c1.1,0 2,-0.9 2,-2V6C22,4.9 21.1,4 20,4zM13,6h2.5v12H13V6z" +
+                "M11,18H8.5V6H11V18zM4,6h2.5v12H4V6zM20,18h-2.5V6H20V18z",
+        )
+    }
+
+    /** Ticked lines: the To-do tab. */
+    val Checklist: ImageVector by lazy {
+        icon(
+            "Checklist",
+            "M22,7h-9v2h9V7zM22,15h-9v2h9V15zM5.54,11L2,7.46l1.41,-1.41l2.12,2.12l4.24,-4.24l1.41,1.41L5.54,11z" +
+                "M5.54,19L2,15.46l1.41,-1.41l2.12,2.12l4.24,-4.24l1.41,1.41L5.54,19z",
+        )
+    }
+
+    /** Two arrows going round: the Habits tab and repeating tasks. */
+    val Repeat: ImageVector by lazy {
+        icon("Repeat", "M7,7h10v3l4,-4 -4,-4v3H5v6h2V7zM17,17H7v-3l-4,4 4,4v-3h12v-6h-2v4z")
+    }
+
+    /** Three bars: the Insights tab. */
+    val BarChart: ImageVector by lazy {
+        icon("BarChart", "M5,9.2h3V19H5zM10.6,5h2.8v14h-2.8zM16.2,13H19v6h-2.8z")
+    }
+
+    /** A flag: deadlines. */
+    val Flag: ImageVector by lazy {
+        icon("Flag", "M14.4,6L14,4H5v17h2v-7h5.6l0.4,2h7V6z")
     }
 
     private fun icon(name: String, path: String): ImageVector =

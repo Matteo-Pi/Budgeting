@@ -31,6 +31,16 @@ import io.github.matteopi.budgeting.core.model.SinkingFund
 import io.github.matteopi.budgeting.core.model.SinkingFundStatus
 import io.github.matteopi.budgeting.core.model.TermPeriod
 import io.github.matteopi.budgeting.core.model.Transaction
+import io.github.matteopi.budgeting.core.planner.model.ChecklistItem
+import io.github.matteopi.budgeting.core.planner.model.DeadlineType
+import io.github.matteopi.budgeting.core.planner.model.Module
+import io.github.matteopi.budgeting.core.planner.model.Priority
+import io.github.matteopi.budgeting.core.planner.model.RepeatKind
+import io.github.matteopi.budgeting.core.planner.model.Task
+import io.github.matteopi.budgeting.core.planner.model.TaskCompletion
+import io.github.matteopi.budgeting.core.planner.model.TaskKind
+import io.github.matteopi.budgeting.core.planner.model.TaskRepeat
+import io.github.matteopi.budgeting.core.planner.model.Weekdays
 import io.github.matteopi.budgeting.core.model.TxKind
 import io.github.matteopi.budgeting.core.model.ZeroPoint
 import io.github.matteopi.budgeting.core.recipes.BaseUnit
@@ -50,7 +60,9 @@ import io.github.matteopi.budgeting.core.recipes.ShoppingEntry
 import io.github.matteopi.budgeting.core.recipes.ShoppingMark
 import io.github.matteopi.budgeting.core.recipes.StepKind
 import io.github.matteopi.budgeting.core.recipes.VegKind
+import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 
 /** Converts between the app's core models ([BackupData]) and the JSON DTOs ([BackupV1]). */
 object BackupMapper {
@@ -104,6 +116,14 @@ object BackupMapper {
             shoppingEntries = data.shoppingEntries.map { it.toDto() },
             shoppingMarks = data.shoppingMarks.map { ShoppingMarkDto(it.ingredientId, it.checked, it.haveIt) },
             ownedItems = data.ownedItems.map { OwnedItemDto(it.ingredientId, it.quantity, it.updatedAtEpochMillis) },
+            plannerModules = data.plannerModules.map { it.toDto() },
+            plannerTasks = data.plannerTasks.map { it.toDto() },
+            plannerChecklist = data.plannerTasks.flatMap { task ->
+                task.checklist.mapIndexed { index, item -> PlannerChecklistItemDto(task.id, index, item.text, item.done) }
+            },
+            plannerCompletions = data.plannerCompletions.map {
+                PlannerCompletionDto(it.id, it.taskId, it.dueDate?.toString(), it.completedAt.toEpochMilli())
+            },
             settings = data.settings.toDto(),
             appSettings = appSettings,
         )
@@ -112,6 +132,7 @@ object BackupMapper {
         val portionsByIngredient = backup.ingredientPortions.groupBy { it.ingredientId }
         val linesByRecipe = backup.recipeLines.groupBy { it.recipeId }
         val stepsByRecipe = backup.recipeSteps.groupBy { it.recipeId }
+        val checklistByTask = backup.plannerChecklist.groupBy { it.taskId }
         return BackupData(
             accounts = backup.accounts.map { it.toModel() },
             categories = backup.categories.map { it.toModel() },
@@ -145,6 +166,13 @@ object BackupMapper {
             shoppingEntries = backup.shoppingEntries.map { it.toModel() },
             shoppingMarks = backup.shoppingMarks.map { ShoppingMark(it.ingredientId, it.checked, it.haveIt) },
             ownedItems = backup.ownedItems.map { OwnedItem(it.ingredientId, it.quantity, it.updatedAtEpochMillis) },
+            plannerModules = backup.plannerModules.map { it.toModel() },
+            plannerTasks = backup.plannerTasks.map { dto ->
+                dto.toModel(checklistByTask[dto.id].orEmpty().sortedBy { it.position }.map { ChecklistItem(it.text, it.done) })
+            },
+            plannerCompletions = backup.plannerCompletions.map {
+                TaskCompletion(it.id, it.taskId, it.dueDate?.let(LocalDate::parse), Instant.ofEpochMilli(it.completedAtEpochMillis))
+            },
             settings = backup.settings.toModel(),
         )
     }
@@ -522,4 +550,56 @@ private fun ShoppingEntryDto.toModel() = ShoppingEntry(
     freeText = freeText,
     checked = checked,
     addedAtEpochMillis = addedAtEpochMillis,
+)
+
+// ---- Planner (version 5) ------------------------------------------------------------------------
+
+private fun Module.toDto() = PlannerModuleDto(id, code, name, colorArgb, weeklyTargetMinutes, weight, archived, sortOrder)
+private fun PlannerModuleDto.toModel() = Module(id, code, name, colorArgb, weeklyTargetMinutes, weight, archived, sortOrder)
+
+private fun Task.toDto() = PlannerTaskDto(
+    id = id,
+    title = title,
+    notes = notes,
+    kind = kind.name,
+    deadlineType = deadlineType?.name,
+    dueDate = dueDate?.toString(),
+    dueMinute = dueTime?.let { it.hour * 60 + it.minute },
+    lengthMinutes = lengthMinutes,
+    estimateMinutes = estimateMinutes,
+    priority = priority.name,
+    moduleId = moduleId,
+    tags = tags,
+    repeatKind = repeat?.kind?.name,
+    repeatInterval = repeat?.interval ?: 1,
+    repeatDays = repeat?.let { Weekdays.toBits(it.weekdays) } ?: 0,
+    reminderMinutesBefore = reminderMinutesBefore,
+    parentId = parentId,
+    location = location,
+    completedAtEpochMillis = completedAt?.toEpochMilli(),
+    createdAtEpochMillis = createdAt.toEpochMilli(),
+    sortOrder = sortOrder,
+)
+
+private fun PlannerTaskDto.toModel(checklist: List<ChecklistItem>) = Task(
+    id = id,
+    title = title,
+    notes = notes,
+    kind = TaskKind.valueOf(kind),
+    deadlineType = deadlineType?.let { DeadlineType.valueOf(it) },
+    dueDate = dueDate?.let(LocalDate::parse),
+    dueTime = dueMinute?.let { LocalTime.of(it / 60, it % 60) },
+    lengthMinutes = lengthMinutes,
+    estimateMinutes = estimateMinutes,
+    priority = Priority.valueOf(priority),
+    moduleId = moduleId,
+    tags = tags,
+    repeat = repeatKind?.let { TaskRepeat(RepeatKind.valueOf(it), repeatInterval, Weekdays.fromBits(repeatDays)) },
+    reminderMinutesBefore = reminderMinutesBefore,
+    parentId = parentId,
+    location = location,
+    completedAt = completedAtEpochMillis?.let(Instant::ofEpochMilli),
+    createdAt = Instant.ofEpochMilli(createdAtEpochMillis),
+    sortOrder = sortOrder,
+    checklist = checklist,
 )

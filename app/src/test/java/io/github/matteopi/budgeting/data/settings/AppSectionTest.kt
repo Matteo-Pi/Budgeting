@@ -18,8 +18,8 @@ class AppSectionTest {
     }
 
     @Test
-    fun `the other section is the one the switch leads to`() {
-        assertEquals(AppSection.RECIPES, AppSection.BUDGETING.other)
-        assertEquals(AppSection.BUDGETING, AppSection.RECIPES.other)
+    fun `there are three sections, Budgeting first`() {
+        assertEquals(listOf(AppSection.BUDGETING, AppSection.RECIPES, AppSection.PLANNER), AppSection.entries)
+        assertEquals(AppSection.BUDGETING, AppSection.DEFAULT)
     }
 }

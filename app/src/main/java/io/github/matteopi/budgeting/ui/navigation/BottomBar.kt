@@ -39,6 +39,14 @@ private val recipesBarItems = listOf(
     BottomBarItem(Route.Ingredients, "Ingredients", AppIcons.Kitchen),
 )
 
+private val plannerBarItems = listOf(
+    BottomBarItem(Route.Today, "Today", AppIcons.Today),
+    BottomBarItem(Route.Timetable, "Timetable", AppIcons.CalendarViewWeek),
+    BottomBarItem(Route.Todo, "To-do", AppIcons.Checklist),
+    BottomBarItem(Route.Habits, "Habits", AppIcons.Repeat),
+    BottomBarItem(Route.PlannerInsights, "Insights", AppIcons.BarChart),
+)
+
 /** The 5-item bottom bar: Home, Activity, Forecast, Plan, Insights (docs/PLAN.md §6.5). */
 @Composable
 fun BudgetBottomBar(navController: NavHostController) {
@@ -64,6 +72,17 @@ fun RecipesBottomBar(navController: NavHostController) {
         section = AppSection.RECIPES,
         firstTabOnStack = { runCatching { navController.getBackStackEntry<Route.Recipes>() }.isSuccess },
     ) { popUpTo<Route.Recipes>() }
+}
+
+/** The Planner section's 5-item bottom bar: Today, Timetable, To-do, Habits, Insights (docs/PLAN.md §13.8). */
+@Composable
+fun PlannerBottomBar(navController: NavHostController) {
+    TabBar(
+        navController = navController,
+        items = plannerBarItems,
+        section = AppSection.PLANNER,
+        firstTabOnStack = { runCatching { navController.getBackStackEntry<Route.Today>() }.isSuccess },
+    ) { popUpTo<Route.Today>() }
 }
 
 /**

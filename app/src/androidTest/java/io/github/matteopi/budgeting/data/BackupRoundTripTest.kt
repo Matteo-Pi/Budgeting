@@ -53,10 +53,20 @@ import io.github.matteopi.budgeting.core.recipes.RecipeMaths
 import io.github.matteopi.budgeting.core.recipes.RecipeStep
 import io.github.matteopi.budgeting.core.recipes.Shelf
 import io.github.matteopi.budgeting.core.recipes.StepKind
+import io.github.matteopi.budgeting.core.planner.model.ChecklistItem
+import io.github.matteopi.budgeting.core.planner.model.Module
+import io.github.matteopi.budgeting.core.planner.model.RepeatKind
+import io.github.matteopi.budgeting.core.planner.model.Task
+import io.github.matteopi.budgeting.core.planner.model.TaskKind
+import io.github.matteopi.budgeting.core.planner.model.TaskRepeat
+import io.github.matteopi.budgeting.core.planner.todo.BreakdownTemplate
+import io.github.matteopi.budgeting.core.planner.todo.BreakdownTemplates
+import io.github.matteopi.budgeting.core.planner.todo.TemplateStep
 import io.github.matteopi.budgeting.data.repo.SelectedImportRow
 import io.github.matteopi.budgeting.data.settings.AccountView
 import io.github.matteopi.budgeting.data.settings.AppTheme
 import io.github.matteopi.budgeting.data.settings.DarkMode
+import io.github.matteopi.budgeting.data.settings.PlannerReminderSettings
 import io.github.matteopi.budgeting.testing.DataTestSupport
 import io.github.matteopi.budgeting.testing.DataTestSupport.createAccount
 import io.github.matteopi.budgeting.testing.DataTestSupport.transactions
@@ -508,6 +518,9 @@ class BackupRoundTripTest {
         shoppingEntries = shoppingEntries.sortedBy { it.id },
         shoppingMarks = shoppingMarks.sortedBy { it.ingredientId },
         ownedItems = ownedItems.sortedBy { it.ingredientId },
+        plannerModules = plannerModules.sortedBy { it.id },
+        plannerTasks = plannerTasks.sortedBy { it.id },
+        plannerCompletions = plannerCompletions.sortedBy { it.id },
     )
 
     /** Table by table (so a failure names the table), ignoring row order but not ids. */
@@ -539,6 +552,9 @@ class BackupRoundTripTest {
         assertEquals(e.shoppingEntries, a.shoppingEntries, "shopping list entries")
         assertEquals(e.shoppingMarks, a.shoppingMarks, "shopping list marks")
         assertEquals(e.ownedItems, a.ownedItems, "what the kitchen has")
+        assertEquals(e.plannerModules, a.plannerModules, "Planner modules")
+        assertEquals(e.plannerTasks, a.plannerTasks, "Planner tasks with their checklists")
+        assertEquals(e.plannerCompletions, a.plannerCompletions, "the Planner's Done log")
         assertEquals(e.settings, a.settings, "budget settings")
     }
 
@@ -813,15 +829,15 @@ class BackupRoundTripTest {
     }
 
     @Test
-    fun theExportedFileIsVersion4AndCarriesTheFoodLists() = runBlocking<Unit> {
+    fun theExportedFileIsVersion5AndCarriesTheFoodAndPlannerLists() = runBlocking<Unit> {
         populateEverything()
 
         val json = BackupViewModel(container).buildExportJson()
 
-        assertTrue("\"version\": 4" in json, "the file says it is version 4")
+        assertTrue("\"version\": 5" in json, "the file says it is version 5")
         for (list in listOf(
             "ingredients", "ingredientPortions", "ingredientAliases", "recipes", "recipeLines", "recipeSteps", "shoppingEntries",
-            "shoppingMarks", "ownedItems",
+            "shoppingMarks", "ownedItems", "plannerModules", "plannerTasks", "plannerChecklist", "plannerCompletions",
         )) {
             assertTrue("\"$list\": [" in json, "the file has a \"$list\" list")
         }
@@ -842,6 +858,47 @@ class BackupRoundTripTest {
         assertEquals(1, restored.accounts.size)
         assertTrue(restored.ingredients.isEmpty() && restored.recipes.isEmpty() && restored.ingredientAliases.isEmpty())
         assertTrue(restored.shoppingEntries.isEmpty() && restored.shoppingMarks.isEmpty() && restored.ownedItems.isEmpty())
+    }
+
+    /**
+     * The Planner (docs/PLAN.md §13.5): modules, a deadline with steps and a checklist, a repeating task and the Done
+     * log survive export and restore into an empty database, as do the reminder time and the user's templates.
+     */
+    @Test
+    fun thePlannerSurvivesBackupAndRestore() = runBlocking<Unit> {
+        val moduleId = container.moduleRepository.save(Module(code = "EC101", name = "Economics", weeklyTargetMinutes = 300))!!
+        val essayId = container.taskRepository.save(
+            Task(title = "EC101 essay", kind = TaskKind.DEADLINE, dueDate = today.plusDays(10), estimateMinutes = 360, moduleId = moduleId,
+                checklist = listOf(ChecklistItem("Brief"), ChecklistItem("Sources", done = true))),
+        )
+        val essay = container.taskRepository.getTask(essayId)!!
+        val stepIds = container.taskRepository.addSteps(BreakdownTemplates.apply(BreakdownTemplates.defaults.first(), essay, today))
+        val laundryId = container.taskRepository.save(Task(title = "Laundry", dueDate = today, repeat = TaskRepeat(RepeatKind.WEEKS)))
+        container.taskRepository.complete(container.taskRepository.getTask(laundryId)!!)
+        container.taskRepository.complete(container.taskRepository.getTask(stepIds.first())!!)
+        container.settingsStore.setPlannerReminders(PlannerReminderSettings(taskMinute = 8 * 60))
+        val mine = listOf(BreakdownTemplate("Poster", listOf(TemplateStep("Sketch", 40), TemplateStep("Print", 60))))
+        container.settingsStore.setBreakdownTemplates(mine)
+
+        val original = container.backupRepository.readAll()
+        assertEquals(1, original.plannerModules.size)
+        assertEquals(2 + stepIds.size, original.plannerTasks.size)
+        assertEquals(2, original.plannerCompletions.size)
+        val json = BackupViewModel(container).buildExportJson()
+        val success = decodeOrFail(json)
+
+        clearDatabase()
+        container.settingsStore.resetBreakdownTemplates()
+        container.settingsStore.setPlannerReminders(PlannerReminderSettings())
+        assertTrue(container.backupRepository.readAll().plannerTasks.isEmpty())
+        BackupViewModel(container).confirmRestore(success)
+
+        assertSameBackup(original, container.backupRepository.readAll())
+        assertEquals(mine, container.settingsStore.breakdownTemplates.first())
+        assertEquals(8 * 60, container.settingsStore.plannerReminders.first().taskMinute)
+        val restoredSteps = container.taskRepository.observeSteps(essayId).first()
+        assertEquals(stepIds, restoredSteps.map { it.id }, "the steps keep their ids and order")
+        assertEquals(listOf("Brief", "Sources"), container.taskRepository.getTask(essayId)?.checklist?.map { it.text })
     }
 
     /** The backup file carries `chartAccountView` and `balanceView`; restoring must write them back too. */

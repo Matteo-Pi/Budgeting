@@ -16,12 +16,16 @@ import io.github.matteopi.budgeting.data.repo.ScenarioRepository
 import io.github.matteopi.budgeting.data.repo.ShoppingRepository
 import io.github.matteopi.budgeting.data.repo.SnapshotRepository
 import io.github.matteopi.budgeting.data.repo.TransactionRepository
+import io.github.matteopi.budgeting.data.repo.planner.ModuleRepository
+import io.github.matteopi.budgeting.data.repo.planner.TaskRepository
 import io.github.matteopi.budgeting.data.settings.SettingsStore
 import io.github.matteopi.budgeting.domain.Clock
 import io.github.matteopi.budgeting.domain.ForecastService
 import io.github.matteopi.budgeting.domain.PostingService
 import io.github.matteopi.budgeting.ui.food.timers.CookingTimers
 import io.github.matteopi.budgeting.widget.WidgetUpdater
+import io.github.matteopi.budgeting.work.planner.PlannerAlarms
+import io.github.matteopi.budgeting.work.planner.PlannerUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -45,6 +49,9 @@ class AppContainer(context: Context) {
     /** The recipe timers (docs/PLAN.md §11.11), app-wide so they keep running between screens. */
     val cookingTimers = CookingTimers(appScope)
     val widgetUpdater = WidgetUpdater(context.applicationContext, appScope)
+
+    /** After Planner writes: the reminder alarm follows (docs/PLAN.md §13.5). [plannerAlarms] is built below. */
+    val plannerUpdater = PlannerUpdater(appScope) { plannerAlarms.reschedule() }
 
     val accountRepository = AccountRepository(
         database = database,
@@ -118,6 +125,26 @@ class AppContainer(context: Context) {
         clock = clock,
     )
 
+    val moduleRepository = ModuleRepository(
+        plannerDao = database.plannerDao(),
+        plannerUpdater = plannerUpdater,
+    )
+
+    val taskRepository = TaskRepository(
+        database = database,
+        plannerDao = database.plannerDao(),
+        clock = clock,
+        plannerUpdater = plannerUpdater,
+    )
+
+    /** The Planner's single reminder alarm (docs/PLAN.md §13.7). */
+    val plannerAlarms = PlannerAlarms(
+        context = context.applicationContext,
+        taskRepository = taskRepository,
+        settingsStore = settingsStore,
+        clock = clock,
+    )
+
     val snapshotRepository = SnapshotRepository(
         database = database,
         snapshotDao = database.snapshotDao(),
@@ -137,8 +164,10 @@ class AppContainer(context: Context) {
         snapshotDao = database.snapshotDao(),
         receiptDao = database.receiptDao(),
         foodDao = database.foodDao(),
+        plannerDao = database.plannerDao(),
         settingsStore = settingsStore,
         widgetUpdater = widgetUpdater,
+        plannerUpdater = plannerUpdater,
     )
 
     val forecastService = ForecastService(

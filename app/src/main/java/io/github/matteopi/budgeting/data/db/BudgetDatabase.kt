@@ -8,6 +8,7 @@ import io.github.matteopi.budgeting.data.db.dao.CategoryDao
 import io.github.matteopi.budgeting.data.db.dao.FoodDao
 import io.github.matteopi.budgeting.data.db.dao.ImportDao
 import io.github.matteopi.budgeting.data.db.dao.PlanDao
+import io.github.matteopi.budgeting.data.db.dao.PlannerDao
 import io.github.matteopi.budgeting.data.db.dao.PresetDao
 import io.github.matteopi.budgeting.data.db.dao.ReceiptDao
 import io.github.matteopi.budgeting.data.db.dao.ReconciliationDao
@@ -43,6 +44,10 @@ import io.github.matteopi.budgeting.data.db.entities.ShoppingMarkEntity
 import io.github.matteopi.budgeting.data.db.entities.SinkingFundEntity
 import io.github.matteopi.budgeting.data.db.entities.TermPeriodEntity
 import io.github.matteopi.budgeting.data.db.entities.TransactionEntity
+import io.github.matteopi.budgeting.data.db.entities.planner.ChecklistItemEntity
+import io.github.matteopi.budgeting.data.db.entities.planner.ModuleEntity
+import io.github.matteopi.budgeting.data.db.entities.planner.TaskCompletionEntity
+import io.github.matteopi.budgeting.data.db.entities.planner.TaskEntity
 
 @Database(
     entities = [
@@ -75,17 +80,23 @@ import io.github.matteopi.budgeting.data.db.entities.TransactionEntity
         ShoppingEntryEntity::class,
         ShoppingMarkEntity::class,
         OwnedItemEntity::class,
+        ModuleEntity::class,
+        TaskEntity::class,
+        ChecklistItemEntity::class,
+        TaskCompletionEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
     // Version 2 only adds tables and one nullable column (`transactions.receipt_id`); version 3 (the
     // Recipes section, docs/PLAN.md §11.3) only adds the eight food tables; version 4 (§11.11) only
-    // adds `owned_items` and two nullable columns on `ingredients`. Room can migrate all three
-    // without a spec. Never replace these with a destructive migration.
+    // adds `owned_items` and two nullable columns on `ingredients`; version 5 (the Planner's to-do
+    // list, §13.5) only adds four `planner_` tables. Room can migrate all four without a spec. Never
+    // replace these with a destructive migration.
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
         AutoMigration(from = 2, to = 3),
         AutoMigration(from = 3, to = 4),
+        AutoMigration(from = 4, to = 5),
     ],
 )
 abstract class BudgetDatabase : RoomDatabase() {
@@ -100,6 +111,7 @@ abstract class BudgetDatabase : RoomDatabase() {
     abstract fun snapshotDao(): SnapshotDao
     abstract fun receiptDao(): ReceiptDao
     abstract fun foodDao(): FoodDao
+    abstract fun plannerDao(): PlannerDao
 
     companion object {
         const val DATABASE_NAME = "budgeting.db"

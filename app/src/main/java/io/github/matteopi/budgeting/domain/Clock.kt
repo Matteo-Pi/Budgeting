@@ -20,6 +20,9 @@ class Clock(
 
     fun nowMillis(): Long = System.currentTimeMillis()
 
+    /** The phone's time zone, read on every call so a change of zone applies straight away (docs/PLAN.md §13.2). */
+    fun zone(): ZoneId = ZoneId.systemDefault()
+
     /**
      * Emits the current date immediately, then again whenever the date changes.
      *

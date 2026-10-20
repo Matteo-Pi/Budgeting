@@ -373,3 +373,60 @@ data class OwnedItemDto(
     val quantity: Double?,
     val updatedAtEpochMillis: Long,
 )
+
+// ---- Version 5: the Planner's modules and to-do list (docs/PLAN.md §13.5) --------------------
+
+@Serializable
+data class PlannerModuleDto(
+    val id: Long,
+    val code: String,
+    val name: String,
+    val colorArgb: Long?,
+    val weeklyTargetMinutes: Int?,
+    val weight: Int,
+    val archived: Boolean,
+    val sortOrder: Int,
+)
+
+/** Dates are ISO strings, times minutes after midnight, moments epoch millis, weekdays a bitmask (Monday = bit 0). */
+@Serializable
+data class PlannerTaskDto(
+    val id: Long,
+    val title: String,
+    val notes: String,
+    val kind: String,
+    val deadlineType: String?,
+    val dueDate: String?,
+    val dueMinute: Int?,
+    val lengthMinutes: Int?,
+    val estimateMinutes: Int?,
+    val priority: String,
+    val moduleId: Long?,
+    val tags: List<String>,
+    val repeatKind: String?,
+    val repeatInterval: Int,
+    val repeatDays: Int,
+    val reminderMinutesBefore: Int?,
+    val parentId: Long?,
+    val location: String?,
+    val completedAtEpochMillis: Long?,
+    val createdAtEpochMillis: Long,
+    val sortOrder: Int,
+)
+
+/** [position] orders one task's checklist. */
+@Serializable
+data class PlannerChecklistItemDto(
+    val taskId: Long,
+    val position: Int,
+    val text: String,
+    val done: Boolean,
+)
+
+@Serializable
+data class PlannerCompletionDto(
+    val id: Long,
+    val taskId: Long,
+    val dueDate: String?,
+    val completedAtEpochMillis: Long,
+)

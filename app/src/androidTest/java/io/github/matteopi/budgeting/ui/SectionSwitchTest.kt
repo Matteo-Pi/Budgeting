@@ -18,93 +18,115 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * The two sections (docs/PLAN.md §11.8): the switch at the top left of every tab moves between Budgeting and
- * Recipes, each with its own bottom bar; the last section is remembered; Back on a section's first tab leaves
- * the app. The Recipes tabs are placeholders for now, so these tests look at the bars and the switch, not at
- * what the tabs show.
+ * The three sections (docs/PLAN.md §11.8, §13.8): the chooser at the top left of every tab moves between Budgeting,
+ * Recipes and the Planner, each with its own bottom bar; the last section is remembered; Back on a section's first
+ * tab leaves the app. These tests look at the bars, the chooser and the settings actions, not at what the tabs show.
  */
 @RunWith(AndroidJUnit4::class)
 class SectionSwitchTest : UiTest() {
 
+    // "Insights" is a tab of both Budgeting and the Planner, so only the other tabs tell the sections apart.
     private val budgetingTabs = listOf("Home", "Activity", "Forecast", "Plan", "Insights")
+    private val budgetingOnly = listOf("Home", "Activity", "Forecast", "Plan")
     private val recipesTabs = listOf("Recipes", "Compare", "Shopping", "Ingredients")
+    private val plannerTabs = listOf("Today", "Timetable", "To-do", "Habits", "Insights")
+    private val plannerOnly = listOf("Today", "Timetable", "To-do", "Habits")
 
-    private fun switchButton(description: String) = hasContentDescription(description) and hasClickAction()
+    private val chooser = hasContentDescription("Switch section") and hasClickAction()
 
     /** The section the app has saved as the one to open next time. */
     private fun savedSection(): AppSection = blocking { appContainer.settingsStore.appSection.first() }
 
-    private fun expectBudgetingSection(timeoutMs: Long = UI_TIMEOUT_MS) {
-        waitForExists(switchButton("Switch to Recipes"), "the switch to Recipes", timeoutMs)
-        budgetingTabs.forEach { waitForExists(clickableText(it), "the '$it' tab", timeoutMs) }
-        recipesTabs.forEach { waitUntilGone(clickableText(it), "the Recipes tab '$it'", timeoutMs) }
-        assertNeverShows(switchButton("Switch to Budgeting"), "The switch to Budgeting", forMs = 300)
+    private fun switchTo(section: String) {
+        tap(chooser, "the section chooser")
+        tapMenuItem(section)
     }
 
-    private fun expectRecipesSection(timeoutMs: Long = UI_TIMEOUT_MS) {
-        waitForExists(switchButton("Switch to Budgeting"), "the switch to Budgeting", timeoutMs)
-        recipesTabs.forEach { waitForExists(clickableText(it), "the '$it' tab", timeoutMs) }
-        budgetingTabs.forEach { waitUntilGone(clickableText(it), "the Budgeting tab '$it'", timeoutMs) }
-        assertNeverShows(switchButton("Switch to Recipes"), "The switch to Recipes", forMs = 300)
+    private fun expectOnly(tabs: List<String>, notThese: List<String>, timeoutMs: Long = UI_TIMEOUT_MS) {
+        waitForExists(chooser, "the section chooser", timeoutMs)
+        tabs.forEach { waitForExists(clickableText(it), "the '$it' tab", timeoutMs) }
+        notThese.forEach { waitUntilGone(clickableText(it), "the other section's tab '$it'", timeoutMs) }
     }
+
+    private fun expectBudgetingSection(timeoutMs: Long = UI_TIMEOUT_MS) = expectOnly(budgetingTabs, recipesTabs + plannerOnly, timeoutMs)
+
+    private fun expectRecipesSection(timeoutMs: Long = UI_TIMEOUT_MS) = expectOnly(recipesTabs, budgetingTabs + plannerOnly, timeoutMs)
+
+    private fun expectPlannerSection(timeoutMs: Long = UI_TIMEOUT_MS) = expectOnly(plannerTabs, budgetingOnly + recipesTabs, timeoutMs)
 
     private fun expectSelectedTab(name: String) =
         waitForExists(hasText(name) and isSelected(), "the '$name' tab selected in the bottom bar")
 
     @Test
-    fun theSwitchMovesBetweenTheTwoSectionsAndEachHasItsOwnTabs() {
+    fun theChooserMovesBetweenTheThreeSectionsAndEachHasItsOwnTabs() {
         seedSmallLedger()
         launchHome()
 
-        // Budgeting: the five tabs, each with the switch to Recipes at the top left.
+        // Budgeting: the five tabs, each with the chooser at the top left.
         expectBudgetingSection()
         expectSelectedTab("Home")
         shot("sections-01-budgeting-home")
         for (tab in budgetingTabs.drop(1) + "Home") {
             goToTab(tab)
-            waitForExists(switchButton("Switch to Recipes"), "the switch on the $tab tab", HEAVY_TIMEOUT_MS)
+            waitForExists(chooser, "the chooser on the $tab tab", HEAVY_TIMEOUT_MS)
         }
-        goToTab("Insights")
 
-        // To Recipes: four tabs, no Budgeting ones, and the Recipes tab is open.
-        tapIcon("Switch to Recipes")
+        // The chooser offers the other two sections.
+        tap(chooser, "the section chooser")
+        waitForExists(menuItem("Recipes"), "Recipes in the chooser")
+        waitForExists(menuItem("Planner"), "the Planner in the chooser")
+        assertNeverShows(menuItem("Budgeting"), "Budgeting offered from inside Budgeting", forMs = 300)
+        shot("sections-02-chooser")
+        tapMenuItem("Recipes")
+
+        // Recipes: four tabs, none of the others, and the Recipes tab is open.
         expectRecipesSection()
         expectSelectedTab("Recipes")
-        shot("sections-02-recipes")
+        shot("sections-03-recipes")
+        for (tab in recipesTabs.drop(1) + "Recipes") {
+            goToTab(tab)
+            waitForExists(chooser, "the chooser on the $tab tab")
+        }
 
-        // Every Recipes tab has the switch back to Budgeting.
-        listOf("Compare" to "sections-03-compare", "Shopping" to "sections-04-shopping", "Ingredients" to "sections-05-ingredients")
-            .forEach { (tab, shotName) ->
-                goToTab(tab)
-                waitForExists(switchButton("Switch to Budgeting"), "the switch on the $tab tab")
-                shot(shotName)
-            }
-        goToTab("Recipes")
-        waitForExists(switchButton("Switch to Budgeting"), "the switch on the Recipes tab")
-
-        // A sub-screen keeps the Recipes bar but has a back arrow instead of the switch.
+        // A sub-screen keeps the bar but has a back arrow instead of the chooser.
         tapIcon("Recipe settings")
-        waitUntilGone(switchButton("Switch to Budgeting"), "the switch on a sub-screen")
+        waitUntilGone(chooser, "the chooser on a sub-screen")
         recipesTabs.forEach { waitForExists(clickableText(it), "the '$it' tab on a sub-screen") }
-        shot("sections-06-recipes-sub-screen")
         tapBack()
-        waitForExists(switchButton("Switch to Budgeting"), "the Recipes tab after Back")
+        waitForExists(chooser, "the Recipes tab after Back")
+
+        // The Planner: five tabs, Today first, each with the chooser and the gear for the Planner's settings.
+        switchTo("Planner")
+        expectPlannerSection()
+        expectSelectedTab("Today")
+        shot("sections-04-planner-today")
+        for (tab in plannerTabs.drop(1) + "Today") {
+            goToTab(tab)
+            waitForExists(chooser, "the chooser on the $tab tab")
+            waitForExists(hasContentDescription("Planner settings") and hasClickAction(), "the gear on the $tab tab")
+        }
+        tapIcon("Planner settings")
+        waitForText("Planner settings")
+        waitUntilGone(chooser, "the chooser on the Planner's settings")
+        plannerOnly.forEach { waitForExists(clickableText(it), "the '$it' tab on the Planner's settings") }
+        shot("sections-05-planner-settings")
+        tapBack()
 
         // Back to Budgeting: Home (not the tab that was open before), with the five tabs.
-        tapIcon("Switch to Budgeting")
+        switchTo("Budgeting")
         expectBudgetingSection()
         expectSelectedTab("Home")
-        shot("sections-07-budgeting-again")
+        shot("sections-06-budgeting-again")
     }
 
     @Test
     fun theLastSectionOpensNextTime() {
         seedSmallLedger()
         val first = launchMain()
-        waitForExists(switchButton("Switch to Recipes"), "Home's switch to Recipes", HEAVY_TIMEOUT_MS)
+        waitForExists(chooser, "Home's section chooser", HEAVY_TIMEOUT_MS)
         assertEquals("Budgeting is the section until the user switches", AppSection.BUDGETING, savedSection())
 
-        tapIcon("Switch to Recipes")
+        switchTo("Recipes")
         expectRecipesSection()
         waitFor("the Recipes section to be saved") { savedSection() == AppSection.RECIPES }
 
@@ -113,37 +135,61 @@ class SectionSwitchTest : UiTest() {
         val second = launchMain()
         expectRecipesSection(HEAVY_TIMEOUT_MS)
         expectSelectedTab("Recipes")
-        shot("sections-08-reopened-on-recipes")
+        shot("sections-07-reopened-on-recipes")
 
-        // And back: the choice is saved again, and the next launch opens on Home.
-        tapIcon("Switch to Budgeting")
+        // The Planner is remembered the same way.
+        switchTo("Planner")
+        expectPlannerSection()
+        waitFor("the Planner to be saved") { savedSection() == AppSection.PLANNER }
+        second.close()
+        val third = launchMain()
+        expectPlannerSection(HEAVY_TIMEOUT_MS)
+        expectSelectedTab("Today")
+        shot("sections-08-reopened-on-planner")
+
+        // And back: the next launch opens on Home.
+        switchTo("Budgeting")
         expectBudgetingSection()
         waitFor("the Budgeting section to be saved") { savedSection() == AppSection.BUDGETING }
-        second.close()
+        third.close()
         launchMain()
         expectBudgetingSection(HEAVY_TIMEOUT_MS)
         expectSelectedTab("Home")
-        shot("sections-09-reopened-on-budgeting")
     }
 
     @Test
-    fun backOnTheRecipesTabLeavesTheApp() {
+    fun backOnASectionsFirstTabLeavesTheApp() {
         seedSmallLedger()
         val scenario = launchMain()
-        waitForExists(switchButton("Switch to Recipes"), "Home's switch to Recipes", HEAVY_TIMEOUT_MS)
-        tapIcon("Switch to Recipes")
+        waitForExists(chooser, "Home's section chooser", HEAVY_TIMEOUT_MS)
+        switchTo("Recipes")
         expectRecipesSection()
 
         // Back from another Recipes tab goes to the Recipes tab (the back stack holds only those two) ...
         goToTab("Compare")
         pressSystemBack()
         expectSelectedTab("Recipes")
-        waitForExists(switchButton("Switch to Budgeting"), "the Recipes tab after Back")
+        waitForExists(chooser, "the Recipes tab after Back")
 
-        // ... and Back from the Recipes tab leaves the app instead of reaching the Budgeting tabs that were
-        // open before the switch. From Android 12 a launcher activity that is the root of its task is moved
-        // to the back rather than destroyed, so "left" means no longer in the foreground.
+        // ... and Back from the Recipes tab leaves the app instead of reaching the Budgeting tabs that were open
+        // before the switch. From Android 12 a launcher activity that is the root of its task is moved to the back
+        // rather than destroyed, so "left" means no longer in the foreground.
         pressSystemBack()
         waitFor("the app to be left after Back on the Recipes tab") { scenario.state.name != "RESUMED" }
+    }
+
+    @Test
+    fun backOnTodayLeavesTheApp() {
+        seedSmallLedger()
+        val scenario = launchMain()
+        waitForExists(chooser, "Home's section chooser", HEAVY_TIMEOUT_MS)
+        switchTo("Planner")
+        expectPlannerSection()
+
+        goToTab("To-do")
+        pressSystemBack()
+        expectSelectedTab("Today")
+        pressSystemBack()
+        waitFor("the app to be left after Back on Today") { scenario.state.name != "RESUMED" }
     }
 }
