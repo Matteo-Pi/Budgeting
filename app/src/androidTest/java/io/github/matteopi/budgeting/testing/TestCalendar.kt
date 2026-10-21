@@ -15,7 +15,9 @@ import java.time.ZoneOffset
 /**
  * A local calendar on the emulator, standing in for a synced Google one (docs/PLAN.md §13.10). The test creates it as a
  * sync adapter (`ACCOUNT_TYPE_LOCAL`), with the calendar permissions granted by its rule, and [delete]s it after, which
- * takes its events too. Events are added as a calendar app would add them.
+ * takes its events too. Events are added as a calendar app would add them, except the repeating ones: those and their
+ * changed days are written as Google's sync adapter writes them (a series with a sync id, and each changed or cancelled
+ * day a row of its own naming the series), which is what the app reads on a real phone.
  */
 class TestCalendar private constructor(val id: Long, private val zone: ZoneId) {
 
@@ -54,43 +56,58 @@ class TestCalendar private constructor(val id: Long, private val zone: ZoneId) {
         },
     )
 
+    /** The repeating events added, by id: their sync id and title, for their changed days. */
+    private val series = mutableMapOf<Long, Pair<String, String>>()
+
     /** A daily event for [days] days from [start], an hour long. */
-    fun addDaily(title: String, start: LocalDateTime, days: Int): Long = insert(
-        ContentValues().apply {
-            put(CalendarContract.Events.TITLE, title)
-            put(CalendarContract.Events.DTSTART, start.atZone(zone).toInstant().toEpochMilli())
-            put(CalendarContract.Events.DURATION, "PT1H")
-            put(CalendarContract.Events.RRULE, "FREQ=DAILY;COUNT=$days")
-            put(CalendarContract.Events.EVENT_TIMEZONE, zone.id)
-        },
-    )
-
-    /**
-     * Moves the occurrence of repeating [eventId] that was due at [original] to start at [start]. It keeps the
-     * series' length: the provider refuses an exception that sets its own end ("Exceptions can't overwrite dtend").
-     */
-    fun moveOccurrence(eventId: Long, original: LocalDateTime, start: LocalDateTime) = exception(
-        eventId,
-        original,
-        ContentValues().apply { put(CalendarContract.Events.DTSTART, start.atZone(zone).toInstant().toEpochMilli()) },
-    )
-
-    /** Cancels the occurrence of repeating [eventId] that was due at [original]. */
-    fun cancelOccurrence(eventId: Long, original: LocalDateTime) = exception(
-        eventId,
-        original,
-        ContentValues().apply { put(CalendarContract.Events.STATUS, CalendarContract.Events.STATUS_CANCELED) },
-    )
-
-    private fun exception(eventId: Long, original: LocalDateTime, values: ContentValues) {
-        values.put(CalendarContract.Events.ORIGINAL_INSTANCE_TIME, original.atZone(zone).toInstant().toEpochMilli())
-        resolver.insert(Uri.withAppendedPath(CalendarContract.Events.CONTENT_EXCEPTION_URI, eventId.toString()), values)
-            ?: throw AssertionError("The calendar refused the exception")
+    fun addDaily(title: String, start: LocalDateTime, days: Int): Long {
+        val syncId = "series-${series.size + 1}"
+        val id = insert(
+            ContentValues().apply {
+                put(CalendarContract.Events._SYNC_ID, syncId)
+                put(CalendarContract.Events.TITLE, title)
+                put(CalendarContract.Events.DTSTART, start.atZone(zone).toInstant().toEpochMilli())
+                put(CalendarContract.Events.DURATION, "PT1H")
+                put(CalendarContract.Events.RRULE, "FREQ=DAILY;COUNT=$days")
+                put(CalendarContract.Events.EVENT_TIMEZONE, zone.id)
+            },
+            asSyncAdapter = true,
+        )
+        series[id] = syncId to title
+        return id
     }
 
-    private fun insert(values: ContentValues): Long {
+    /** Moves the hour-long occurrence of repeating [eventId] that was due at [original] to start at [start]. */
+    fun moveOccurrence(eventId: Long, original: LocalDateTime, start: LocalDateTime) =
+        exception(eventId, original, start, cancelled = false)
+
+    /** Cancels the occurrence of repeating [eventId] that was due at [original]. */
+    fun cancelOccurrence(eventId: Long, original: LocalDateTime) = exception(eventId, original, original, cancelled = true)
+
+    private fun exception(eventId: Long, original: LocalDateTime, start: LocalDateTime, cancelled: Boolean) {
+        val (syncId, title) = series[eventId] ?: throw AssertionError("Event $eventId is not a repeating event of this calendar")
+        val originalMillis = original.atZone(zone).toInstant().toEpochMilli()
+        val startMillis = start.atZone(zone).toInstant().toEpochMilli()
+        insert(
+            ContentValues().apply {
+                put(CalendarContract.Events._SYNC_ID, "$syncId-$originalMillis")
+                put(CalendarContract.Events.ORIGINAL_SYNC_ID, syncId)
+                put(CalendarContract.Events.ORIGINAL_INSTANCE_TIME, originalMillis)
+                put(CalendarContract.Events.ORIGINAL_ALL_DAY, 0)
+                put(CalendarContract.Events.TITLE, title)
+                put(CalendarContract.Events.DTSTART, startMillis)
+                put(CalendarContract.Events.DTEND, startMillis + 3_600_000)
+                put(CalendarContract.Events.EVENT_TIMEZONE, zone.id)
+                if (cancelled) put(CalendarContract.Events.STATUS, CalendarContract.Events.STATUS_CANCELED)
+            },
+            asSyncAdapter = true,
+        )
+    }
+
+    private fun insert(values: ContentValues, asSyncAdapter: Boolean = false): Long {
         values.put(CalendarContract.Events.CALENDAR_ID, id)
-        return ContentUris.parseId(resolver.insert(CalendarContract.Events.CONTENT_URI, values) ?: throw AssertionError("The calendar refused the event"))
+        val uri = if (asSyncAdapter) asSyncAdapter(CalendarContract.Events.CONTENT_URI) else CalendarContract.Events.CONTENT_URI
+        return ContentUris.parseId(resolver.insert(uri, values) ?: throw AssertionError("The calendar refused the event"))
     }
 
     /** Every live event (not the instances of repeating ones), by start. */

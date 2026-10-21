@@ -104,7 +104,7 @@ class CalendarProviderTest {
         assertEquals(
             listOf(start, start.plusDays(1).withHour(9)).map { it.atZone(zone).toInstant() },
             instances.map { it.start },
-            "the first day as set, the second moved to 09:00, the third cancelled",
+            "the first day as set, the second moved to 09:00, the third cancelled; the calendar holds ${calendar.events()}",
         )
         assertEquals(start.plusDays(1).withHour(10).atZone(zone).toInstant(), instances[1].end, "the moved day keeps the hour")
     }
