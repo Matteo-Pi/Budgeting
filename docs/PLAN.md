@@ -3323,7 +3323,8 @@ use made-up figures. `7.json` is committed.
     - `widget/PlannerWidgetTest` (both sizes).
 
 **P4: Habits (Room 8, backup 8)**
-**Status (2026-10-21)**: built; waiting for CI. Settled while building (also in §13.4):
+**Status (2026-10-21)**: built and published as build 74 (451 of 451 device tests; it installs over build 73). `8.json` is
+committed. Settled while building (also in §13.4):
 - a day of a weekly goal with nothing counted is `NONE`, and the week judges it;
 - `HabitProgress.tickAmount`: a tick enters 1 time, or a daily amount's target; weekly amounts and limits take an
   amount (*Add*) instead, and their reminders have no *Done*;
