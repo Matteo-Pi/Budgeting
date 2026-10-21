@@ -58,6 +58,12 @@ import io.github.matteopi.budgeting.core.planner.day.EditPlan
 import io.github.matteopi.budgeting.core.planner.model.CalendarLink
 import io.github.matteopi.budgeting.core.planner.model.ChecklistItem
 import io.github.matteopi.budgeting.core.planner.model.Module
+import io.github.matteopi.budgeting.core.planner.model.CategoryKey
+import io.github.matteopi.budgeting.core.planner.model.GoalKind
+import io.github.matteopi.budgeting.core.planner.model.GoalUnit
+import io.github.matteopi.budgeting.core.planner.model.Habit
+import io.github.matteopi.budgeting.core.planner.model.HabitCounting
+import io.github.matteopi.budgeting.core.planner.model.HabitGoal
 import io.github.matteopi.budgeting.core.planner.model.PlanBlock
 import io.github.matteopi.budgeting.core.planner.model.RecordChunk
 import io.github.matteopi.budgeting.core.planner.model.RecordOrigin
@@ -539,6 +545,8 @@ class BackupRoundTripTest {
         plannerPlanBlocks = plannerPlanBlocks.sortedBy { it.id },
         plannerRecords = plannerRecords.sortedBy { it.id },
         plannerDayReviews = plannerDayReviews.sortedBy { it.date },
+        plannerHabits = plannerHabits.sortedBy { it.id },
+        plannerHabitEntries = plannerHabitEntries.sortedBy { it.id },
     )
 
     /** Table by table (so a failure names the table), ignoring row order but not ids. */
@@ -580,6 +588,8 @@ class BackupRoundTripTest {
         assertEquals(e.plannerPlanBlocks, a.plannerPlanBlocks, "plan blocks")
         assertEquals(e.plannerRecords, a.plannerRecords, "the day record")
         assertEquals(e.plannerDayReviews, a.plannerDayReviews, "day reviews")
+        assertEquals(e.plannerHabits, a.plannerHabits, "habits")
+        assertEquals(e.plannerHabitEntries, a.plannerHabitEntries, "habits' days")
         assertEquals(e.settings, a.settings, "budget settings")
     }
 
@@ -854,17 +864,17 @@ class BackupRoundTripTest {
     }
 
     @Test
-    fun theExportedFileIsVersion7AndCarriesTheFoodAndPlannerLists() = runBlocking<Unit> {
+    fun theExportedFileIsVersion8AndCarriesTheFoodAndPlannerLists() = runBlocking<Unit> {
         populateEverything()
 
         val json = BackupViewModel(container).buildExportJson()
 
-        assertTrue("\"version\": 7" in json, "the file says it is version 7")
+        assertTrue("\"version\": 8" in json, "the file says it is version 8")
         for (list in listOf(
             "ingredients", "ingredientPortions", "ingredientAliases", "recipes", "recipeLines", "recipeSteps", "shoppingEntries",
             "shoppingMarks", "ownedItems", "plannerModules", "plannerTasks", "plannerChecklist", "plannerCompletions",
             "plannerEntries", "plannerEntryExceptions", "plannerCalendarLinks", "plannerCategories", "plannerPlanBlocks", "plannerRecords",
-            "plannerDayReviews",
+            "plannerDayReviews", "plannerHabits", "plannerHabitEntries",
         )) {
             assertTrue("\"$list\": [" in json, "the file has a \"$list\" list")
         }
@@ -889,8 +899,8 @@ class BackupRoundTripTest {
 
     /**
      * The Planner (docs/PLAN.md §13.5): modules, a deadline with steps and a checklist, a repeating task and the Done
-     * log, the timetable (an entry for one term, with a cancelled week) and a calendar link survive export and restore
-     * into an empty database, as do the reminder time and the user's templates.
+     * log, the timetable (an entry for one term, with a cancelled week), a calendar link, the day record and habits
+     * survive export and restore into an empty database, as do the reminder time and the user's templates.
      */
     @Test
     fun thePlannerSurvivesBackupAndRestore() = runBlocking<Unit> {
@@ -935,7 +945,23 @@ class BackupRoundTripTest {
         )
         container.dayRepository.finishDay(today.minusDays(1), rating = 5, note = "Good")
 
+        // Habits: one counted from the record with a reminder and a pause, its ticked and skipped days, and an archived one.
+        val exercise = categories.single { it.systemKey == CategoryKey.EXERCISE }.id
+        val gym = container.habitRepository.save(
+            Habit(name = "Gym", goal = HabitGoal(GoalKind.TIMES_PER_WEEK, 3), counting = HabitCounting.BOTH, categoryId = exercise, minMinutes = 30,
+                reminderTime = LocalTime.of(18, 15), termOnly = true, pausedFrom = today.plusDays(20), pausedUntil = today.plusDays(27),
+                startDate = today.minusDays(14)),
+        )
+        container.habitRepository.setAmount(gym, today.minusDays(2), 1)
+        container.habitRepository.setSkipped(gym, today.minusDays(1), true)
+        val read = container.habitRepository.save(
+            Habit(name = "Read", goal = HabitGoal(GoalKind.AT_LEAST, 20, GoalUnit.MINUTES), startDate = today.minusDays(5)),
+        )
+        container.habitRepository.setArchived(read, true)
+
         val original = container.backupRepository.readAll()
+        assertEquals(2, original.plannerHabits.size)
+        assertEquals(2, original.plannerHabitEntries.size)
         assertEquals(1, original.plannerRecords.size)
         assertEquals(1, original.plannerPlanBlocks.size)
         assertEquals(DefaultTimeCategories.all.size, original.plannerCategories.size)

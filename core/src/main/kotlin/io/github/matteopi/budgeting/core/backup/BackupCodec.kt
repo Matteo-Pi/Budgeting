@@ -16,7 +16,7 @@ sealed class BackupDecodeResult {
     data class Failure(val errors: List<String>) : BackupDecodeResult()
 }
 
-/** JSON encode/decode for [BackupV1] (versions 1 to 7), with validation. See docs/PLAN.md §5.17. */
+/** JSON encode/decode for [BackupV1] (versions 1 to 8), with validation. See docs/PLAN.md §5.17. */
 object BackupCodec {
 
     private val json = Json {
@@ -181,9 +181,9 @@ object BackupCodec {
     }
 
     /**
-     * The Planner tables (versions 5 to 7): references, the unique module codes (without case), steps one level deep,
+     * The Planner tables (versions 5 to 8): references, the unique module codes (without case), steps one level deep,
      * one change per entry and date, one link per item, times inside the day (`LocalTime.of` would otherwise throw on a
-     * corrupted minute), chunks that end after they start, and one review per day.
+     * corrupted minute), chunks that end after they start, one review per day, and one entry per habit and day.
      */
     private fun validatePlanner(b: BackupV1, check: (Boolean, String) -> Unit) {
         val moduleIds = b.plannerModules.map { it.id }.toSet()
@@ -263,6 +263,27 @@ object BackupCodec {
         check(b.plannerDayReviews.map { it.date }.toSet().size == b.plannerDayReviews.size, "A day has two reviews.")
         for (review in b.plannerDayReviews) {
             check(review.rating == null || review.rating in 1..5, "The review of ${review.date} has a rating outside 1 to 5.")
+        }
+
+        // Version 8: habits.
+        val habitIds = b.plannerHabits.map { it.id }.toSet()
+        check(habitIds.size == b.plannerHabits.size, "Two habits have the same id.")
+        for (habit in b.plannerHabits) {
+            habit.categoryId?.let { check(it in categoryIds, "Habit ${habit.id} refers to a missing category $it.") }
+            check(
+                listOfNotNull(habit.reminderMinute, habit.slotStartMinute, habit.slotEndMinute).all { it in day },
+                "Habit ${habit.id} has a time outside the day.",
+            )
+        }
+        for (block in b.plannerPlanBlocks) {
+            block.habitId?.let { check(it in habitIds, "Plan block ${block.id} refers to a missing habit $it.") }
+        }
+        check(
+            b.plannerHabitEntries.map { it.habitId to it.date }.toSet().size == b.plannerHabitEntries.size,
+            "A habit has two entries on the same day.",
+        )
+        for (entry in b.plannerHabitEntries) {
+            check(entry.habitId in habitIds, "A habit entry refers to a missing habit ${entry.habitId}.")
         }
     }
 

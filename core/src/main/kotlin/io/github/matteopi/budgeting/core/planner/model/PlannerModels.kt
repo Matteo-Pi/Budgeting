@@ -284,3 +284,79 @@ data class DayReview(
     val rating: Int? = null,
     val note: String = "",
 )
+
+// ---- Habits (docs/PLAN.md §12.9, stage P4) ----
+
+/**
+ * What a habit aims for: [ON_DAYS] each chosen day; [TIMES_PER_WEEK] a number of times a week; [AT_LEAST] an amount
+ * per day or week; [AT_MOST] a limit per day or week.
+ */
+enum class GoalKind { ON_DAYS, TIMES_PER_WEEK, AT_LEAST, AT_MOST }
+
+/** What a habit's amounts count: times (ticks or sessions), minutes, or a number of something ("pages"). */
+enum class GoalUnit { TIMES, MINUTES, COUNT }
+
+enum class GoalPeriod { DAY, WEEK }
+
+/** How a habit is filled in: ticked by hand, counted from the day record by a category, or both (the larger counts). */
+enum class HabitCounting { MANUAL, RECORD, BOTH }
+
+/**
+ * A habit's goal. [days] are the chosen days of [GoalKind.ON_DAYS], and of a daily [GoalKind.AT_LEAST] or
+ * [GoalKind.AT_MOST] (empty: every day). [GoalKind.ON_DAYS] always means once on each chosen day, and
+ * [GoalKind.TIMES_PER_WEEK] [target] times a week.
+ */
+data class HabitGoal(
+    val kind: GoalKind,
+    val target: Int = 1,
+    val unit: GoalUnit = GoalUnit.TIMES,
+    val period: GoalPeriod = GoalPeriod.DAY,
+    val days: Set<DayOfWeek> = emptySet(),
+) {
+    /** True when the goal is judged per week (its streak counts weeks). */
+    val weekly: Boolean
+        get() = kind == GoalKind.TIMES_PER_WEEK || (kind != GoalKind.ON_DAYS && period == GoalPeriod.WEEK)
+
+    /** The amount a day or week needs: 1 for [GoalKind.ON_DAYS], else [target]. */
+    val effectiveTarget: Int get() = if (kind == GoalKind.ON_DAYS) 1 else target
+}
+
+/**
+ * A habit (docs/PLAN.md §12.9). [minMinutes] is the shortest record chunk of [categoryId] that counts as once.
+ * [pausedFrom] to [pausedUntil] (both included; no end: paused until resumed) and, for [termOnly], days outside the
+ * terms don't count against it. Days before [startDate] don't count at all. The slot fields are for *Suggest a
+ * time* (stage P5).
+ */
+data class Habit(
+    val id: Long = 0,
+    val name: String,
+    val colorArgb: Long = 0xFF2E8B57,
+    val goal: HabitGoal,
+    val counting: HabitCounting = HabitCounting.MANUAL,
+    val categoryId: Long? = null,
+    val minMinutes: Int? = null,
+    val streaks: Boolean = true,
+    val reminderTime: LocalTime? = null,
+    val termOnly: Boolean = false,
+    val pausedFrom: LocalDate? = null,
+    val pausedUntil: LocalDate? = null,
+    val suggestSlot: Boolean = false,
+    val slotMinutes: Int? = null,
+    val slotStart: LocalTime? = null,
+    val slotEnd: LocalTime? = null,
+    val startDate: LocalDate,
+    val archived: Boolean = false,
+    val sortOrder: Int = 0,
+) {
+    val countsRecord: Boolean get() = counting != HabitCounting.MANUAL
+    val countsByHand: Boolean get() = counting != HabitCounting.RECORD
+}
+
+/** A habit's day filled in by hand: [amount] (1 for a tick), or [skipped] ("Skip today": ill, away). */
+data class HabitEntry(
+    val id: Long = 0,
+    val habitId: Long,
+    val date: LocalDate,
+    val amount: Int = 0,
+    val skipped: Boolean = false,
+)

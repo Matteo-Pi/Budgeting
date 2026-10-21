@@ -531,3 +531,42 @@ data class PlannerDayReviewDto(
     val rating: Int?,
     val note: String,
 )
+
+// ---- Version 8: habits ----
+
+@Serializable
+data class PlannerHabitDto(
+    val id: Long,
+    val name: String,
+    val colorArgb: Long,
+    val goalKind: String,
+    val target: Int,
+    val unit: String,
+    val period: String,
+    /** The goal's chosen days, Monday = bit 0. */
+    val days: Int,
+    val counting: String,
+    val categoryId: Long?,
+    val minMinutes: Int?,
+    val streaks: Boolean,
+    val reminderMinute: Int?,
+    val termOnly: Boolean,
+    val pausedFrom: String?,
+    val pausedUntil: String?,
+    val suggestSlot: Boolean,
+    val slotMinutes: Int?,
+    val slotStartMinute: Int?,
+    val slotEndMinute: Int?,
+    val startDate: String,
+    val archived: Boolean,
+    val sortOrder: Int,
+)
+
+@Serializable
+data class PlannerHabitEntryDto(
+    val id: Long,
+    val habitId: Long,
+    val date: String,
+    val amount: Int,
+    val skipped: Boolean,
+)

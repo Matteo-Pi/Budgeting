@@ -7,6 +7,13 @@ import io.github.matteopi.budgeting.core.planner.model.DayReview
 import io.github.matteopi.budgeting.core.planner.model.DeadlineType
 import io.github.matteopi.budgeting.core.planner.model.EntryException
 import io.github.matteopi.budgeting.core.planner.model.EntryKind
+import io.github.matteopi.budgeting.core.planner.model.GoalKind
+import io.github.matteopi.budgeting.core.planner.model.GoalPeriod
+import io.github.matteopi.budgeting.core.planner.model.GoalUnit
+import io.github.matteopi.budgeting.core.planner.model.Habit
+import io.github.matteopi.budgeting.core.planner.model.HabitCounting
+import io.github.matteopi.budgeting.core.planner.model.HabitEntry
+import io.github.matteopi.budgeting.core.planner.model.HabitGoal
 import io.github.matteopi.budgeting.core.planner.model.Module
 import io.github.matteopi.budgeting.core.planner.model.Outcome
 import io.github.matteopi.budgeting.core.planner.model.PlanBlock
@@ -31,6 +38,8 @@ import io.github.matteopi.budgeting.data.db.entities.planner.TimeCategoryEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.ChecklistItemEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.DayReviewEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.EntryExceptionEntity
+import io.github.matteopi.budgeting.data.db.entities.planner.HabitEntity
+import io.github.matteopi.budgeting.data.db.entities.planner.HabitEntryEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.ModuleEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.PlanBlockEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.RecordEntity
@@ -337,3 +346,63 @@ fun DayReview.toEntity() = DayReviewEntity(
     rating = rating,
     note = note.trim(),
 )
+
+// ---- Habits (version 8) --------------------------------------------------------------------------
+
+fun HabitEntity.toModel() = Habit(
+    id = id,
+    name = name,
+    colorArgb = colorArgb,
+    goal = HabitGoal(
+        kind = enumOr(goalKind, GoalKind.ON_DAYS),
+        target = target,
+        unit = enumOr(unit, GoalUnit.TIMES),
+        period = enumOr(period, GoalPeriod.DAY),
+        days = Weekdays.fromBits(days),
+    ),
+    counting = enumOr(counting, HabitCounting.MANUAL),
+    categoryId = categoryId,
+    minMinutes = minMinutes,
+    streaks = streaks,
+    reminderTime = timeOf(reminderMinute),
+    termOnly = termOnly,
+    pausedFrom = pausedFrom?.let(LocalDate::ofEpochDay),
+    pausedUntil = pausedUntil?.let(LocalDate::ofEpochDay),
+    suggestSlot = suggestSlot,
+    slotMinutes = slotMinutes,
+    slotStart = timeOf(slotStartMinute),
+    slotEnd = timeOf(slotEndMinute),
+    startDate = LocalDate.ofEpochDay(startDate),
+    archived = archived,
+    sortOrder = sortOrder,
+)
+
+fun Habit.toEntity() = HabitEntity(
+    id = id,
+    name = name.trim(),
+    colorArgb = colorArgb,
+    goalKind = goal.kind.name,
+    target = goal.target,
+    unit = goal.unit.name,
+    period = goal.period.name,
+    days = Weekdays.toBits(goal.days),
+    counting = counting.name,
+    categoryId = categoryId,
+    minMinutes = minMinutes,
+    streaks = streaks,
+    reminderMinute = reminderTime?.let(::minuteOf),
+    termOnly = termOnly,
+    pausedFrom = pausedFrom?.toEpochDay(),
+    pausedUntil = pausedUntil?.toEpochDay(),
+    suggestSlot = suggestSlot,
+    slotMinutes = slotMinutes,
+    slotStartMinute = slotStart?.let(::minuteOf),
+    slotEndMinute = slotEnd?.let(::minuteOf),
+    startDate = startDate.toEpochDay(),
+    archived = archived,
+    sortOrder = sortOrder,
+)
+
+fun HabitEntryEntity.toModel() = HabitEntry(id, habitId, LocalDate.ofEpochDay(date), amount.coerceAtLeast(0), skipped)
+
+fun HabitEntry.toEntity() = HabitEntryEntity(id, habitId, date.toEpochDay(), amount, skipped)

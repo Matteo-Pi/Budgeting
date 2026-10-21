@@ -7,6 +7,9 @@ import androidx.navigation.toRoute
 import io.github.matteopi.budgeting.ui.plan.TermDatesScreen
 import io.github.matteopi.budgeting.ui.planner.components.PlannerComingSoonScreen
 import io.github.matteopi.budgeting.ui.planner.day.DayScreen
+import io.github.matteopi.budgeting.ui.planner.habits.HabitDetailScreen
+import io.github.matteopi.budgeting.ui.planner.habits.HabitEditScreen
+import io.github.matteopi.budgeting.ui.planner.habits.HabitsScreen
 import io.github.matteopi.budgeting.ui.planner.settings.CalendarsScreen
 import io.github.matteopi.budgeting.ui.planner.settings.CategoriesScreen
 import io.github.matteopi.budgeting.ui.planner.settings.DaySettingsScreen
@@ -24,6 +27,7 @@ import io.github.matteopi.budgeting.ui.planner.todo.TodoScreen
 fun NavGraphBuilder.plannerDestinations(navController: NavHostController) {
     val openSettings = { navController.navigate(Route.PlannerSettings) }
     val openTask = { id: Long -> navController.navigate(Route.TaskDetail(id)) }
+    val openHabit = { id: Long -> navController.navigate(Route.HabitDetail(id)) }
 
     composable<Route.Today> {
         TodayScreen(
@@ -37,6 +41,7 @@ fun NavGraphBuilder.plannerDestinations(navController: NavHostController) {
             },
             onOpenDay = { date, review -> navController.navigate(Route.Day(epochDay = date.toEpochDay(), review = review)) },
             onAddTask = { navController.navigate(Route.TaskEdit()) },
+            onOpenHabit = openHabit,
         )
     }
     composable<Route.Timetable> {
@@ -57,10 +62,26 @@ fun NavGraphBuilder.plannerDestinations(navController: NavHostController) {
         )
     }
     composable<Route.Habits> {
-        PlannerComingSoonScreen(
-            title = "Habits",
-            message = "Habits, with ticks, streaks and goals such as \"gym 3 times a week\", come in a later build of the Planner.",
+        HabitsScreen(
             onOpenSettings = openSettings,
+            onOpenHabit = openHabit,
+            onAddHabit = { navController.navigate(Route.HabitEdit()) },
+        )
+    }
+    composable<Route.HabitEdit> { backStackEntry ->
+        val args = backStackEntry.toRoute<Route.HabitEdit>()
+        HabitEditScreen(
+            habitId = args.habitId,
+            onBack = { navController.popBackStack() },
+            onSaved = { navController.popBackStack() },
+        )
+    }
+    composable<Route.HabitDetail> { backStackEntry ->
+        val args = backStackEntry.toRoute<Route.HabitDetail>()
+        HabitDetailScreen(
+            habitId = args.habitId,
+            onBack = { navController.popBackStack() },
+            onEdit = { id -> navController.navigate(Route.HabitEdit(habitId = id)) },
         )
     }
     composable<Route.PlannerInsights> {

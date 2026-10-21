@@ -2,6 +2,9 @@ package io.github.matteopi.budgeting.core.backup
 
 import io.github.matteopi.budgeting.core.planner.day.DefaultTimeCategories
 import io.github.matteopi.budgeting.core.planner.model.DayReview
+import io.github.matteopi.budgeting.core.planner.model.GoalKind
+import io.github.matteopi.budgeting.core.planner.model.Habit
+import io.github.matteopi.budgeting.core.planner.model.HabitGoal
 import io.github.matteopi.budgeting.core.planner.model.Module
 import io.github.matteopi.budgeting.core.planner.model.Outcome
 import io.github.matteopi.budgeting.core.planner.model.PlanBlock
@@ -37,8 +40,10 @@ class DayRecordBackupTest {
         RecordChunk(id = 2, start = ms(5_000_000), end = ms(6_000_000), categoryId = 20, sourceKey = "event:9:5000000", note = "Gig", origin = RecordOrigin.TIMER),
     )
     private val reviews = listOf(DayReview(LocalDate.of(2026, 10, 19), finishedAt = ms(7_000_000), rating = 4, note = "Good day"), DayReview(LocalDate.of(2026, 10, 20)))
+    /** Plan block 2's habit (version 8). */
+    private val habit = Habit(id = 7, name = "Gym", goal = HabitGoal(GoalKind.TIMES_PER_WEEK, 3), startDate = LocalDate.of(2026, 10, 5))
     private val data = BackupData(plannerModules = listOf(module), plannerTasks = listOf(task), plannerCategories = categories,
-        plannerPlanBlocks = blocks, plannerRecords = records, plannerDayReviews = reviews)
+        plannerPlanBlocks = blocks, plannerRecords = records, plannerDayReviews = reviews, plannerHabits = listOf(habit))
 
     private fun encode(d: BackupData) = BackupCodec.encode(BackupMapper.toBackup(d, exportedAt = "now"))
 

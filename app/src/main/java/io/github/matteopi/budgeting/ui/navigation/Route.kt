@@ -122,6 +122,12 @@ sealed interface Route {
 
     /** The day record's categories. */
     @Serializable data object PlannerCategories : Route
+
+    /** Add ([habitId] null) or edit a habit. */
+    @Serializable data class HabitEdit(val habitId: Long? = null) : Route
+
+    /** One habit's page: its month, rates and streaks, *Pause* and *Archive*. */
+    @Serializable data class HabitDetail(val habitId: Long) : Route
 }
 
 /**
@@ -166,6 +172,8 @@ val plannerRoutes: List<KClass<out Route>> = listOf(
     Route.Day::class,
     Route.PlannerDaySettings::class,
     Route.PlannerCategories::class,
+    Route.HabitEdit::class,
+    Route.HabitDetail::class,
 )
 
 /** True if this destination is one of [plannerRoutes]. */

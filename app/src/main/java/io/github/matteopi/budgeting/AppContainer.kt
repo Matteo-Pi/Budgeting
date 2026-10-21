@@ -18,6 +18,7 @@ import io.github.matteopi.budgeting.data.repo.ShoppingRepository
 import io.github.matteopi.budgeting.data.repo.SnapshotRepository
 import io.github.matteopi.budgeting.data.repo.TransactionRepository
 import io.github.matteopi.budgeting.data.repo.planner.DayRepository
+import io.github.matteopi.budgeting.data.repo.planner.HabitRepository
 import io.github.matteopi.budgeting.data.repo.planner.ModuleRepository
 import io.github.matteopi.budgeting.data.repo.planner.TaskRepository
 import io.github.matteopi.budgeting.data.repo.planner.TimetableRepository
@@ -27,6 +28,7 @@ import io.github.matteopi.budgeting.domain.ForecastService
 import io.github.matteopi.budgeting.domain.PostingService
 import io.github.matteopi.budgeting.domain.planner.PlannerCalendar
 import io.github.matteopi.budgeting.domain.planner.PlannerCalendarSync
+import io.github.matteopi.budgeting.domain.planner.HabitService
 import io.github.matteopi.budgeting.domain.planner.PlannerService
 import io.github.matteopi.budgeting.domain.planner.PlannerTimer
 import io.github.matteopi.budgeting.ui.food.timers.CookingTimers
@@ -167,6 +169,20 @@ class AppContainer(context: Context) {
         plannerUpdater = plannerUpdater,
     )
 
+    val habitRepository: HabitRepository = HabitRepository(
+        habitDao = database.habitDao(),
+        plannerUpdater = plannerUpdater,
+    )
+
+    /** Habits' progress and streaks (docs/PLAN.md §13.9), for the Habits tab, Today and the reminders. */
+    val habitService = HabitService(
+        habitRepository = habitRepository,
+        dayRepository = dayRepository,
+        planRepository = planRepository,
+        settingsStore = settingsStore,
+        clock = clock,
+    )
+
     /** The phone's calendars (docs/PLAN.md §13.7): read offline, and written to only when the user turns it on. */
     val calendarAccess = CalendarAccess(context.applicationContext)
 
@@ -193,6 +209,7 @@ class AppContainer(context: Context) {
         dayRepository = dayRepository,
         timetableRepository = timetableRepository,
         planRepository = planRepository,
+        habitService = habitService,
         settingsStore = settingsStore,
         clock = clock,
     )
@@ -238,6 +255,7 @@ class AppContainer(context: Context) {
         plannerDao = database.plannerDao(),
         timetableDao = database.timetableDao(),
         dayDao = database.dayDao(),
+        habitDao = database.habitDao(),
         settingsStore = settingsStore,
         widgetUpdater = widgetUpdater,
         plannerUpdater = plannerUpdater,

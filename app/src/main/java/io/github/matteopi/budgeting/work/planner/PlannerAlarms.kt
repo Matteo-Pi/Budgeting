@@ -15,6 +15,7 @@ import io.github.matteopi.budgeting.data.repo.planner.TaskRepository
 import io.github.matteopi.budgeting.data.repo.planner.TimetableRepository
 import io.github.matteopi.budgeting.data.settings.SettingsStore
 import io.github.matteopi.budgeting.domain.Clock
+import io.github.matteopi.budgeting.domain.planner.HabitService
 import io.github.matteopi.budgeting.widget.planner.PlannerWidget
 import java.time.Instant
 import kotlinx.coroutines.flow.first
@@ -32,6 +33,7 @@ class PlannerAlarms(
     private val dayRepository: DayRepository,
     private val timetableRepository: TimetableRepository,
     private val planRepository: PlanRepository,
+    private val habitService: HabitService,
     private val settingsStore: SettingsStore,
     private val clock: Clock,
 ) {
@@ -47,7 +49,7 @@ class PlannerAlarms(
     /** False when Android refuses exact alarms, so reminders may come a few minutes late. */
     fun exactAlarmsAllowed(): Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
 
-    /** Every reminder the Planner has now: tasks, the end-of-day review, and the widget's next class changes. */
+    /** Every reminder the Planner has now: tasks, habits, the end-of-day review, and the widget's next class changes. */
     suspend fun reminders(): List<Reminder> {
         val settings = settingsStore.plannerReminders.first()
         val zone = clock.zone()
@@ -56,7 +58,9 @@ class PlannerAlarms(
             timetableRepository.getEntries(), timetableRepository.getExceptions(), planRepository.observeTermPeriods().first(),
             today, today.plusDays(1), zone,
         )
+        val habits = habitService.observe().first()
         return ReminderPlan.taskReminders(taskRepository.getOpenTasks(), settings.taskTime, zone, today) +
+            ReminderPlan.habitReminders(habits.statuses, habits.today, zone) +
             ReminderPlan.dayReviewReminders(settings.reviewTime, dayRepository.getReviews(today, today.plusDays(1)), today, zone) +
             ReminderPlan.widgetRefreshes(occurrences, Instant.ofEpochMilli(clock.nowMillis()))
     }

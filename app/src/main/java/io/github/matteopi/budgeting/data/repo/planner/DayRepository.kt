@@ -39,6 +39,9 @@ class DayRepository(
     fun observeCategories(): Flow<List<TimeCategory>> =
         dayDao.observeCategories().onEach { if (it.isEmpty()) ensureCategoriesSeeded() }.map { list -> list.map { it.toModel() } }
 
+    /** The categories as stored, without seeding: for readers that run before the Planner is used (the reminders). */
+    fun observeStoredCategories(): Flow<List<TimeCategory>> = dayDao.observeCategories().map { list -> list.map { it.toModel() } }
+
     suspend fun getCategories(): List<TimeCategory> = dayDao.getCategories().map { it.toModel() }
 
     /** Adds the default categories that are missing (all of them on first use). Safe to call any number of times. */

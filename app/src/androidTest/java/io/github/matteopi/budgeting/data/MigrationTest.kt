@@ -14,6 +14,11 @@ import io.github.matteopi.budgeting.core.planner.day.DefaultTimeCategories
 import io.github.matteopi.budgeting.core.planner.model.ChecklistItem
 import io.github.matteopi.budgeting.core.planner.model.EntryException
 import io.github.matteopi.budgeting.core.planner.model.Module
+import io.github.matteopi.budgeting.core.planner.model.GoalKind
+import io.github.matteopi.budgeting.core.planner.model.Habit
+import io.github.matteopi.budgeting.core.planner.model.HabitCounting
+import io.github.matteopi.budgeting.core.planner.model.HabitEntry
+import io.github.matteopi.budgeting.core.planner.model.HabitGoal
 import io.github.matteopi.budgeting.core.planner.model.PlanBlock
 import io.github.matteopi.budgeting.core.planner.model.RecordChunk
 import io.github.matteopi.budgeting.core.planner.model.RecordOrigin
@@ -751,6 +756,83 @@ class MigrationTest {
             assertNull(kept.taskId)
             assertNull(kept.planBlockId)
             assertEquals(1_800_000, kept.end.toEpochMilli() - kept.start.toEpochMilli())
+        } finally {
+            db.close()
+        }
+    }
+
+    // ---- 7 -> 8: habits (docs/PLAN.md §13.5) --------------------------------------------------------
+
+    private val habitTables = listOf("planner_habits", "planner_habit_entries")
+
+    @Test
+    fun migratingFromVersion7To8KeepsTheDayRecordAndAddsEmptyHabitTables() {
+        createVersion3Database()
+        helper.runMigrationsAndValidate(DB_NAME, 7, true).use { db ->
+            db.execSQL("INSERT INTO planner_categories (id, name, color_argb, system_key, rates_focus, archived, sort_order) VALUES (3, 'Exercise', 1, 'EXERCISE', 0, 0, 2)")
+            db.execSQL(
+                "INSERT INTO planner_records (start_millis, end_millis, category_id, module_id, task_id, plan_block_id, source_key, focus, note, origin, " +
+                    "created_at_millis) VALUES (1000, 2000, 3, NULL, NULL, NULL, NULL, NULL, 'Gym', 'MANUAL', 1000)",
+            )
+        }
+
+        val db = helper.runMigrationsAndValidate(DB_NAME, 8, true)
+
+        assertVersion2RowsSurvived(db)
+        assertEquals(listOf("Gym"), db.strings("SELECT note FROM planner_records"))
+        val tables = db.strings("SELECT name FROM sqlite_master WHERE type = 'table'")
+        for (table in habitTables) {
+            assertTrue(table in tables, "the $table table exists; have $tables")
+            assertEquals(listOf(0L), db.longs("SELECT COUNT(*) FROM $table"), "$table starts empty")
+        }
+        assertEquals(setOf(Triple("planner_categories", "category_id", "NO ACTION")), db.foreignKeys("planner_habits").toSet())
+        assertEquals(setOf(Triple("planner_habits", "habit_id", "CASCADE")), db.foreignKeys("planner_habit_entries").toSet())
+        db.execSQL(
+            "INSERT INTO planner_habits (id, name, color_argb, goal_kind, target, unit, period, days, counting, category_id, min_minutes, streaks, " +
+                "reminder_minute, term_only, paused_from, paused_until, suggest_slot, slot_minutes, slot_start_minute, slot_end_minute, start_date, " +
+                "archived, sort_order) VALUES (1, 'Gym', 1, 'TIMES_PER_WEEK', 3, 'TIMES', 'WEEK', 0, 'BOTH', 3, 30, 1, 1095, 0, NULL, NULL, 0, NULL, " +
+                "NULL, NULL, $day, 0, 0)",
+        )
+        db.execSQL("INSERT INTO planner_habit_entries (habit_id, date, amount, skipped) VALUES (1, $day, 1, 0)")
+        assertEquals(listOf(1L), db.longs("SELECT COUNT(*) FROM planner_habit_entries"))
+        db.close()
+    }
+
+    @Test
+    fun migratingStraightFromVersion1To8RunsAllSevenAutoMigrations() {
+        createVersion1Database()
+
+        val db = helper.runMigrationsAndValidate(DB_NAME, 8, true)
+
+        assertEquals(listOf(1L, 2L, 3L), db.longs("SELECT id FROM transactions ORDER BY id"))
+        val tables = db.strings("SELECT name FROM sqlite_master WHERE type = 'table'")
+        for (table in listOf("receipts", "products") + foodTables + "owned_items" + plannerTables + timetableTables + dayTables + habitTables) {
+            assertTrue(table in tables, "the $table table exists; have $tables")
+        }
+        db.close()
+    }
+
+    @Test
+    fun theVersion8FileOpensWithTheRealDatabaseClassAndTheHabitTablesWork() = runBlocking<Unit> {
+        createVersion3Database()
+        helper.runMigrationsAndValidate(DB_NAME, 8, true).close()
+
+        val db = Room.databaseBuilder(context, BudgetDatabase::class.java, DB_NAME).build()
+        try {
+            val exercise = db.dayDao().insertCategories(DefaultTimeCategories.all.map { it.toEntity() })[2]
+            val dao = db.habitDao()
+            val habit = Habit(name = "Gym", goal = HabitGoal(GoalKind.TIMES_PER_WEEK, 3), counting = HabitCounting.BOTH, categoryId = exercise,
+                minMinutes = 30, startDate = LocalDate.ofEpochDay(day))
+            val id = dao.insertHabit(habit.toEntity())
+            assertEquals(habit.copy(id = id), dao.getHabit(id)!!.toModel())
+            dao.upsertEntry(HabitEntry(habitId = id, date = LocalDate.ofEpochDay(day), amount = 1).toEntity())
+            // One entry per habit and day: a second write for the day replaces it.
+            val first = dao.getEntry(id, day)!!
+            dao.upsertEntry(first.copy(amount = 2))
+            assertEquals(listOf(2), dao.getEntries(day, day).map { it.amount })
+            // Habits are archived rather than deleted, but their entries go with them if one is.
+            db.openHelper.writableDatabase.execSQL("DELETE FROM planner_habits WHERE id = $id")
+            assertTrue(dao.getAllEntries().isEmpty())
         } finally {
             db.close()
         }

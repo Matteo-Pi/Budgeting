@@ -12,12 +12,17 @@ import io.github.matteopi.budgeting.data.repo.planner.DayRepository
 import io.github.matteopi.budgeting.data.repo.planner.ModuleRepository
 import io.github.matteopi.budgeting.data.repo.planner.TaskRepository
 import io.github.matteopi.budgeting.domain.Clock
+import io.github.matteopi.budgeting.domain.planner.HabitService
 import io.github.matteopi.budgeting.domain.planner.PlannerService
 import io.github.matteopi.budgeting.domain.planner.PlannerTimer
 import io.github.matteopi.budgeting.domain.planner.TimerStop
 import io.github.matteopi.budgeting.ui.planner.components.TaskRowUi
 import io.github.matteopi.budgeting.ui.planner.day.DayEvent
 import io.github.matteopi.budgeting.ui.planner.day.DayMapping
+import io.github.matteopi.budgeting.ui.planner.habits.HabitActions
+import io.github.matteopi.budgeting.ui.planner.habits.HabitEvent
+import io.github.matteopi.budgeting.ui.planner.habits.HabitRowUi
+import io.github.matteopi.budgeting.ui.planner.habits.HabitsMapping
 import io.github.matteopi.budgeting.ui.planner.todo.TodoMapping
 import io.github.matteopi.budgeting.ui.settings.budgetViewModelFactory
 import io.github.matteopi.budgeting.widget.planner.PlannerWidgetState
@@ -44,6 +49,10 @@ data class TodayUiState(
     val title: String = "Today",
     val overdue: List<TaskRowUi> = emptyList(),
     val dueToday: List<TaskRowUi> = emptyList(),
+    /** The habits that count today. */
+    val habits: List<HabitRowUi> = emptyList(),
+    /** The habits' day, which they are ticked on. */
+    val habitDay: LocalDate = day,
     /** The day as an agenda: classes, events, plans, records and gaps. */
     val agenda: List<AgendaRowUi> = emptyList(),
     /** The Now card's lines: the class on now or next, the free time left, the timer. */
@@ -66,10 +75,16 @@ class TodayViewModel(
     moduleRepository: ModuleRepository,
     private val dayRepository: DayRepository,
     plannerService: PlannerService,
+    habitService: HabitService,
+    private val habitActions: HabitActions,
     private val plannerTimer: PlannerTimer,
     private val clock: Clock,
 ) : ViewModel() {
     private val completions = Channel<CompletionUndo>(Channel.BUFFERED)
+    private val habitEvents = Channel<HabitEvent>(Channel.BUFFERED)
+
+    /** What a change to a habit's day did, for the *Undo* snackbar. */
+    val habitEventFlow: Flow<HabitEvent> = habitEvents.receiveAsFlow()
     private val timerEvents = Channel<DayEvent>(Channel.BUFFERED)
 
     /** A task just ticked off, for the *Undo* snackbar. */
@@ -84,14 +99,16 @@ class TodayViewModel(
             plannerService.dayFlow(day.minusDays(1)),
             taskRepository.observeOpenTasks(),
             moduleRepository.observeModules(),
-            combine(plannerTimer.state, clock.todayFlow) { timer, today -> timer to today },
-        ) { model, yesterday, tasks, modules, (timer, today) ->
+            combine(plannerTimer.state, clock.todayFlow, habitService.observe()) { timer, today, habits -> Triple(timer, today, habits) },
+        ) { model, yesterday, tasks, modules, (timer, today, habits) ->
             TodayUiState(
                 loading = false,
                 day = day,
                 title = "Today · ${PlannerText.date(day, day)}",
                 overdue = TodoMapping.rows(TaskViews.overdue(tasks, today), tasks, modules, today),
                 dueToday = TodoMapping.rows(TaskViews.today(tasks, today), tasks, modules, today),
+                habits = HabitsMapping.forToday(habits),
+                habitDay = habits.today,
                 agenda = TodayMapping.agenda(model, modules),
                 now = PlannerWidgetState.of(model.now, day, model.zone, model.occurrences, model.freeLeftMinutes, tasks, model.categories, modules, timer),
                 freeSummary = TodayMapping.freeSummary(model),
@@ -113,6 +130,20 @@ class TodayViewModel(
 
     fun undo(undo: CompletionUndo) {
         viewModelScope.launch { taskRepository.undoComplete(undo) }
+    }
+
+    fun toggleHabit(habitId: Long) = habitChange { habitActions.toggle(habitId, it) }
+
+    fun addToHabit(habitId: Long, amount: Int) = habitChange { habitActions.add(habitId, it, amount) }
+
+    fun skipHabit(habitId: Long, skipped: Boolean) = habitChange { habitActions.skip(habitId, it, skipped) }
+
+    fun undoHabit(event: HabitEvent) {
+        viewModelScope.launch { event.undo() }
+    }
+
+    private fun habitChange(change: suspend (LocalDate) -> HabitEvent?) {
+        viewModelScope.launch { change(state.value.habitDay)?.let { habitEvents.send(it) } }
     }
 
     fun startTimer(categoryId: Long, moduleId: Long?) {
@@ -141,7 +172,10 @@ class TodayViewModel(
 
     companion object {
         val Factory: ViewModelProvider.Factory = budgetViewModelFactory {
-            TodayViewModel(it.taskRepository, it.moduleRepository, it.dayRepository, it.plannerService, it.plannerTimer, it.clock)
+            TodayViewModel(
+                it.taskRepository, it.moduleRepository, it.dayRepository, it.plannerService, it.habitService, HabitActions(it.habitRepository),
+                it.plannerTimer, it.clock,
+            )
         }
     }
 }

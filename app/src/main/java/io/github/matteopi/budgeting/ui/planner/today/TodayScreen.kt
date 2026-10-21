@@ -60,6 +60,7 @@ import io.github.matteopi.budgeting.ui.planner.components.PlannerTabTopBar
 import io.github.matteopi.budgeting.ui.planner.components.TaskRow
 import io.github.matteopi.budgeting.ui.planner.day.ChunkState
 import io.github.matteopi.budgeting.ui.planner.day.DayMapping
+import io.github.matteopi.budgeting.ui.planner.habits.HabitRow
 import java.time.LocalDate
 import kotlinx.coroutines.launch
 
@@ -84,6 +85,7 @@ fun TodayScreen(
     onOpenTodo: () -> Unit,
     onOpenDay: (LocalDate, Boolean) -> Unit,
     onAddTask: () -> Unit,
+    onOpenHabit: (Long) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TodayViewModel = viewModel(factory = TodayViewModel.Factory),
 ) {
@@ -98,6 +100,14 @@ fun TodayScreen(
             scope.launch {
                 val result = snackbarHostState.showSnackbar("Done: ${undo.task.title}", actionLabel = "Undo")
                 if (result == SnackbarResult.ActionPerformed) viewModel.undo(undo)
+            }
+        }
+    }
+    LaunchedEffect(viewModel) {
+        viewModel.habitEventFlow.collect { event ->
+            scope.launch {
+                val result = snackbarHostState.showSnackbar(event.message, actionLabel = "Undo")
+                if (result == SnackbarResult.ActionPerformed) viewModel.undoHabit(event)
             }
         }
     }
@@ -168,6 +178,18 @@ fun TodayScreen(
                 TaskRow(row = row, onToggle = { if (it) viewModel.complete(row.id) }, onOpen = { onOpenTask(row.id) })
             }
             item(key = "todo") { TextButton(onClick = onOpenTodo) { Text("All tasks") } }
+            if (state.habits.isNotEmpty()) {
+                item(key = "habits") { Header("Habits") }
+                items(state.habits, key = { "habit-${it.id}" }) { row ->
+                    HabitRow(
+                        row = row,
+                        onOpen = { onOpenHabit(row.id) },
+                        onToggle = { viewModel.toggleHabit(row.id) },
+                        onAdd = { amount -> viewModel.addToHabit(row.id, amount) },
+                        onSkip = { skipped -> viewModel.skipHabit(row.id, skipped) },
+                    )
+                }
+            }
         }
     }
 

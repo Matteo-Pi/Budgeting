@@ -23,6 +23,8 @@ import io.github.matteopi.budgeting.core.model.Transaction
 import io.github.matteopi.budgeting.core.planner.model.CalendarLink
 import io.github.matteopi.budgeting.core.planner.model.DayReview
 import io.github.matteopi.budgeting.core.planner.model.EntryException
+import io.github.matteopi.budgeting.core.planner.model.Habit
+import io.github.matteopi.budgeting.core.planner.model.HabitEntry
 import io.github.matteopi.budgeting.core.planner.model.Module
 import io.github.matteopi.budgeting.core.planner.model.PlanBlock
 import io.github.matteopi.budgeting.core.planner.model.RecordChunk
@@ -84,4 +86,7 @@ data class BackupData(
     val plannerPlanBlocks: List<PlanBlock> = emptyList(),
     val plannerRecords: List<RecordChunk> = emptyList(),
     val plannerDayReviews: List<DayReview> = emptyList(),
+    // Backup version 8.
+    val plannerHabits: List<Habit> = emptyList(),
+    val plannerHabitEntries: List<HabitEntry> = emptyList(),
 )

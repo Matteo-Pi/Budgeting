@@ -1,6 +1,10 @@
 package io.github.matteopi.budgeting.core.planner.reminders
 
 import io.github.matteopi.budgeting.core.planner.PlannerText
+import io.github.matteopi.budgeting.core.planner.habits.HabitDayState
+import io.github.matteopi.budgeting.core.planner.habits.HabitProgress
+import io.github.matteopi.budgeting.core.planner.habits.HabitStatus
+import io.github.matteopi.budgeting.core.planner.habits.HabitText
 import io.github.matteopi.budgeting.core.planner.model.DayReview
 import io.github.matteopi.budgeting.core.planner.model.Occurrence
 import io.github.matteopi.budgeting.core.planner.model.Task
@@ -12,14 +16,15 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 
 /**
- * What a reminder is about; later stages add habits and the weekly review (docs/PLAN.md §13.4). [WIDGET] posts
- * nothing: it redraws the Planner widget when a class starts or ends.
+ * What a reminder is about; a later stage adds the weekly review (docs/PLAN.md §13.4). [WIDGET] posts nothing: it
+ * redraws the Planner widget when a class starts or ends.
  */
-enum class ReminderKind { TASK, DAY_REVIEW, WIDGET }
+enum class ReminderKind { TASK, DAY_REVIEW, WIDGET, HABIT }
 
 /**
  * One reminder to post at [at]. [key] is stable for the same reminder and changes when what it reminds of changes
- * (a moved date, a repeat that moved on), so it doubles as the notification's identity.
+ * (a moved date, a repeat that moved on), so it doubles as the notification's identity. [offersDone]: its notification
+ * has a *Done* button (tasks, and habits that aren't limits).
  */
 data class Reminder(
     val key: String,
@@ -28,6 +33,7 @@ data class Reminder(
     val at: Instant,
     val title: String,
     val text: String,
+    val offersDone: Boolean = false,
 )
 
 /**
@@ -59,6 +65,7 @@ object ReminderPlan {
                 at = due.minus(Duration.ofMinutes(before.toLong())),
                 title = task.title,
                 text = PlannerText.due(date, task.dueTime, today),
+                offersDone = true,
             )
         }
 
@@ -80,6 +87,28 @@ object ReminderPlan {
             )
         }
     }
+
+    /**
+     * The reminders of habits with a reminder time, today and tomorrow, on the days still to do: [HabitDayState.PENDING]
+     * in each habit's status (which must cover both days). Archived habits have none.
+     */
+    fun habitReminders(statuses: List<HabitStatus>, today: LocalDate, zone: ZoneId): List<Reminder> =
+        statuses.flatMap { status ->
+            val habit = status.habit
+            val time = habit.reminderTime
+            if (time == null || habit.archived) return@flatMap emptyList()
+            listOf(today, today.plusDays(1)).filter { status.day(it)?.state == HabitDayState.PENDING }.map { date ->
+                Reminder(
+                    key = "habit:${habit.id}:$date:$time",
+                    kind = ReminderKind.HABIT,
+                    itemId = habit.id,
+                    at = ZonedDateTime.of(date, time, zone).toInstant(),
+                    title = habit.name,
+                    text = if (date == today) HabitText.progress(status) else HabitText.goal(habit.goal),
+                    offersDone = HabitProgress.tickAmount(habit.goal) != null,
+                )
+            }
+        }
 
     /** The next class start and end after [now], when the widget's *next class* changes. */
     fun widgetRefreshes(occurrences: List<Occurrence>, now: Instant): List<Reminder> =

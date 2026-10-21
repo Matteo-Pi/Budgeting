@@ -37,6 +37,13 @@ import io.github.matteopi.budgeting.core.planner.model.DayReview
 import io.github.matteopi.budgeting.core.planner.model.ChecklistItem
 import io.github.matteopi.budgeting.core.planner.model.EntryException
 import io.github.matteopi.budgeting.core.planner.model.EntryKind
+import io.github.matteopi.budgeting.core.planner.model.GoalKind
+import io.github.matteopi.budgeting.core.planner.model.GoalPeriod
+import io.github.matteopi.budgeting.core.planner.model.GoalUnit
+import io.github.matteopi.budgeting.core.planner.model.Habit
+import io.github.matteopi.budgeting.core.planner.model.HabitCounting
+import io.github.matteopi.budgeting.core.planner.model.HabitEntry
+import io.github.matteopi.budgeting.core.planner.model.HabitGoal
 import io.github.matteopi.budgeting.core.planner.model.DeadlineType
 import io.github.matteopi.budgeting.core.planner.model.Module
 import io.github.matteopi.budgeting.core.planner.model.Outcome
@@ -155,6 +162,10 @@ object BackupMapper {
             plannerDayReviews = data.plannerDayReviews.map {
                 PlannerDayReviewDto(it.date.toString(), it.finishedAt?.toEpochMilli(), it.rating, it.note)
             },
+            plannerHabits = data.plannerHabits.map { it.toDto() },
+            plannerHabitEntries = data.plannerHabitEntries.map {
+                PlannerHabitEntryDto(it.id, it.habitId, it.date.toString(), it.amount, it.skipped)
+            },
             settings = data.settings.toDto(),
             appSettings = appSettings,
         )
@@ -218,6 +229,10 @@ object BackupMapper {
             plannerRecords = backup.plannerRecords.map { it.toModel() },
             plannerDayReviews = backup.plannerDayReviews.map {
                 DayReview(LocalDate.parse(it.date), it.finishedAtEpochMillis?.let(Instant::ofEpochMilli), it.rating, it.note)
+            },
+            plannerHabits = backup.plannerHabits.map { it.toModel() },
+            plannerHabitEntries = backup.plannerHabitEntries.map {
+                HabitEntry(it.id, it.habitId, LocalDate.parse(it.date), it.amount, it.skipped)
             },
             settings = backup.settings.toModel(),
         )
@@ -778,4 +793,52 @@ private fun PlannerRecordDto.toModel() = RecordChunk(
     note = note,
     origin = RecordOrigin.entries.firstOrNull { it.name == origin } ?: RecordOrigin.MANUAL,
     createdAt = Instant.ofEpochMilli(createdAtEpochMillis),
+)
+
+private fun Habit.toDto() = PlannerHabitDto(
+    id = id,
+    name = name,
+    colorArgb = colorArgb,
+    goalKind = goal.kind.name,
+    target = goal.target,
+    unit = goal.unit.name,
+    period = goal.period.name,
+    days = Weekdays.toBits(goal.days),
+    counting = counting.name,
+    categoryId = categoryId,
+    minMinutes = minMinutes,
+    streaks = streaks,
+    reminderMinute = reminderTime?.let(::minuteOf),
+    termOnly = termOnly,
+    pausedFrom = pausedFrom?.toString(),
+    pausedUntil = pausedUntil?.toString(),
+    suggestSlot = suggestSlot,
+    slotMinutes = slotMinutes,
+    slotStartMinute = slotStart?.let(::minuteOf),
+    slotEndMinute = slotEnd?.let(::minuteOf),
+    startDate = startDate.toString(),
+    archived = archived,
+    sortOrder = sortOrder,
+)
+
+private fun PlannerHabitDto.toModel() = Habit(
+    id = id,
+    name = name,
+    colorArgb = colorArgb,
+    goal = HabitGoal(GoalKind.valueOf(goalKind), target, GoalUnit.valueOf(unit), GoalPeriod.valueOf(period), Weekdays.fromBits(days)),
+    counting = HabitCounting.valueOf(counting),
+    categoryId = categoryId,
+    minMinutes = minMinutes,
+    streaks = streaks,
+    reminderTime = reminderMinute?.let(::timeOf),
+    termOnly = termOnly,
+    pausedFrom = pausedFrom?.let(LocalDate::parse),
+    pausedUntil = pausedUntil?.let(LocalDate::parse),
+    suggestSlot = suggestSlot,
+    slotMinutes = slotMinutes,
+    slotStart = slotStartMinute?.let(::timeOf),
+    slotEnd = slotEndMinute?.let(::timeOf),
+    startDate = LocalDate.parse(startDate),
+    archived = archived,
+    sortOrder = sortOrder,
 )

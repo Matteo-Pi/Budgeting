@@ -2807,6 +2807,12 @@ rate it.
     week never breaks one.
   - Days before the habit's start don't count.
 
+- **Days of weekly goals**: a day with something counted is `DONE`; one with nothing is `NONE`, judged by its week.
+  Today and later are `PENDING` until the week is done.
+- **A tick** (`tickAmount`): 1 for times, the day's target for a daily amount; weekly amounts and limits are entered as
+  amounts.
+- **Record sessions**: touching chunks of the category are joined, so a session split in two counts once.
+
 **`HabitRules`**: a positive target; days chosen for `ON_DAYS`; a category for record counting.
 
 **Checkpoints** (today Tue 20 Oct 2026)
@@ -3251,7 +3257,11 @@ does), and the Upcoming chip reads "Upcoming (1)". Both are fixed in the P2 push
       time.
 
 **P2: the Timetable and Google Calendar (Room 6, backup 6)**
-**Status (2026-10-20)**: built, pushed with P1's test fixes; waiting for CI. Beyond the list below, Today gains an
+**Status (2026-10-21)**: built and published as build 69 (426 of 427 device tests). The one failure was the test
+calendar's repeating event: the provider's exception URI refuses an exception's own end, and the instances then read
+back empty, so the test calendar now writes a series and its changed days as Google's sync adapter does (a series with
+a sync id, each changed or cancelled day a row naming it); that runs with P3's fix push. `6.json` is committed. Beyond
+the list below, Today gains an
 *On today* list (the day's classes, cancelled ones struck through, and calendar events), and the daily worker
 brings a written calendar up to date. `CalendarAccess.appEvents` counts a linked event id as the app's only while
 the event still carries the app's description, so a link restored from another phone can never touch one of this
@@ -3279,6 +3289,10 @@ phone's own events.
       reading week, cancelling one week, the clash warning.
 
 **P3: Today, the day record and the review (Room 7, backup 7)**
+**Status (2026-10-21)**: built and published as build 72 (440 of 441 device tests; the one failure is P2's calendar
+test above). Two build fixes on the way: the day record's category entity is `TimeCategoryEntity` (two classes named
+`CategoryEntity` stopped Room's processor), and the boundary test opts into `ExperimentalTestApi`. The tests' budgets now
+use made-up figures. `7.json` is committed.
 - **Core**: `DayWindows`, `Intervals`, `Snap`, `DayTimeline`, `DayEdits`, `PlanOutcome`, `ChunkRules`,
   `FreeTime`, the on-track part of `DeadlineStatus`, `DefaultTimeCategories`, `ReminderPlan` (reviews and
   widget), backup 7.
@@ -3309,6 +3323,13 @@ phone's own events.
     - `widget/PlannerWidgetTest` (both sizes).
 
 **P4: Habits (Room 8, backup 8)**
+**Status (2026-10-21)**: built; waiting for CI. Settled while building (also in §13.4):
+- a day of a weekly goal with nothing counted is `NONE`, and the week judges it;
+- `HabitProgress.tickAmount`: a tick enters 1 time, or a daily amount's target; weekly amounts and limits take an
+  amount (*Add*) instead, and their reminders have no *Done*;
+- `HabitService` (app) works every habit out once for the Habits tab, Today, the habit page and the reminders. It reads
+  the categories without seeding them, because the reminders run when the app starts;
+- *Suggest a time* waits for P5, which builds the slots.
 - **Core**: `HabitProgress`, `HabitRules`, `ReminderPlan` (habits), backup 8.
 - **App**: Room 8, `HabitDao`, `HabitRepository`, the Habits tab, the habit page and editor, habits on Today, and
   the notification's *Done*.

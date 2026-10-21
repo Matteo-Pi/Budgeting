@@ -154,11 +154,13 @@ class MainActivity : FragmentActivity() {
         when (intent.action) {
             PlannerNotifications.ACTION_OPEN_PLANNER -> {
                 val taskId = intent.getLongExtra(PlannerNotifications.EXTRA_TASK_ID, -1L)
+                val habitId = intent.getLongExtra(PlannerNotifications.EXTRA_HABIT_ID, -1L)
                 val reviewDate = intent.getLongExtra(PlannerNotifications.EXTRA_REVIEW_DATE, Long.MIN_VALUE)
                 receiptRequest.value = when {
                     reviewDate != Long.MIN_VALUE -> Route.Day(epochDay = reviewDate, review = true)
                     intent.getBooleanExtra(PlannerNotifications.EXTRA_TODAY, false) -> Route.Today
                     taskId >= 0 -> Route.TaskDetail(taskId)
+                    habitId >= 0 -> Route.HabitDetail(habitId)
                     else -> Route.Todo
                 }
             }

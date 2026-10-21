@@ -23,11 +23,12 @@ object PlannerNotifications {
     const val TIMER_CHANNEL_ID = "planner_timer"
 
     /**
-     * `MainActivity` opens the Planner on this action: [EXTRA_TASK_ID] picks a task, [EXTRA_REVIEW_DATE] (an epoch
-     * day) opens that day's review, and [EXTRA_TODAY] the Today tab.
+     * `MainActivity` opens the Planner on this action: [EXTRA_TASK_ID] picks a task, [EXTRA_HABIT_ID] a habit,
+     * [EXTRA_REVIEW_DATE] (an epoch day) opens that day's review, and [EXTRA_TODAY] the Today tab.
      */
     const val ACTION_OPEN_PLANNER = "io.github.matteopi.budgeting.OPEN_PLANNER"
     const val EXTRA_TASK_ID = "planner_task_id"
+    const val EXTRA_HABIT_ID = "planner_habit_id"
     const val EXTRA_REVIEW_DATE = "planner_review_date"
     const val EXTRA_TODAY = "planner_today"
 
@@ -38,7 +39,7 @@ object PlannerNotifications {
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(
             NotificationChannel(REMINDERS_CHANNEL_ID, "Planner reminders", NotificationManager.IMPORTANCE_DEFAULT).apply {
-                description = "Tasks and deadlines you asked to be reminded of."
+                description = "Tasks, deadlines and habits you asked to be reminded of."
             },
         )
         manager.createNotificationChannel(
@@ -99,7 +100,11 @@ object PlannerNotifications {
         val id = idOf(reminder)
         val review = reminder.kind == ReminderKind.DAY_REVIEW
         val open = openIntent(context) {
-            if (review) putExtra(EXTRA_REVIEW_DATE, reminder.itemId) else putExtra(EXTRA_TASK_ID, reminder.itemId)
+            when (reminder.kind) {
+                ReminderKind.DAY_REVIEW -> putExtra(EXTRA_REVIEW_DATE, reminder.itemId)
+                ReminderKind.HABIT -> putExtra(EXTRA_HABIT_ID, reminder.itemId)
+                else -> putExtra(EXTRA_TASK_ID, reminder.itemId)
+            }
         }
         val builder = NotificationCompat.Builder(context, if (review) REVIEWS_CHANNEL_ID else REMINDERS_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
@@ -108,8 +113,13 @@ object PlannerNotifications {
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setAutoCancel(true)
             .setContentIntent(PendingIntent.getActivity(context, id, open, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT))
-        if (reminder.kind == ReminderKind.TASK) {
-            builder.addAction(0, "Done", PlannerActionReceiver.taskDoneIntent(context, reminder.itemId, id))
+        // A limit habit isn't ticked off: its reminder only says how the day stands.
+        if (reminder.offersDone) {
+            when (reminder.kind) {
+                ReminderKind.TASK -> builder.addAction(0, "Done", PlannerActionReceiver.taskDoneIntent(context, reminder.itemId, id))
+                ReminderKind.HABIT -> builder.addAction(0, "Done", PlannerActionReceiver.habitDoneIntent(context, reminder.itemId, id))
+                else -> Unit
+            }
         }
         try {
             NotificationManagerCompat.from(context).notify(id, builder.build())

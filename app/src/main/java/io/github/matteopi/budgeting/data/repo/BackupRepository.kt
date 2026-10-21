@@ -6,6 +6,7 @@ import io.github.matteopi.budgeting.data.db.BudgetDatabase
 import io.github.matteopi.budgeting.data.db.dao.AccountDao
 import io.github.matteopi.budgeting.data.db.dao.CategoryDao
 import io.github.matteopi.budgeting.data.db.dao.DayDao
+import io.github.matteopi.budgeting.data.db.dao.HabitDao
 import io.github.matteopi.budgeting.data.db.dao.FoodDao
 import io.github.matteopi.budgeting.data.db.dao.ImportDao
 import io.github.matteopi.budgeting.data.db.dao.PlanDao
@@ -46,6 +47,7 @@ class BackupRepository(
     private val plannerDao: PlannerDao,
     private val timetableDao: TimetableDao,
     private val dayDao: DayDao,
+    private val habitDao: HabitDao,
     private val settingsStore: SettingsStore,
     private val widgetUpdater: WidgetUpdater,
     private val plannerUpdater: PlannerUpdater,
@@ -90,16 +92,20 @@ class BackupRepository(
             plannerPlanBlocks = dayDao.getAllPlans().map { it.toModel() },
             plannerRecords = dayDao.getAllRecords().map { it.toModel() },
             plannerDayReviews = dayDao.getAllReviews().map { it.toModel() },
+            plannerHabits = habitDao.getHabits().map { it.toModel() },
+            plannerHabitEntries = habitDao.getAllEntries().map { it.toModel() },
         )
     }
 
     /** Deletes every table (children first) then inserts [data] back with its original ids, atomically. */
     suspend fun replaceAll(data: BackupData) {
         database.withTransaction {
-            // The Planner's tables first: the day record (records point at plan blocks, both at categories,
-            // tasks and modules); the timetable's changes, entries (which point at modules and term dates) and
+            // The Planner's tables first: habits' entries and the habits (which point at categories); the day
+            // record (records point at plan blocks, both at categories, tasks and modules); the timetable's changes, entries (which point at modules and term dates) and
             // calendar links; the Done log and checklists, steps before their deadlines, then the tasks and the
             // modules they point at.
+            habitDao.deleteAllEntries()
+            habitDao.deleteAllHabits()
             dayDao.deleteAllRecords()
             dayDao.deleteAllPlans()
             dayDao.deleteAllReviews()
@@ -203,6 +209,9 @@ class BackupRepository(
             dayDao.insertPlans(data.plannerPlanBlocks.map { it.toEntity() })
             dayDao.insertRecords(data.plannerRecords.map { it.toEntity() })
             dayDao.insertReviews(data.plannerDayReviews.map { it.toEntity() })
+            // Habits after the categories they count, then their entries.
+            habitDao.insertHabits(data.plannerHabits.map { it.toEntity() })
+            habitDao.insertEntries(data.plannerHabitEntries.map { it.toEntity() })
         }
         settingsStore.replaceBudgetSettings(data.settings)
         // Cooking ticks are kept by recipe id, and the restored recipes have other ids.
