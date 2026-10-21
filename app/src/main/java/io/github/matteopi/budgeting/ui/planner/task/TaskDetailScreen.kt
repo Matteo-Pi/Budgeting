@@ -12,16 +12,19 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -38,6 +41,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.matteopi.budgeting.core.planner.model.RevisionTopic
 import io.github.matteopi.budgeting.core.planner.todo.BreakdownTemplate
 import io.github.matteopi.budgeting.core.planner.todo.TaskRules
 import io.github.matteopi.budgeting.ui.components.EmptyState
@@ -149,6 +153,8 @@ fun TaskDetailScreen(
                 }
             }
 
+            if (TaskRules.isExam(task)) RevisionTopics(state.topics, onSave = viewModel::saveTopic, onDelete = viewModel::deleteTopic)
+
             if (task.notes.isNotBlank()) {
                 Text("Notes", style = MaterialTheme.typography.titleSmall)
                 Text(task.notes, style = MaterialTheme.typography.bodyMedium)
@@ -183,5 +189,37 @@ private fun TemplateMenu(state: TaskDetailUiState, onPick: (BreakdownTemplate) -
                 )
             }
         }
+    }
+}
+
+/** An exam's revision topics: each comes back at growing intervals, sooner when hard (docs/PLAN.md §12.7). */
+@Composable
+private fun RevisionTopics(topics: List<RevisionTopic>, onSave: (RevisionTopic) -> Unit, onDelete: (Long) -> Unit) {
+    var name by remember { mutableStateOf("") }
+    Text("Revision topics", style = MaterialTheme.typography.titleSmall)
+    Text(
+        "Suggested study brings each topic back at growing intervals before the exam, sooner when it is hard.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    topics.forEach { topic ->
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(topic.name, modifier = Modifier.weight(1f))
+            listOf(1 to "Easy", 2 to "Medium", 3 to "Hard").forEach { (level, label) ->
+                FilterChip(selected = topic.difficulty == level, onClick = { onSave(topic.copy(difficulty = level)) }, label = { Text(label) },
+                    modifier = Modifier.padding(start = 4.dp))
+            }
+            IconButton(onClick = { onDelete(topic.id) }) { Icon(Icons.Default.Close, contentDescription = "Remove ${topic.name}") }
+        }
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Add a topic") }, singleLine = true, modifier = Modifier.weight(1f))
+        TextButton(
+            onClick = {
+                onSave(RevisionTopic(examTaskId = 0, name = name.trim()))
+                name = ""
+            },
+            enabled = name.isNotBlank(),
+        ) { Text("Add") }
     }
 }

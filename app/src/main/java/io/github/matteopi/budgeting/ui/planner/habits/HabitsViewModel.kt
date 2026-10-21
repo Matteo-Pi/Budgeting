@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import io.github.matteopi.budgeting.domain.planner.HabitService
+import io.github.matteopi.budgeting.ui.planner.components.UndoableEvent
 import io.github.matteopi.budgeting.ui.settings.budgetViewModelFactory
 import java.time.LocalDate
 import kotlinx.coroutines.channels.Channel
@@ -29,16 +30,16 @@ class HabitsViewModel(
     private val actions: HabitActions,
     today: LocalDate,
 ) : ViewModel() {
-    private val events = Channel<HabitEvent>(Channel.BUFFERED)
+    private val events = Channel<UndoableEvent>(Channel.BUFFERED)
 
     /** What a change did, for the *Undo* snackbar. */
-    val eventFlow: Flow<HabitEvent> = events.receiveAsFlow()
+    val eventFlow: Flow<UndoableEvent> = events.receiveAsFlow()
 
     val state: StateFlow<HabitsUiState> = habitService.observe()
         .map { model -> HabitsUiState(loading = false, today = model.today, sections = HabitsMapping.sections(model)) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HabitsUiState(today = today))
 
-    private fun send(change: suspend (LocalDate) -> HabitEvent?) {
+    private fun send(change: suspend (LocalDate) -> UndoableEvent?) {
         viewModelScope.launch { change(state.value.today)?.let { events.send(it) } }
     }
 
@@ -48,7 +49,7 @@ class HabitsViewModel(
 
     fun skip(habitId: Long, skipped: Boolean) = send { actions.skip(habitId, it, skipped) }
 
-    fun undo(event: HabitEvent) {
+    fun undo(event: UndoableEvent) {
         viewModelScope.launch { event.undo() }
     }
 

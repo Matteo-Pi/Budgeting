@@ -7,14 +7,17 @@ import androidx.lifecycle.viewModelScope
 import io.github.matteopi.budgeting.core.planner.PlannerText
 import io.github.matteopi.budgeting.core.planner.model.Module
 import io.github.matteopi.budgeting.core.planner.model.Priority
+import io.github.matteopi.budgeting.core.planner.model.RevisionTopic
 import io.github.matteopi.budgeting.core.planner.model.Task
 import io.github.matteopi.budgeting.core.planner.todo.BreakdownTemplate
 import io.github.matteopi.budgeting.core.planner.todo.BreakdownTemplates
 import io.github.matteopi.budgeting.core.planner.todo.DeadlineProgress
 import io.github.matteopi.budgeting.core.planner.todo.DeadlineState
 import io.github.matteopi.budgeting.core.planner.todo.DeadlineStatus
+import io.github.matteopi.budgeting.core.planner.todo.TaskRules
 import io.github.matteopi.budgeting.data.repo.planner.DayRepository
 import io.github.matteopi.budgeting.data.repo.planner.ModuleRepository
+import io.github.matteopi.budgeting.data.repo.planner.SuggestionRepository
 import io.github.matteopi.budgeting.data.repo.planner.TaskRepository
 import io.github.matteopi.budgeting.data.settings.SettingsStore
 import io.github.matteopi.budgeting.domain.Clock
@@ -51,6 +54,8 @@ data class TaskDetailUiState(
     val deadline: DeadlineCardUi? = null,
     val steps: List<TaskRowUi> = emptyList(),
     val templates: List<BreakdownTemplate> = emptyList(),
+    /** An exam's revision topics (docs/PLAN.md §12.7). */
+    val topics: List<RevisionTopic> = emptyList(),
 )
 
 /** One task's page: its details, checklist, and for a deadline its status and steps (docs/PLAN.md §13.9). */
@@ -62,6 +67,7 @@ class TaskDetailViewModel(
     settingsStore: SettingsStore,
     dayRepository: DayRepository,
     plannerService: PlannerService,
+    private val suggestionRepository: SuggestionRepository,
     private val clock: Clock,
 ) : ViewModel() {
 
@@ -89,8 +95,10 @@ class TaskDetailViewModel(
         val freeBefore: Int?,
     )
 
-    val state: StateFlow<TaskDetailUiState> = parts.map { p ->
-        val task = p.task ?: return@map TaskDetailUiState(loading = false, task = null, today = p.today)
+    private val topics = suggestionRepository.observeTopics().map { list -> list.filter { it.examTaskId == taskId } }
+
+    val state: StateFlow<TaskDetailUiState> = combine(parts, topics) { p, examTopics ->
+        val task = p.task ?: return@combine TaskDetailUiState(loading = false, task = null, today = p.today)
         val parent = task.parentId?.let { id -> taskRepository.getTask(id) }
         TaskDetailUiState(
             loading = false,
@@ -101,6 +109,7 @@ class TaskDetailViewModel(
             deadline = if (task.isDeadline) deadlineCard(task, p.steps, p.today, p.studied, p.freeBefore) else null,
             steps = TodoMapping.rows(p.steps, p.steps, p.modules, p.today, p.studied),
             templates = p.templates,
+            topics = if (TaskRules.isExam(task)) examTopics else emptyList(),
         )
     }.flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TaskDetailUiState(today = clock.today()))
@@ -119,6 +128,16 @@ class TaskDetailViewModel(
             val step = taskRepository.getTask(stepId) ?: return@launch
             if (done && step.isOpen) taskRepository.complete(step) else if (!done && !step.isOpen) taskRepository.reopen(step)
         }
+    }
+
+    /** Adds a revision topic to this exam, or saves one. */
+    fun saveTopic(topic: RevisionTopic) {
+        if (topic.name.isBlank()) return
+        viewModelScope.launch { suggestionRepository.saveTopic(topic.copy(examTaskId = taskId)) }
+    }
+
+    fun deleteTopic(topicId: Long) {
+        viewModelScope.launch { suggestionRepository.deleteTopic(topicId) }
     }
 
     /** *Add steps from a template*: the template's steps, dated up to the deadline. */
@@ -177,7 +196,9 @@ class TaskDetailViewModel(
 
     companion object {
         fun factory(taskId: Long): ViewModelProvider.Factory = budgetViewModelFactory {
-            TaskDetailViewModel(taskId, it.taskRepository, it.moduleRepository, it.settingsStore, it.dayRepository, it.plannerService, it.clock)
+            TaskDetailViewModel(
+                taskId, it.taskRepository, it.moduleRepository, it.settingsStore, it.dayRepository, it.plannerService, it.suggestionRepository, it.clock,
+            )
         }
     }
 }

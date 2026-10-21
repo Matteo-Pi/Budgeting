@@ -16,7 +16,7 @@ sealed class BackupDecodeResult {
     data class Failure(val errors: List<String>) : BackupDecodeResult()
 }
 
-/** JSON encode/decode for [BackupV1] (versions 1 to 8), with validation. See docs/PLAN.md §5.17. */
+/** JSON encode/decode for [BackupV1] (versions 1 to 9), with validation. See docs/PLAN.md §5.17. */
 object BackupCodec {
 
     private val json = Json {
@@ -181,9 +181,9 @@ object BackupCodec {
     }
 
     /**
-     * The Planner tables (versions 5 to 8): references, the unique module codes (without case), steps one level deep,
+     * The Planner tables (versions 5 to 9): references, the unique module codes (without case), steps one level deep,
      * one change per entry and date, one link per item, times inside the day (`LocalTime.of` would otherwise throw on a
-     * corrupted minute), chunks that end after they start, one review per day, and one entry per habit and day.
+     * corrupted minute), chunks that end after they start, one review per day, one entry per habit and day, and topics that belong to exams.
      */
     private fun validatePlanner(b: BackupV1, check: (Boolean, String) -> Unit) {
         val moduleIds = b.plannerModules.map { it.id }.toSet()
@@ -285,6 +285,19 @@ object BackupCodec {
         for (entry in b.plannerHabitEntries) {
             check(entry.habitId in habitIds, "A habit entry refers to a missing habit ${entry.habitId}.")
         }
+
+        // Version 9: revision topics and dismissed suggestions.
+        val topicIds = b.plannerRevisionTopics.map { it.id }.toSet()
+        check(topicIds.size == b.plannerRevisionTopics.size, "Two revision topics have the same id.")
+        for (topic in b.plannerRevisionTopics) {
+            val exam = tasksById[topic.examTaskId]
+            check(exam != null, "Revision topic ${topic.id} refers to a missing exam ${topic.examTaskId}.")
+            check(topic.difficulty in 1..3, "Revision topic ${topic.id} has a difficulty outside 1 to 3.")
+        }
+        for (block in b.plannerPlanBlocks) {
+            block.topicId?.let { check(it in topicIds, "Plan block ${block.id} refers to a missing revision topic $it.") }
+        }
+        check(b.plannerDismissed.map { it.key }.toSet().size == b.plannerDismissed.size, "A suggestion is dismissed twice.")
     }
 
     /** The version-3 tables: the same reference checks, plus the uniqueness the food tables enforce. */

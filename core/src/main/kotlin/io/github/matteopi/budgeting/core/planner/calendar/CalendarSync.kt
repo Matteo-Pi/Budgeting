@@ -2,6 +2,8 @@ package io.github.matteopi.budgeting.core.planner.calendar
 
 import io.github.matteopi.budgeting.core.planner.model.CalendarLink
 import io.github.matteopi.budgeting.core.planner.model.Occurrence
+import io.github.matteopi.budgeting.core.planner.model.PlanBlock
+import io.github.matteopi.budgeting.core.planner.model.PlanOrigin
 import io.github.matteopi.budgeting.core.planner.model.Task
 import java.security.MessageDigest
 import java.time.Duration
@@ -90,6 +92,12 @@ object CalendarSync {
     fun occurrenceEvents(occurrences: List<Occurrence>, now: Instant): List<DesiredEvent> =
         occurrences.filter { it.end.isAfter(now) }.map { o ->
             DesiredEvent(o.key, o.title, o.start, o.end, listOf(o.room, o.location).filter { it.isNotBlank() }.joinToString(", "))
+        }
+
+    /** Accepted suggestions (study and habit blocks) ending after [now], as events titled by their note ("EC101 essay"). */
+    fun blockEvents(blocks: List<PlanBlock>, now: Instant): List<DesiredEvent> =
+        blocks.filter { it.origin != PlanOrigin.USER && it.end.isAfter(now) }.map { b ->
+            DesiredEvent("block:${b.id}", b.note.ifBlank { "Study" }, b.start, b.end)
         }
 
     fun diff(desired: List<DesiredEvent>, links: List<CalendarLink>, existing: List<ExistingEvent>, now: Instant): SyncPlan {

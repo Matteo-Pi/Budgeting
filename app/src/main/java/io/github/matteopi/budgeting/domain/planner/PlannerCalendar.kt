@@ -2,17 +2,20 @@ package io.github.matteopi.budgeting.domain.planner
 
 import io.github.matteopi.budgeting.core.model.TermPeriod
 import io.github.matteopi.budgeting.core.planner.calendar.CalendarSync
+import io.github.matteopi.budgeting.core.planner.day.Interval
 import io.github.matteopi.budgeting.core.planner.model.CalendarInstance
 import io.github.matteopi.budgeting.core.planner.model.CalendarLink
 import io.github.matteopi.budgeting.core.planner.timetable.Timetable
 import io.github.matteopi.budgeting.data.calendar.CalendarAccess
 import io.github.matteopi.budgeting.data.calendar.CalendarInfo
 import io.github.matteopi.budgeting.data.repo.PlanRepository
+import io.github.matteopi.budgeting.data.repo.planner.DayRepository
 import io.github.matteopi.budgeting.data.repo.planner.TaskRepository
 import io.github.matteopi.budgeting.data.repo.planner.TimetableRepository
 import io.github.matteopi.budgeting.data.settings.CalendarChoice
 import io.github.matteopi.budgeting.data.settings.SettingsStore
 import io.github.matteopi.budgeting.domain.Clock
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -88,9 +91,13 @@ class PlannerCalendarSync(
     private val taskRepository: TaskRepository,
     private val timetableRepository: TimetableRepository,
     private val planRepository: PlanRepository,
+    private val dayRepository: DayRepository,
     private val clock: Clock,
 ) {
     private val mutex = Mutex()
+
+    /** How far ahead accepted suggestions are written. */
+    private val blocksAhead = Duration.ofDays(60)
 
     /** How far ahead classes are written: to the end of the next term, at most this many days. */
     private val maxDaysAhead = 200L
@@ -107,6 +114,7 @@ class PlannerCalendarSync(
         val today = clock.today()
 
         val desired = CalendarSync.taskEvents(taskRepository.getOpenTasks(), now, zone) +
+            CalendarSync.blockEvents(dayRepository.getPlans(Interval(now, now.plus(blocksAhead))), now) +
             if (settings.writeTimetable) {
                 val terms = planRepository.observeTermPeriods().first()
                 val occurrences = Timetable.occurrences(

@@ -128,6 +128,12 @@ sealed interface Route {
 
     /** One habit's page: its month, rates and streaks, *Pause* and *Archive*. */
     @Serializable data class HabitDetail(val habitId: Long) : Route
+
+    /** Meals, travel and the shortest useful gap. */
+    @Serializable data object PlannerFreeTime : Route
+
+    /** Suggested study: times, days off, blocks, caps, revision and modules. */
+    @Serializable data object PlannerStudy : Route
 }
 
 /**
@@ -174,6 +180,8 @@ val plannerRoutes: List<KClass<out Route>> = listOf(
     Route.PlannerCategories::class,
     Route.HabitEdit::class,
     Route.HabitDetail::class,
+    Route.PlannerFreeTime::class,
+    Route.PlannerStudy::class,
 )
 
 /** True if this destination is one of [plannerRoutes]. */

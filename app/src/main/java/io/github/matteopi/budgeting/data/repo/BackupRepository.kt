@@ -17,6 +17,7 @@ import io.github.matteopi.budgeting.data.db.dao.ReceiptDao
 import io.github.matteopi.budgeting.data.db.dao.ReconciliationDao
 import io.github.matteopi.budgeting.data.db.dao.ScenarioDao
 import io.github.matteopi.budgeting.data.db.dao.SnapshotDao
+import io.github.matteopi.budgeting.data.db.dao.StudyDao
 import io.github.matteopi.budgeting.data.db.dao.TransactionDao
 import io.github.matteopi.budgeting.data.repo.planner.toChecklistEntities
 import io.github.matteopi.budgeting.data.repo.planner.toEntity
@@ -48,6 +49,7 @@ class BackupRepository(
     private val timetableDao: TimetableDao,
     private val dayDao: DayDao,
     private val habitDao: HabitDao,
+    private val studyDao: StudyDao,
     private val settingsStore: SettingsStore,
     private val widgetUpdater: WidgetUpdater,
     private val plannerUpdater: PlannerUpdater,
@@ -94,6 +96,8 @@ class BackupRepository(
             plannerDayReviews = dayDao.getAllReviews().map { it.toModel() },
             plannerHabits = habitDao.getHabits().map { it.toModel() },
             plannerHabitEntries = habitDao.getAllEntries().map { it.toModel() },
+            plannerRevisionTopics = studyDao.getTopics().map { it.toModel() },
+            plannerDismissed = studyDao.getDismissed().map { it.toModel() },
         )
     }
 
@@ -104,6 +108,8 @@ class BackupRepository(
             // record (records point at plan blocks, both at categories, tasks and modules); the timetable's changes, entries (which point at modules and term dates) and
             // calendar links; the Done log and checklists, steps before their deadlines, then the tasks and the
             // modules they point at.
+            studyDao.deleteAllDismissed()
+            studyDao.deleteAllTopics()
             habitDao.deleteAllEntries()
             habitDao.deleteAllHabits()
             dayDao.deleteAllRecords()
@@ -212,6 +218,9 @@ class BackupRepository(
             // Habits after the categories they count, then their entries.
             habitDao.insertHabits(data.plannerHabits.map { it.toEntity() })
             habitDao.insertEntries(data.plannerHabitEntries.map { it.toEntity() })
+            // Revision topics after the exams they belong to.
+            studyDao.insertTopics(data.plannerRevisionTopics.map { it.toEntity() })
+            studyDao.insertDismissed(data.plannerDismissed.map { it.toEntity() })
         }
         settingsStore.replaceBudgetSettings(data.settings)
         // Cooking ticks are kept by recipe id, and the restored recipes have other ids.

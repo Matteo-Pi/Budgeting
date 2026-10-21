@@ -11,18 +11,25 @@ import io.github.matteopi.budgeting.data.repo.planner.CompletionUndo
 import io.github.matteopi.budgeting.data.repo.planner.DayRepository
 import io.github.matteopi.budgeting.data.repo.planner.ModuleRepository
 import io.github.matteopi.budgeting.data.repo.planner.TaskRepository
+import io.github.matteopi.budgeting.data.settings.TimerState
 import io.github.matteopi.budgeting.domain.Clock
 import io.github.matteopi.budgeting.domain.planner.HabitService
+import io.github.matteopi.budgeting.domain.planner.HabitsModel
 import io.github.matteopi.budgeting.domain.planner.PlannerService
 import io.github.matteopi.budgeting.domain.planner.PlannerTimer
+import io.github.matteopi.budgeting.domain.planner.SuggestionService
+import io.github.matteopi.budgeting.domain.planner.SuggestionsModel
 import io.github.matteopi.budgeting.domain.planner.TimerStop
 import io.github.matteopi.budgeting.ui.planner.components.TaskRowUi
+import io.github.matteopi.budgeting.ui.planner.components.UndoableEvent
 import io.github.matteopi.budgeting.ui.planner.day.DayEvent
 import io.github.matteopi.budgeting.ui.planner.day.DayMapping
 import io.github.matteopi.budgeting.ui.planner.habits.HabitActions
-import io.github.matteopi.budgeting.ui.planner.habits.HabitEvent
 import io.github.matteopi.budgeting.ui.planner.habits.HabitRowUi
 import io.github.matteopi.budgeting.ui.planner.habits.HabitsMapping
+import io.github.matteopi.budgeting.ui.planner.suggest.SuggestionActions
+import io.github.matteopi.budgeting.ui.planner.suggest.SuggestionRowUi
+import io.github.matteopi.budgeting.ui.planner.suggest.SuggestionsMapping
 import io.github.matteopi.budgeting.ui.planner.todo.TodoMapping
 import io.github.matteopi.budgeting.ui.settings.budgetViewModelFactory
 import io.github.matteopi.budgeting.widget.planner.PlannerWidgetState
@@ -37,6 +44,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -53,6 +62,8 @@ data class TodayUiState(
     val habits: List<HabitRowUi> = emptyList(),
     /** The habits' day, which they are ticked on. */
     val habitDay: LocalDate = day,
+    /** Today's study suggestions (docs/PLAN.md §12.7). */
+    val suggestions: List<SuggestionRowUi> = emptyList(),
     /** The day as an agenda: classes, events, plans, records and gaps. */
     val agenda: List<AgendaRowUi> = emptyList(),
     /** The Now card's lines: the class on now or next, the free time left, the timer. */
@@ -63,6 +74,13 @@ data class TodayUiState(
     val timerRunning: Boolean = false,
     val categories: List<TimeCategory> = emptyList(),
     val modules: List<Module> = emptyList(),
+)
+
+private data class TodayExtras(
+    val timer: TimerState?,
+    val today: LocalDate,
+    val habits: HabitsModel,
+    val suggestions: SuggestionsModel?,
 )
 
 /**
@@ -77,14 +95,16 @@ class TodayViewModel(
     plannerService: PlannerService,
     habitService: HabitService,
     private val habitActions: HabitActions,
+    suggestionService: SuggestionService,
+    private val suggestionActions: SuggestionActions,
     private val plannerTimer: PlannerTimer,
     private val clock: Clock,
 ) : ViewModel() {
     private val completions = Channel<CompletionUndo>(Channel.BUFFERED)
-    private val habitEvents = Channel<HabitEvent>(Channel.BUFFERED)
+    private val habitEvents = Channel<UndoableEvent>(Channel.BUFFERED)
 
     /** What a change to a habit's day did, for the *Undo* snackbar. */
-    val habitEventFlow: Flow<HabitEvent> = habitEvents.receiveAsFlow()
+    val habitEventFlow: Flow<UndoableEvent> = habitEvents.receiveAsFlow()
     private val timerEvents = Channel<DayEvent>(Channel.BUFFERED)
 
     /** A task just ticked off, for the *Undo* snackbar. */
@@ -93,14 +113,22 @@ class TodayViewModel(
     /** What the timer did when stopped, for the snackbar. */
     val timerEventFlow: Flow<DayEvent> = timerEvents.receiveAsFlow()
 
+    /** The latest suggestions, for *Accept*; null until the first run. */
+    private val suggestionModel: StateFlow<SuggestionsModel?> = suggestionService.observe()
+        .map<SuggestionsModel, SuggestionsModel?> { it }
+        .onStart { emit(null) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
     val state: StateFlow<TodayUiState> = plannerService.currentDay.flatMapLatest { day ->
         combine(
             plannerService.dayFlow(day),
             plannerService.dayFlow(day.minusDays(1)),
             taskRepository.observeOpenTasks(),
             moduleRepository.observeModules(),
-            combine(plannerTimer.state, clock.todayFlow, habitService.observe()) { timer, today, habits -> Triple(timer, today, habits) },
-        ) { model, yesterday, tasks, modules, (timer, today, habits) ->
+            combine(plannerTimer.state, clock.todayFlow, habitService.observe(), suggestionModel) { timer, today, habits, suggestions ->
+                TodayExtras(timer, today, habits, suggestions)
+            },
+        ) { model, yesterday, tasks, modules, (timer, today, habits, suggestions) ->
             TodayUiState(
                 loading = false,
                 day = day,
@@ -109,6 +137,7 @@ class TodayViewModel(
                 dueToday = TodoMapping.rows(TaskViews.today(tasks, today), tasks, modules, today),
                 habits = HabitsMapping.forToday(habits),
                 habitDay = habits.today,
+                suggestions = suggestions?.let { SuggestionsMapping.within(it.suggestions, model.waking, habits.today, model.zone) } ?: emptyList(),
                 agenda = TodayMapping.agenda(model, modules),
                 now = PlannerWidgetState.of(model.now, day, model.zone, model.occurrences, model.freeLeftMinutes, tasks, model.categories, modules, timer),
                 freeSummary = TodayMapping.freeSummary(model),
@@ -138,12 +167,20 @@ class TodayViewModel(
 
     fun skipHabit(habitId: Long, skipped: Boolean) = habitChange { habitActions.skip(habitId, it, skipped) }
 
-    fun undoHabit(event: HabitEvent) {
+    fun undoHabit(event: UndoableEvent) {
         viewModelScope.launch { event.undo() }
     }
 
-    private fun habitChange(change: suspend (LocalDate) -> HabitEvent?) {
+    private fun habitChange(change: suspend (LocalDate) -> UndoableEvent?) {
         viewModelScope.launch { change(state.value.habitDay)?.let { habitEvents.send(it) } }
+    }
+
+    fun acceptSuggestion(key: String) {
+        viewModelScope.launch { suggestionActions.accept(suggestionModel.value, key, clock.zone())?.let { habitEvents.send(it) } }
+    }
+
+    fun anotherTime(key: String) {
+        viewModelScope.launch { habitEvents.send(suggestionActions.dismiss(key)) }
     }
 
     fun startTimer(categoryId: Long, moduleId: Long?) {
@@ -174,7 +211,7 @@ class TodayViewModel(
         val Factory: ViewModelProvider.Factory = budgetViewModelFactory {
             TodayViewModel(
                 it.taskRepository, it.moduleRepository, it.dayRepository, it.plannerService, it.habitService, HabitActions(it.habitRepository),
-                it.plannerTimer, it.clock,
+                it.suggestionService, SuggestionActions(it.suggestionRepository, it.dayRepository), it.plannerTimer, it.clock,
             )
         }
     }

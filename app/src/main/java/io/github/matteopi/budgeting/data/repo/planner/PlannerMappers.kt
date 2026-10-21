@@ -5,6 +5,7 @@ import io.github.matteopi.budgeting.core.planner.model.CategoryKey
 import io.github.matteopi.budgeting.core.planner.model.ChecklistItem
 import io.github.matteopi.budgeting.core.planner.model.DayReview
 import io.github.matteopi.budgeting.core.planner.model.DeadlineType
+import io.github.matteopi.budgeting.core.planner.model.DismissedSuggestion
 import io.github.matteopi.budgeting.core.planner.model.EntryException
 import io.github.matteopi.budgeting.core.planner.model.EntryKind
 import io.github.matteopi.budgeting.core.planner.model.GoalKind
@@ -22,6 +23,7 @@ import io.github.matteopi.budgeting.core.planner.model.Priority
 import io.github.matteopi.budgeting.core.planner.model.RecordChunk
 import io.github.matteopi.budgeting.core.planner.model.RecordOrigin
 import io.github.matteopi.budgeting.core.planner.model.RepeatKind
+import io.github.matteopi.budgeting.core.planner.model.RevisionTopic
 import io.github.matteopi.budgeting.core.planner.model.Task
 import io.github.matteopi.budgeting.core.planner.model.TaskCompletion
 import io.github.matteopi.budgeting.core.planner.model.TaskKind
@@ -37,12 +39,14 @@ import io.github.matteopi.budgeting.data.db.entities.planner.CalendarLinkEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.TimeCategoryEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.ChecklistItemEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.DayReviewEntity
+import io.github.matteopi.budgeting.data.db.entities.planner.DismissedEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.EntryExceptionEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.HabitEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.HabitEntryEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.ModuleEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.PlanBlockEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.RecordEntity
+import io.github.matteopi.budgeting.data.db.entities.planner.RevisionTopicEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.TaskCompletionEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.TaskEntity
 import io.github.matteopi.budgeting.data.db.entities.planner.TimetableEntryEntity
@@ -406,3 +410,13 @@ fun Habit.toEntity() = HabitEntity(
 fun HabitEntryEntity.toModel() = HabitEntry(id, habitId, LocalDate.ofEpochDay(date), amount.coerceAtLeast(0), skipped)
 
 fun HabitEntry.toEntity() = HabitEntryEntity(id, habitId, date.toEpochDay(), amount, skipped)
+
+// ---- Study suggestions (version 9) ---------------------------------------------------------------
+
+fun RevisionTopicEntity.toModel() = RevisionTopic(id, examTaskId, name, difficulty.coerceIn(1, 3), sortOrder)
+
+fun RevisionTopic.toEntity() = RevisionTopicEntity(id, examTaskId, name.trim(), difficulty.coerceIn(1, 3), sortOrder)
+
+fun DismissedEntity.toModel() = DismissedSuggestion(key, Instant.ofEpochMilli(dismissedAtMillis))
+
+fun DismissedSuggestion.toEntity() = DismissedEntity(key, dismissedAt.toEpochMilli())

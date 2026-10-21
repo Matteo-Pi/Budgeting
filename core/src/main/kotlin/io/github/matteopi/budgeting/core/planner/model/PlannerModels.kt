@@ -360,3 +360,17 @@ data class HabitEntry(
     val amount: Int = 0,
     val skipped: Boolean = false,
 )
+
+// ---- Study suggestions (docs/PLAN.md §12.7, stage P5) ----
+
+/** A topic to revise for an exam (a deadline of type exam): [difficulty] 1 (easy) to 3 (hard). */
+data class RevisionTopic(
+    val id: Long = 0,
+    val examTaskId: Long,
+    val name: String,
+    val difficulty: Int = 2,
+    val sortOrder: Int = 0,
+)
+
+/** A suggestion the user dismissed ([key] is the demand's key and the start), kept 30 days so it isn't offered again. */
+data class DismissedSuggestion(val key: String, val dismissedAt: Instant)

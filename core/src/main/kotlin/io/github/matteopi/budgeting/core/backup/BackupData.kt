@@ -22,12 +22,14 @@ import io.github.matteopi.budgeting.core.model.TermPeriod
 import io.github.matteopi.budgeting.core.model.Transaction
 import io.github.matteopi.budgeting.core.planner.model.CalendarLink
 import io.github.matteopi.budgeting.core.planner.model.DayReview
+import io.github.matteopi.budgeting.core.planner.model.DismissedSuggestion
 import io.github.matteopi.budgeting.core.planner.model.EntryException
 import io.github.matteopi.budgeting.core.planner.model.Habit
 import io.github.matteopi.budgeting.core.planner.model.HabitEntry
 import io.github.matteopi.budgeting.core.planner.model.Module
 import io.github.matteopi.budgeting.core.planner.model.PlanBlock
 import io.github.matteopi.budgeting.core.planner.model.RecordChunk
+import io.github.matteopi.budgeting.core.planner.model.RevisionTopic
 import io.github.matteopi.budgeting.core.planner.model.Task
 import io.github.matteopi.budgeting.core.planner.model.TaskCompletion
 import io.github.matteopi.budgeting.core.planner.model.TimeCategory
@@ -89,4 +91,7 @@ data class BackupData(
     // Backup version 8.
     val plannerHabits: List<Habit> = emptyList(),
     val plannerHabitEntries: List<HabitEntry> = emptyList(),
+    // Backup version 9.
+    val plannerRevisionTopics: List<RevisionTopic> = emptyList(),
+    val plannerDismissed: List<DismissedSuggestion> = emptyList(),
 )

@@ -8,7 +8,9 @@ import io.github.matteopi.budgeting.core.planner.model.CalendarInstance
 import io.github.matteopi.budgeting.core.planner.model.EntryKind
 import io.github.matteopi.budgeting.core.planner.model.Module
 import io.github.matteopi.budgeting.core.planner.model.Occurrence
+import io.github.matteopi.budgeting.core.planner.model.PlanBlock
 import io.github.matteopi.budgeting.core.planner.model.Task
+import io.github.matteopi.budgeting.core.planner.suggest.Suggestion
 import io.github.matteopi.budgeting.core.planner.timetable.ClashKind
 import io.github.matteopi.budgeting.core.planner.timetable.Clashes
 import io.github.matteopi.budgeting.core.planner.timetable.Lanes
@@ -21,8 +23,8 @@ import java.time.ZoneId
 import java.time.format.TextStyle
 import java.util.Locale
 
-/** What a timetable item is. */
-enum class ItemKind { CLASS, CANCELLED, EVENT, EXAM, TASK }
+/** What a timetable item is; [PLAN] is a block planned in the day record, [SUGGESTION] a study suggestion, drawn outlined until accepted. */
+enum class ItemKind { CLASS, CANCELLED, EVENT, EXAM, TASK, PLAN, SUGGESTION }
 
 /**
  * One block on the timetable (docs/PLAN.md §13.9): a class, a cancelled class, a calendar event, an exam or a timed
@@ -49,6 +51,7 @@ data class TimetableItemUi(
     val changed: Boolean = false,
     /** A class's room this week (for *Change this week*). */
     val room: String = "",
+    val suggestionKey: String? = null,
 ) {
     val timeText: String get() = PlannerText.range(start, end)
 }
@@ -107,6 +110,8 @@ object TimetableMapping {
         tasks: List<Task>,
         modules: List<Module>,
         zone: ZoneId,
+        suggestions: List<Suggestion> = emptyList(),
+        plans: List<PlanBlock> = emptyList(),
     ): List<TimetableItemUi> {
         val modulesById = modules.associateBy { it.id }
         val items = mutableListOf<TimetableItemUi>()
@@ -167,6 +172,42 @@ object TimetableMapping {
                 taskId = t.id,
             )
         }
+        for (b in plans) {
+            val start = b.start.atZone(zone)
+            val end = b.end.atZone(zone)
+            if (start.toLocalDate() != date) continue
+            val module = b.moduleId?.let { modulesById[it] }
+            items += TimetableItemUi(
+                key = "plan:${b.id}",
+                kind = ItemKind.PLAN,
+                title = b.note.ifBlank { module?.code ?: "Planned" },
+                detail = "Planned",
+                date = date,
+                start = start.toLocalTime(),
+                end = end.toLocalTime(),
+                startMinute = minuteOf(start.toLocalTime()),
+                endMinute = endMinuteOf(start.toLocalTime(), end.toLocalTime()),
+                colorArgb = module?.colorArgb,
+            )
+        }
+        for (s in suggestions) {
+            val start = s.interval.start.atZone(zone)
+            val end = s.interval.end.atZone(zone)
+            if (start.toLocalDate() != date) continue
+            items += TimetableItemUi(
+                key = "suggestion:${s.key}",
+                kind = ItemKind.SUGGESTION,
+                title = s.demand.title,
+                detail = "Suggested · ${s.reason}",
+                date = date,
+                start = start.toLocalTime(),
+                end = end.toLocalTime(),
+                startMinute = minuteOf(start.toLocalTime()),
+                endMinute = endMinuteOf(start.toLocalTime(), end.toLocalTime()),
+                colorArgb = s.demand.moduleId?.let { modulesById[it]?.colorArgb },
+                suggestionKey = s.key,
+            )
+        }
         return Lanes.assign(items, { it.startMinute.toLong() }, { it.endMinute.toLong() })
             .map { it.item.copy(lane = it.lane, lanes = it.lanes) }
             .sortedWith(compareBy<TimetableItemUi> { it.startMinute }.thenBy { it.endMinute }.thenBy { it.key })
@@ -181,13 +222,15 @@ object TimetableMapping {
         modules: List<Module>,
         terms: List<TermPeriod>,
         zone: ZoneId,
+        suggestions: List<Suggestion> = emptyList(),
+        plans: List<PlanBlock> = emptyList(),
     ): WeekUi {
         val days = (0L..6L).map { weekStart.plusDays(it) }.map { date ->
             DayColumnUi(
                 date = date,
                 label = "${date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.ENGLISH)} ${date.dayOfMonth}",
                 isToday = date == today,
-                items = dayItems(date, occurrences, events, tasks, modules, zone),
+                items = dayItems(date, occurrences, events, tasks, modules, zone, suggestions, plans),
                 allDay = allDay(date, events, zone),
             )
         }

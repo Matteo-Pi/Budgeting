@@ -65,6 +65,8 @@ fun PlannerSettingsScreen(
     onOpenCalendars: () -> Unit,
     onOpenDaySettings: () -> Unit,
     onOpenCategories: () -> Unit,
+    onOpenFreeTime: () -> Unit,
+    onOpenStudy: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PlannerSettingsViewModel = viewModel(factory = PlannerSettingsViewModel.Factory),
 ) {
@@ -117,6 +119,16 @@ fun PlannerSettingsScreen(
                 title = "Day record categories",
                 detail = state.categories.filter { !it.archived }.joinToString(", ") { it.name }.ifBlank { "Study, Lecture or class, Exercise, …" },
                 onClick = onOpenCategories,
+            )
+            LinkRow(
+                title = "Free time",
+                detail = "Meals, travel times and the shortest gap worth counting",
+                onClick = onOpenFreeTime,
+            )
+            LinkRow(
+                title = "Suggested study",
+                detail = "When to suggest study, days off, block lengths and caps",
+                onClick = onOpenStudy,
             )
             HorizontalDivider()
 

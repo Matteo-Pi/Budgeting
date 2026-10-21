@@ -5,30 +5,42 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import io.github.matteopi.budgeting.core.forecast.Regimes
 import io.github.matteopi.budgeting.core.model.TermPeriod
+import io.github.matteopi.budgeting.core.planner.day.Interval
 import io.github.matteopi.budgeting.core.planner.model.EntryException
 import io.github.matteopi.budgeting.core.planner.model.Module
+import io.github.matteopi.budgeting.core.planner.model.PlanBlock
 import io.github.matteopi.budgeting.core.planner.model.Task
 import io.github.matteopi.budgeting.core.planner.model.TimetableEntry
 import io.github.matteopi.budgeting.core.planner.timetable.Timetable
 import io.github.matteopi.budgeting.data.repo.PlanRepository
+import io.github.matteopi.budgeting.data.repo.planner.DayRepository
 import io.github.matteopi.budgeting.data.repo.planner.ModuleRepository
 import io.github.matteopi.budgeting.data.repo.planner.TaskRepository
 import io.github.matteopi.budgeting.data.repo.planner.TimetableRepository
 import io.github.matteopi.budgeting.domain.Clock
 import io.github.matteopi.budgeting.domain.planner.CalendarState
 import io.github.matteopi.budgeting.domain.planner.PlannerCalendar
+import io.github.matteopi.budgeting.domain.planner.SuggestionService
+import io.github.matteopi.budgeting.domain.planner.SuggestionsModel
 import io.github.matteopi.budgeting.domain.planner.instances
+import io.github.matteopi.budgeting.ui.planner.components.UndoableEvent
+import io.github.matteopi.budgeting.ui.planner.suggest.SuggestionActions
 import io.github.matteopi.budgeting.ui.settings.budgetViewModelFactory
 import java.time.LocalDate
 import java.time.LocalTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -60,8 +72,22 @@ class TimetableViewModel(
     moduleRepository: ModuleRepository,
     planRepository: PlanRepository,
     private val plannerCalendar: PlannerCalendar,
+    dayRepository: DayRepository,
+    suggestionService: SuggestionService,
+    private val suggestionActions: SuggestionActions,
     private val clock: Clock,
 ) : ViewModel() {
+    private val events = Channel<UndoableEvent>(Channel.BUFFERED)
+
+    /** What accepting or moving a suggestion did, for the *Undo* snackbar. */
+    val eventFlow: Flow<UndoableEvent> = events.receiveAsFlow()
+
+    /** The study suggestions, shown outlined on the week; null until the first run. */
+    private val suggestions: StateFlow<SuggestionsModel?> = suggestionService.observe()
+        .map<SuggestionsModel, SuggestionsModel?> { it }
+        .onStart { emit(null) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
     private val mode = MutableStateFlow(TimetableMode.WEEK)
     private val focus = MutableStateFlow(clock.today())
 
@@ -93,7 +119,17 @@ class TimetableViewModel(
         plannerCalendar.observe(from.atStartOfDay(zone).toInstant(), to.plusDays(1).atStartOfDay(zone).toInstant())
     }
 
-    val state: StateFlow<TimetableUiState> = combine(source, mode, focus, calendar, clock.todayFlow) { src, mode, focus, cal, today ->
+    /** The blocks planned in the day record for the days on screen. */
+    private val plans = combine(mode, focus) { m, f -> range(m, f) }.flatMapLatest { (from, to) ->
+        val zone = clock.zone()
+        dayRepository.observePlans(Interval(from.atStartOfDay(zone).toInstant(), to.plusDays(1).atStartOfDay(zone).toInstant()))
+    }
+
+    private data class Extras(val today: LocalDate, val suggested: SuggestionsModel?, val plans: List<PlanBlock>)
+
+    val state: StateFlow<TimetableUiState> = combine(
+        source, mode, focus, calendar, combine(clock.todayFlow, suggestions, plans) { t, s, p -> Extras(t, s, p) },
+    ) { src, mode, focus, cal, (today, suggested, plans) ->
         val zone = clock.zone()
         val (from, to) = range(mode, focus)
         val occurrences = Timetable.occurrences(src.entries, src.exceptions, src.terms, from, to, zone, includeCancelled = true)
@@ -108,11 +144,18 @@ class TimetableViewModel(
             mode = mode,
             focus = focus,
             week = if (mode == TimetableMode.WEEK) {
-                TimetableMapping.week(TimetableMapping.weekStart(focus), today, occurrences, events, src.tasks, src.modules, src.terms, zone)
+                TimetableMapping.week(
+                    TimetableMapping.weekStart(focus), today, occurrences, events, src.tasks, src.modules, src.terms, zone, suggested?.suggestions.orEmpty(),
+                    plans,
+                )
             } else {
                 null
             },
-            day = if (mode == TimetableMode.DAY) TimetableMapping.dayItems(focus, occurrences, events, src.tasks, src.modules, zone) else emptyList(),
+            day = if (mode == TimetableMode.DAY) {
+                TimetableMapping.dayItems(focus, occurrences, events, src.tasks, src.modules, zone, suggested?.suggestions.orEmpty(), plans)
+            } else {
+                emptyList()
+            },
             dayAllDay = if (mode == TimetableMode.DAY) TimetableMapping.allDay(focus, events, zone) else emptyList(),
             month = if (mode == TimetableMode.MONTH) TimetableMapping.month(focus, today, occurrences, events, src.tasks, src.modules, zone) else emptyList(),
             calendar = cal,
@@ -164,6 +207,20 @@ class TimetableViewModel(
         viewModelScope.launch { timetableRepository.change(entryId, item.date, start, end, room) }
     }
 
+    fun acceptSuggestion(item: TimetableItemUi) {
+        val key = item.suggestionKey ?: return
+        viewModelScope.launch { suggestionActions.accept(suggestions.value, key, clock.zone())?.let { events.send(it) } }
+    }
+
+    fun anotherTime(item: TimetableItemUi) {
+        val key = item.suggestionKey ?: return
+        viewModelScope.launch { events.send(suggestionActions.dismiss(key)) }
+    }
+
+    fun undo(event: UndoableEvent) {
+        viewModelScope.launch { event.undo() }
+    }
+
     fun copyTerm(onDone: (Int) -> Unit) {
         val from = state.value.copyFrom ?: return
         val to = state.value.copyTo ?: return
@@ -172,7 +229,10 @@ class TimetableViewModel(
 
     companion object {
         val Factory: ViewModelProvider.Factory = budgetViewModelFactory {
-            TimetableViewModel(it.timetableRepository, it.taskRepository, it.moduleRepository, it.planRepository, it.plannerCalendar, it.clock)
+            TimetableViewModel(
+                it.timetableRepository, it.taskRepository, it.moduleRepository, it.planRepository, it.plannerCalendar, it.dayRepository,
+                it.suggestionService, SuggestionActions(it.suggestionRepository, it.dayRepository), it.clock,
+            )
         }
     }
 }

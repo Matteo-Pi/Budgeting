@@ -89,6 +89,9 @@ class DayRepository(
         return plan.copy(inserts = inserts.zip(ids) { row, id -> row.copy(id = id) })
     }
 
+    /** A deleted revision topic's blocks stay, no longer naming it. */
+    suspend fun clearTopic(topicId: Long) = dayDao.clearTopic(topicId)
+
     // ---- Reviews ------------------------------------------------------------------------------
 
     fun observeReviews(from: LocalDate, to: LocalDate): Flow<List<DayReview>> =

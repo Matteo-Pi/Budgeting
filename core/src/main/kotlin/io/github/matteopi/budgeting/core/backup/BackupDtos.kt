@@ -570,3 +570,20 @@ data class PlannerHabitEntryDto(
     val amount: Int,
     val skipped: Boolean,
 )
+
+// ---- Version 9: study suggestions ----
+
+@Serializable
+data class PlannerRevisionTopicDto(
+    val id: Long,
+    val examTaskId: Long,
+    val name: String,
+    val difficulty: Int,
+    val sortOrder: Int,
+)
+
+@Serializable
+data class PlannerDismissedDto(
+    val key: String,
+    val dismissedAtEpochMillis: Long,
+)

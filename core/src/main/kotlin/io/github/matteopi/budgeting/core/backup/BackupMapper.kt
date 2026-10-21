@@ -34,6 +34,7 @@ import io.github.matteopi.budgeting.core.model.Transaction
 import io.github.matteopi.budgeting.core.planner.model.CalendarLink
 import io.github.matteopi.budgeting.core.planner.model.CategoryKey
 import io.github.matteopi.budgeting.core.planner.model.DayReview
+import io.github.matteopi.budgeting.core.planner.model.DismissedSuggestion
 import io.github.matteopi.budgeting.core.planner.model.ChecklistItem
 import io.github.matteopi.budgeting.core.planner.model.EntryException
 import io.github.matteopi.budgeting.core.planner.model.EntryKind
@@ -52,6 +53,7 @@ import io.github.matteopi.budgeting.core.planner.model.PlanOrigin
 import io.github.matteopi.budgeting.core.planner.model.Priority
 import io.github.matteopi.budgeting.core.planner.model.RecordChunk
 import io.github.matteopi.budgeting.core.planner.model.RecordOrigin
+import io.github.matteopi.budgeting.core.planner.model.RevisionTopic
 import io.github.matteopi.budgeting.core.planner.model.RepeatKind
 import io.github.matteopi.budgeting.core.planner.model.Task
 import io.github.matteopi.budgeting.core.planner.model.TaskCompletion
@@ -166,6 +168,8 @@ object BackupMapper {
             plannerHabitEntries = data.plannerHabitEntries.map {
                 PlannerHabitEntryDto(it.id, it.habitId, it.date.toString(), it.amount, it.skipped)
             },
+            plannerRevisionTopics = data.plannerRevisionTopics.map { PlannerRevisionTopicDto(it.id, it.examTaskId, it.name, it.difficulty, it.sortOrder) },
+            plannerDismissed = data.plannerDismissed.map { PlannerDismissedDto(it.key, it.dismissedAt.toEpochMilli()) },
             settings = data.settings.toDto(),
             appSettings = appSettings,
         )
@@ -234,6 +238,8 @@ object BackupMapper {
             plannerHabitEntries = backup.plannerHabitEntries.map {
                 HabitEntry(it.id, it.habitId, LocalDate.parse(it.date), it.amount, it.skipped)
             },
+            plannerRevisionTopics = backup.plannerRevisionTopics.map { RevisionTopic(it.id, it.examTaskId, it.name, it.difficulty, it.sortOrder) },
+            plannerDismissed = backup.plannerDismissed.map { DismissedSuggestion(it.key, Instant.ofEpochMilli(it.dismissedAtEpochMillis)) },
             settings = backup.settings.toModel(),
         )
     }

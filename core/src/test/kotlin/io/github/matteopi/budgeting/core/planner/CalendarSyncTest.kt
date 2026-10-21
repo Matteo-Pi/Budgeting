@@ -4,6 +4,8 @@ import io.github.matteopi.budgeting.core.planner.calendar.CalendarSync
 import io.github.matteopi.budgeting.core.planner.calendar.DesiredEvent
 import io.github.matteopi.budgeting.core.planner.calendar.ExistingEvent
 import io.github.matteopi.budgeting.core.planner.model.CalendarLink
+import io.github.matteopi.budgeting.core.planner.model.PlanBlock
+import io.github.matteopi.budgeting.core.planner.model.PlanOrigin
 import io.github.matteopi.budgeting.core.planner.model.Task
 import java.time.Instant
 import java.time.LocalDate
@@ -103,5 +105,17 @@ class CalendarSyncTest {
         assertEquals(Instant.parse("2026-10-23T16:30:00Z"), events[0].end, "30 minutes from 17:00 BST")
         assertEquals(Instant.parse("2026-10-23T10:30:00Z"), events[1].end)
         assertEquals("Hall", events[1].location)
+    }
+
+    @Test
+    fun `accepted suggestions in the future are written back, the user's own blocks are not`() {
+        val accepted = PlanBlock(3, hours(4), hours(5), categoryId = 1, origin = PlanOrigin.SUGGESTION, note = "Study EC101")
+        val habit = PlanBlock(4, hours(6), hours(7), categoryId = 1, origin = PlanOrigin.HABIT)
+        val own = PlanBlock(5, hours(8), hours(9), categoryId = 1)
+        val past = accepted.copy(id = 6, start = hours(-3), end = hours(-2))
+        assertEquals(
+            listOf(DesiredEvent("block:3", "Study EC101", hours(4), hours(5)), DesiredEvent("block:4", "Study", hours(6), hours(7))),
+            CalendarSync.blockEvents(listOf(accepted, habit, own, past), now),
+        )
     }
 }

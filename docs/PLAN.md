@@ -3343,6 +3343,19 @@ committed. Settled while building (also in §13.4):
     - a limit habit going over.
 
 **P5: free time settings and study suggestions (Room 9, backup 9)**
+**Status (2026-10-21)**: built; waiting for CI. Settled while building:
+- *Another time* dismisses the suggestion's key (kept 30 days, pruned by the daily worker). The planner passes over the
+  whole dismissed block, so the next run offers the time after it. Moving an accepted block is done in the day
+  editor;
+- Today shows the suggestions that start in its waking day, the same window as its agenda. The planner counts the
+  caps and days off by date;
+- "now" for suggestions is the next quarter hour, so no suggestion starts in the past;
+- with writing back on, accepted suggestions and habit slots from now on are written to the calendar
+  (`block:<id>`, `CalendarSync.blockEvents`);
+- the study and free-time settings and the days off are changed in one DataStore edit each, so quick taps in a row
+  don't undo each other; days off are dates, in backups, and past ones are dropped when the set is next written;
+- the core tests for `SpacedRepetition` and `FocusProfile` are in `RevisionAndFocusTest`, with `StudyContextTest`
+  (what is planned, studied and reviewed) and `StudyBackupTest`.
 - **Core**: `StudyPrefs`, `Demands`, `StudyPlanner`, `SpacedRepetition`, `FocusProfile`, habit slots, backup 9.
 - **App**:
   - **Data**: Room 9, `SuggestionRepository`.

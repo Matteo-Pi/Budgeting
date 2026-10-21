@@ -2,9 +2,11 @@ package io.github.matteopi.budgeting.data.settings
 
 import io.github.matteopi.budgeting.core.planner.day.DaySettings
 import io.github.matteopi.budgeting.core.planner.freetime.FreeSettings
+import io.github.matteopi.budgeting.core.planner.suggest.StudyPrefs
 import io.github.matteopi.budgeting.core.planner.todo.BreakdownTemplate
 import io.github.matteopi.budgeting.core.planner.todo.BreakdownTemplates
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
@@ -100,6 +102,17 @@ object PlannerSettingsCodec {
             ?: FreeSettings()
 
     fun encodeFree(settings: FreeSettings): String = json.encodeToString(FreeSettings.serializer(), settings)
+
+    fun decodeStudy(text: String?): StudyPrefs =
+        (text?.let { runCatching { json.decodeFromString(StudyPrefs.serializer(), it) }.getOrNull() } ?: StudyPrefs()).sanitized()
+
+    fun encodeStudy(prefs: StudyPrefs): String = json.encodeToString(StudyPrefs.serializer(), prefs)
+
+    /** Days switched off for suggestions, as ISO dates; one that doesn't parse is left out. */
+    fun decodeDaysOff(text: String?): Set<LocalDate> =
+        text?.split(',')?.mapNotNull { runCatching { LocalDate.parse(it.trim()) }.getOrNull() }?.toSet() ?: emptySet()
+
+    fun encodeDaysOff(days: Set<LocalDate>): String = days.sorted().joinToString(",")
 
     fun decodeTimer(text: String?): TimerState? = text?.let { runCatching { json.decodeFromString(TimerState.serializer(), it) }.getOrNull() }
 

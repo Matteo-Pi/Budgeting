@@ -61,6 +61,7 @@ import io.github.matteopi.budgeting.ui.planner.components.TaskRow
 import io.github.matteopi.budgeting.ui.planner.day.ChunkState
 import io.github.matteopi.budgeting.ui.planner.day.DayMapping
 import io.github.matteopi.budgeting.ui.planner.habits.HabitRow
+import io.github.matteopi.budgeting.ui.planner.suggest.SuggestionRow
 import java.time.LocalDate
 import kotlinx.coroutines.launch
 
@@ -159,6 +160,12 @@ fun TodayScreen(
                 }
             }
             items(state.agenda, key = { it.key }) { row -> AgendaRow(row, onClick = { onOpenDay(state.day, false) }) }
+            if (state.suggestions.isNotEmpty()) {
+                item(key = "suggested") { Header("Suggested study") }
+                items(state.suggestions, key = { "suggestion-${it.key}" }) { row ->
+                    SuggestionRow(row, onAccept = { viewModel.acceptSuggestion(row.key) }, onDismiss = { viewModel.anotherTime(row.key) })
+                }
+            }
             if (state.overdue.isNotEmpty()) {
                 item(key = "overdue") { Header("Overdue") }
                 items(state.overdue, key = { "task-${it.id}" }) { row ->

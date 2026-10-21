@@ -1,14 +1,20 @@
 package io.github.matteopi.budgeting.ui.planner
 
 import io.github.matteopi.budgeting.core.model.TermPeriod
+import io.github.matteopi.budgeting.core.planner.day.Interval
 import io.github.matteopi.budgeting.core.planner.model.CalendarInstance
 import io.github.matteopi.budgeting.core.planner.model.DeadlineType
 import io.github.matteopi.budgeting.core.planner.model.EntryException
 import io.github.matteopi.budgeting.core.planner.model.EntryKind
 import io.github.matteopi.budgeting.core.planner.model.Module
+import io.github.matteopi.budgeting.core.planner.model.PlanBlock
+import io.github.matteopi.budgeting.core.planner.model.PlanOrigin
 import io.github.matteopi.budgeting.core.planner.model.Task
 import io.github.matteopi.budgeting.core.planner.model.TaskKind
 import io.github.matteopi.budgeting.core.planner.model.TimetableEntry
+import io.github.matteopi.budgeting.core.planner.suggest.Demand
+import io.github.matteopi.budgeting.core.planner.suggest.DemandKind
+import io.github.matteopi.budgeting.core.planner.suggest.Suggestion
 import io.github.matteopi.budgeting.core.planner.timetable.Timetable
 import io.github.matteopi.budgeting.ui.planner.timetable.ItemKind
 import io.github.matteopi.budgeting.ui.planner.timetable.TimetableMapping
@@ -147,5 +153,36 @@ class TimetableMappingTest {
         assertEquals(2, mon.count)
         assertEquals(listOf(0xFF3F7CAC, 0xFF2E8B57), mon.colours)
         assertTrue(days.first { it.date == today }.isToday)
+    }
+
+    @Test
+    fun `a study suggestion is drawn on its own day as a suggestion, beside the classes`() {
+        val demand = Demand(key = "module:1:2026-10-19", kind = DemandKind.MODULE, title = "EC101", minutes = 300, latest = monday.plusDays(6),
+            moduleId = 1, reason = "EC101: 1 h of 5 h this week")
+        val start = at(monday, 13)
+        val suggestion = Suggestion("module:1:2026-10-19@${start.toEpochMilli()}", Interval(start, at(monday, 14, 30)), demand, "EC101: 1 h of 5 h this week")
+        val items = TimetableMapping.dayItems(monday, occurrences(monday, monday), emptyList(), emptyList(), modules, zone, listOf(suggestion))
+        val item = items.single { it.kind == ItemKind.SUGGESTION }
+        assertEquals("EC101", item.title)
+        assertEquals("Suggested · EC101: 1 h of 5 h this week", item.detail)
+        assertEquals(13 * 60 to 14 * 60 + 30, item.startMinute to item.endMinute)
+        assertEquals(suggestion.key, item.suggestionKey)
+        assertEquals(0xFF3F7CAC, item.colorArgb, "the module's colour")
+        assertEquals(listOf("EC101 Lecture", "EC102 Seminar", "EC101"), items.map { it.title })
+        val tuesday = TimetableMapping.dayItems(today, occurrences(today, today), emptyList(), emptyList(), modules, zone, listOf(suggestion))
+        assertTrue(tuesday.none { it.kind == ItemKind.SUGGESTION }, "only on its own day")
+    }
+
+    @Test
+    fun `planned blocks show on their day, named by their note or module`() {
+        val accepted = PlanBlock(id = 7, start = at(monday, 14), end = at(monday, 15, 30), categoryId = 1, moduleId = 1, origin = PlanOrigin.SUGGESTION,
+            note = "EC101 essay")
+        val own = PlanBlock(id = 8, start = at(monday, 16), end = at(monday, 17), categoryId = 1, moduleId = 1)
+        val other = PlanBlock(id = 9, start = at(today, 16), end = at(today, 17), categoryId = 1)
+        val items = TimetableMapping.dayItems(monday, emptyList(), emptyList(), emptyList(), modules, zone, plans = listOf(accepted, own, other))
+        assertEquals(listOf("EC101 essay", "EC101"), items.map { it.title })
+        assertTrue(items.all { it.kind == ItemKind.PLAN && it.detail == "Planned" && it.colorArgb == 0xFF3F7CAC })
+        assertEquals(listOf("plan:7", "plan:8"), items.map { it.key })
+        assertEquals(listOf("Planned"), TimetableMapping.dayItems(today, emptyList(), emptyList(), emptyList(), modules, zone, plans = listOf(other)).map { it.title })
     }
 }

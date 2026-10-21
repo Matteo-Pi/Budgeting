@@ -86,6 +86,10 @@ abstract class DayDao {
     @Query("DELETE FROM planner_plan_blocks WHERE id IN (:ids)")
     abstract suspend fun deletePlans(ids: List<Long>)
 
+    /** A deleted revision topic's blocks stay, no longer naming it. */
+    @Query("UPDATE planner_plan_blocks SET topic_id = NULL WHERE topic_id = :topicId")
+    abstract suspend fun clearTopic(topicId: Long)
+
     @Transaction
     open suspend fun applyPlans(inserts: List<PlanBlockEntity>, updates: List<PlanBlockEntity>, deleteIds: List<Long>): List<Long> {
         if (deleteIds.isNotEmpty()) deletePlans(deleteIds)

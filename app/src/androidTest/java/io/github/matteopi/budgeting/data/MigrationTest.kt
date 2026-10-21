@@ -12,6 +12,8 @@ import io.github.matteopi.budgeting.core.model.Receipt
 import io.github.matteopi.budgeting.core.model.TxKind
 import io.github.matteopi.budgeting.core.planner.day.DefaultTimeCategories
 import io.github.matteopi.budgeting.core.planner.model.ChecklistItem
+import io.github.matteopi.budgeting.core.planner.model.DeadlineType
+import io.github.matteopi.budgeting.core.planner.model.DismissedSuggestion
 import io.github.matteopi.budgeting.core.planner.model.EntryException
 import io.github.matteopi.budgeting.core.planner.model.Module
 import io.github.matteopi.budgeting.core.planner.model.GoalKind
@@ -22,6 +24,7 @@ import io.github.matteopi.budgeting.core.planner.model.HabitGoal
 import io.github.matteopi.budgeting.core.planner.model.PlanBlock
 import io.github.matteopi.budgeting.core.planner.model.RecordChunk
 import io.github.matteopi.budgeting.core.planner.model.RecordOrigin
+import io.github.matteopi.budgeting.core.planner.model.RevisionTopic
 import io.github.matteopi.budgeting.core.planner.model.Task
 import io.github.matteopi.budgeting.core.planner.model.TaskCompletion
 import io.github.matteopi.budgeting.core.planner.model.TaskKind
@@ -833,6 +836,92 @@ class MigrationTest {
             // Habits are archived rather than deleted, but their entries go with them if one is.
             db.openHelper.writableDatabase.execSQL("DELETE FROM planner_habits WHERE id = $id")
             assertTrue(dao.getAllEntries().isEmpty())
+        } finally {
+            db.close()
+        }
+    }
+
+    // ---- 8 -> 9: study suggestions (docs/PLAN.md §13.5) ---------------------------------------------
+
+    private val studyTables = listOf("planner_revision_topics", "planner_dismissed")
+
+    @Test
+    fun migratingFromVersion8To9KeepsTheHabitsAndAddsEmptyStudyTables() {
+        createVersion3Database()
+        helper.runMigrationsAndValidate(DB_NAME, 8, true).use { db ->
+            db.execSQL("INSERT INTO planner_categories (id, name, color_argb, system_key, rates_focus, archived, sort_order) VALUES (3, 'Exercise', 1, 'EXERCISE', 0, 0, 2)")
+            db.execSQL(
+                "INSERT INTO planner_habits (id, name, color_argb, goal_kind, target, unit, period, days, counting, category_id, min_minutes, streaks, " +
+                    "reminder_minute, term_only, paused_from, paused_until, suggest_slot, slot_minutes, slot_start_minute, slot_end_minute, start_date, " +
+                    "archived, sort_order) VALUES (1, 'Gym', 1, 'TIMES_PER_WEEK', 3, 'TIMES', 'WEEK', 0, 'BOTH', 3, 30, 1, 1095, 0, NULL, NULL, 0, NULL, " +
+                    "NULL, NULL, $day, 0, 0)",
+            )
+            db.execSQL("INSERT INTO planner_habit_entries (habit_id, date, amount, skipped) VALUES (1, $day, 1, 0)")
+        }
+
+        val db = helper.runMigrationsAndValidate(DB_NAME, 9, true)
+
+        assertVersion2RowsSurvived(db)
+        assertEquals(listOf("Gym"), db.strings("SELECT name FROM planner_habits"))
+        assertEquals(listOf(1L), db.longs("SELECT COUNT(*) FROM planner_habit_entries"))
+        val tables = db.strings("SELECT name FROM sqlite_master WHERE type = 'table'")
+        for (table in studyTables) {
+            assertTrue(table in tables, "the $table table exists; have $tables")
+            assertEquals(listOf(0L), db.longs("SELECT COUNT(*) FROM $table"), "$table starts empty")
+        }
+        assertEquals(setOf(Triple("planner_tasks", "exam_task_id", "CASCADE")), db.foreignKeys("planner_revision_topics").toSet())
+        assertTrue(db.foreignKeys("planner_dismissed").isEmpty())
+        db.execSQL(
+            "INSERT INTO planner_tasks (id, title, notes, kind, deadline_type, due_date, due_minute, length_minutes, estimate_minutes, " +
+                "priority, module_id, tags, repeat_kind, repeat_interval, repeat_days, reminder_minutes_before, parent_id, location, " +
+                "completed_at_millis, created_at_millis, sort_order) VALUES " +
+                "(1, 'EC101 exam', '', 'DEADLINE', 'EXAM', $day, 540, 120, NULL, 'MEDIUM', NULL, '', NULL, 1, 0, NULL, NULL, 'Hall', NULL, 1000, 0)",
+        )
+        db.execSQL("INSERT INTO planner_revision_topics (exam_task_id, name, difficulty, sort_order) VALUES (1, 'Elasticity', 3, 0)")
+        db.execSQL("INSERT INTO planner_dismissed (`key`, dismissed_at_millis) VALUES ('task:1@1000', 5000)")
+        assertEquals(listOf("Elasticity"), db.strings("SELECT name FROM planner_revision_topics"))
+        db.close()
+    }
+
+    @Test
+    fun migratingStraightFromVersion1To9RunsAllEightAutoMigrations() {
+        createVersion1Database()
+
+        val db = helper.runMigrationsAndValidate(DB_NAME, 9, true)
+
+        assertEquals(listOf(1L, 2L, 3L), db.longs("SELECT id FROM transactions ORDER BY id"))
+        val tables = db.strings("SELECT name FROM sqlite_master WHERE type = 'table'")
+        for (table in listOf("receipts", "products") + foodTables + "owned_items" + plannerTables + timetableTables + dayTables + habitTables +
+            studyTables) {
+            assertTrue(table in tables, "the $table table exists; have $tables")
+        }
+        db.close()
+    }
+
+    @Test
+    fun theVersion9FileOpensWithTheRealDatabaseClassAndTheStudyTablesWork() = runBlocking<Unit> {
+        createVersion3Database()
+        helper.runMigrationsAndValidate(DB_NAME, 9, true).close()
+
+        val db = Room.databaseBuilder(context, BudgetDatabase::class.java, DB_NAME).build()
+        try {
+            val dao = db.studyDao()
+            val examId = db.plannerDao().saveTask(Task(title = "EC101 exam", kind = TaskKind.DEADLINE, deadlineType = DeadlineType.EXAM).toEntity(), emptyList())
+            val topic = RevisionTopic(examTaskId = examId, name = "Elasticity", difficulty = 3, sortOrder = 0)
+            val topicId = dao.insertTopic(topic.toEntity())
+            assertEquals(listOf(topic.copy(id = topicId)), dao.getTopics().map { it.toModel() })
+
+            // A key dismissed twice keeps one row, and old ones are pruned.
+            dao.dismiss(DismissedSuggestion("task:$examId@1000", Instant.ofEpochMilli(5_000)).toEntity())
+            dao.dismiss(DismissedSuggestion("task:$examId@1000", Instant.ofEpochMilli(6_000)).toEntity())
+            dao.dismiss(DismissedSuggestion("module:1@2000", Instant.ofEpochMilli(9_000)).toEntity())
+            assertEquals(listOf(6_000L, 9_000L), dao.getDismissed().map { it.dismissedAtMillis }.sorted())
+            dao.pruneDismissed(before = 7_000)
+            assertEquals(listOf("module:1@2000"), dao.getDismissed().map { it.key })
+
+            // Topics go with their exam.
+            db.plannerDao().deleteTask(examId)
+            assertTrue(dao.getTopics().isEmpty())
         } finally {
             db.close()
         }

@@ -57,6 +57,7 @@ import io.github.matteopi.budgeting.core.planner.day.DefaultTimeCategories
 import io.github.matteopi.budgeting.core.planner.day.EditPlan
 import io.github.matteopi.budgeting.core.planner.model.CalendarLink
 import io.github.matteopi.budgeting.core.planner.model.ChecklistItem
+import io.github.matteopi.budgeting.core.planner.model.DeadlineType
 import io.github.matteopi.budgeting.core.planner.model.Module
 import io.github.matteopi.budgeting.core.planner.model.CategoryKey
 import io.github.matteopi.budgeting.core.planner.model.GoalKind
@@ -68,11 +69,14 @@ import io.github.matteopi.budgeting.core.planner.model.PlanBlock
 import io.github.matteopi.budgeting.core.planner.model.RecordChunk
 import io.github.matteopi.budgeting.core.planner.model.RecordOrigin
 import io.github.matteopi.budgeting.core.planner.model.RepeatKind
+import io.github.matteopi.budgeting.core.planner.model.RevisionTopic
 import io.github.matteopi.budgeting.core.planner.model.Task
 import io.github.matteopi.budgeting.core.planner.model.TaskKind
 import io.github.matteopi.budgeting.core.planner.model.TaskRepeat
 import io.github.matteopi.budgeting.core.planner.model.TimetableEntry
 import io.github.matteopi.budgeting.core.planner.model.WeekPattern
+import io.github.matteopi.budgeting.core.planner.suggest.StudyPrefs
+import io.github.matteopi.budgeting.core.planner.suggest.TimeWindow
 import io.github.matteopi.budgeting.core.planner.todo.BreakdownTemplate
 import io.github.matteopi.budgeting.core.planner.todo.BreakdownTemplates
 import io.github.matteopi.budgeting.core.planner.todo.TemplateStep
@@ -547,6 +551,8 @@ class BackupRoundTripTest {
         plannerDayReviews = plannerDayReviews.sortedBy { it.date },
         plannerHabits = plannerHabits.sortedBy { it.id },
         plannerHabitEntries = plannerHabitEntries.sortedBy { it.id },
+        plannerRevisionTopics = plannerRevisionTopics.sortedBy { it.id },
+        plannerDismissed = plannerDismissed.sortedBy { it.key },
     )
 
     /** Table by table (so a failure names the table), ignoring row order but not ids. */
@@ -590,6 +596,8 @@ class BackupRoundTripTest {
         assertEquals(e.plannerDayReviews, a.plannerDayReviews, "day reviews")
         assertEquals(e.plannerHabits, a.plannerHabits, "habits")
         assertEquals(e.plannerHabitEntries, a.plannerHabitEntries, "habits' days")
+        assertEquals(e.plannerRevisionTopics, a.plannerRevisionTopics, "exams' revision topics")
+        assertEquals(e.plannerDismissed, a.plannerDismissed, "dismissed suggestions")
         assertEquals(e.settings, a.settings, "budget settings")
     }
 
@@ -864,17 +872,17 @@ class BackupRoundTripTest {
     }
 
     @Test
-    fun theExportedFileIsVersion8AndCarriesTheFoodAndPlannerLists() = runBlocking<Unit> {
+    fun theExportedFileIsVersion9AndCarriesTheFoodAndPlannerLists() = runBlocking<Unit> {
         populateEverything()
 
         val json = BackupViewModel(container).buildExportJson()
 
-        assertTrue("\"version\": 8" in json, "the file says it is version 8")
+        assertTrue("\"version\": 9" in json, "the file says it is version 9")
         for (list in listOf(
             "ingredients", "ingredientPortions", "ingredientAliases", "recipes", "recipeLines", "recipeSteps", "shoppingEntries",
             "shoppingMarks", "ownedItems", "plannerModules", "plannerTasks", "plannerChecklist", "plannerCompletions",
             "plannerEntries", "plannerEntryExceptions", "plannerCalendarLinks", "plannerCategories", "plannerPlanBlocks", "plannerRecords",
-            "plannerDayReviews", "plannerHabits", "plannerHabitEntries",
+            "plannerDayReviews", "plannerHabits", "plannerHabitEntries", "plannerRevisionTopics", "plannerDismissed",
         )) {
             assertTrue("\"$list\": [" in json, "the file has a \"$list\" list")
         }
@@ -899,8 +907,9 @@ class BackupRoundTripTest {
 
     /**
      * The Planner (docs/PLAN.md §13.5): modules, a deadline with steps and a checklist, a repeating task and the Done
-     * log, the timetable (an entry for one term, with a cancelled week), a calendar link, the day record and habits
-     * survive export and restore into an empty database, as do the reminder time and the user's templates.
+     * log, the timetable (an entry for one term, with a cancelled week), a calendar link, the day record, habits, an
+     * exam's revision topics and a dismissed suggestion survive export and restore into an empty database, as do the
+     * reminder time, the user's templates and how study is suggested.
      */
     @Test
     fun thePlannerSurvivesBackupAndRestore() = runBlocking<Unit> {
@@ -959,7 +968,22 @@ class BackupRoundTripTest {
         )
         container.habitRepository.setArchived(read, true)
 
+        // Study suggestions: an exam's topics, a dismissed time, the preferences and a day off.
+        val examId = container.taskRepository.save(
+            Task(title = "EC101 exam", kind = TaskKind.DEADLINE, deadlineType = DeadlineType.EXAM, dueDate = today.plusDays(30), moduleId = moduleId),
+        )
+        container.suggestionRepository.saveTopic(RevisionTopic(examTaskId = examId, name = "Elasticity", difficulty = 3))
+        container.suggestionRepository.saveTopic(RevisionTopic(examTaskId = examId, name = "Game theory"))
+        container.suggestionRepository.dismiss("module:$moduleId@${start.toEpochMilli()}")
+        val studyPrefs = StudyPrefs(
+            preferred = listOf(TimeWindow(9 * 60, 12 * 60)), longestMinutes = 60, weeklyDaysOff = listOf(7), offModules = listOf(moduleId),
+        )
+        container.settingsStore.setPlannerStudy(studyPrefs)
+        container.settingsStore.setPlannerDaysOff(setOf(today.plusDays(3)), today)
+
         val original = container.backupRepository.readAll()
+        assertEquals(listOf("Elasticity", "Game theory"), original.plannerRevisionTopics.map { it.name })
+        assertEquals(1, original.plannerDismissed.size)
         assertEquals(2, original.plannerHabits.size)
         assertEquals(2, original.plannerHabitEntries.size)
         assertEquals(1, original.plannerRecords.size)
@@ -970,7 +994,7 @@ class BackupRoundTripTest {
         assertEquals(1, original.plannerEntryExceptions.size)
         assertEquals(1, original.plannerCalendarLinks.size)
         assertEquals(1, original.plannerModules.size)
-        assertEquals(2 + stepIds.size, original.plannerTasks.size)
+        assertEquals(3 + stepIds.size, original.plannerTasks.size)
         assertEquals(2, original.plannerCompletions.size)
         val json = BackupViewModel(container).buildExportJson()
         val success = decodeOrFail(json)
@@ -978,12 +1002,16 @@ class BackupRoundTripTest {
         clearDatabase()
         container.settingsStore.resetBreakdownTemplates()
         container.settingsStore.setPlannerReminders(PlannerReminderSettings())
+        container.settingsStore.setPlannerStudy(StudyPrefs())
+        container.settingsStore.setPlannerDaysOff(emptySet(), today)
         assertTrue(container.backupRepository.readAll().plannerTasks.isEmpty())
         BackupViewModel(container).confirmRestore(success)
 
         assertSameBackup(original, container.backupRepository.readAll())
         assertEquals(mine, container.settingsStore.breakdownTemplates.first())
         assertEquals(8 * 60, container.settingsStore.plannerReminders.first().taskMinute)
+        assertEquals(studyPrefs, container.settingsStore.plannerStudy.first())
+        assertEquals(setOf(today.plusDays(3)), container.settingsStore.plannerDaysOff.first())
         val restoredSteps = container.taskRepository.observeSteps(essayId).first()
         assertEquals(stepIds, restoredSteps.map { it.id }, "the steps keep their ids and order")
         assertEquals(listOf("Brief", "Sources"), container.taskRepository.getTask(essayId)?.checklist?.map { it.text })

@@ -13,8 +13,10 @@ import io.github.matteopi.budgeting.ui.planner.habits.HabitsScreen
 import io.github.matteopi.budgeting.ui.planner.settings.CalendarsScreen
 import io.github.matteopi.budgeting.ui.planner.settings.CategoriesScreen
 import io.github.matteopi.budgeting.ui.planner.settings.DaySettingsScreen
+import io.github.matteopi.budgeting.ui.planner.settings.FreeTimeSettingsScreen
 import io.github.matteopi.budgeting.ui.planner.settings.ModulesScreen
 import io.github.matteopi.budgeting.ui.planner.settings.PlannerSettingsScreen
+import io.github.matteopi.budgeting.ui.planner.settings.StudySettingsScreen
 import io.github.matteopi.budgeting.ui.planner.settings.TemplatesScreen
 import io.github.matteopi.budgeting.ui.planner.task.TaskDetailScreen
 import io.github.matteopi.budgeting.ui.planner.task.TaskEditScreen
@@ -51,6 +53,7 @@ fun NavGraphBuilder.plannerDestinations(navController: NavHostController) {
             onAddEntry = { navController.navigate(Route.EntryEdit()) },
             onEditEntry = { id -> navController.navigate(Route.EntryEdit(entryId = id)) },
             onOpenTask = openTask,
+            onOpenDay = { date -> navController.navigate(Route.Day(epochDay = date.toEpochDay())) },
         )
     }
     composable<Route.Todo> {
@@ -125,7 +128,15 @@ fun NavGraphBuilder.plannerDestinations(navController: NavHostController) {
             onOpenCalendars = { navController.navigate(Route.PlannerCalendars) },
             onOpenDaySettings = { navController.navigate(Route.PlannerDaySettings) },
             onOpenCategories = { navController.navigate(Route.PlannerCategories) },
+            onOpenFreeTime = { navController.navigate(Route.PlannerFreeTime) },
+            onOpenStudy = { navController.navigate(Route.PlannerStudy) },
         )
+    }
+    composable<Route.PlannerFreeTime> {
+        FreeTimeSettingsScreen(onBack = { navController.popBackStack() })
+    }
+    composable<Route.PlannerStudy> {
+        StudySettingsScreen(onBack = { navController.popBackStack() })
     }
     composable<Route.Modules> {
         ModulesScreen(onBack = { navController.popBackStack() })

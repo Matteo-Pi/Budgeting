@@ -15,6 +15,7 @@ import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.model.ZeroPoint
 import io.github.matteopi.budgeting.core.planner.day.DaySettings
 import io.github.matteopi.budgeting.core.planner.freetime.FreeSettings
+import io.github.matteopi.budgeting.core.planner.suggest.StudyPrefs
 import io.github.matteopi.budgeting.core.planner.todo.BreakdownTemplate
 import java.time.DayOfWeek
 import java.time.Instant
@@ -33,6 +34,8 @@ const val PLANNER_REMINDERS_BACKUP_KEY = "plannerReminders"
 const val PLANNER_TEMPLATES_BACKUP_KEY = "plannerTemplates"
 const val PLANNER_DAY_BACKUP_KEY = "plannerDay"
 const val PLANNER_FREE_BACKUP_KEY = "plannerFree"
+const val PLANNER_STUDY_BACKUP_KEY = "plannerStudy"
+const val PLANNER_DAYS_OFF_BACKUP_KEY = "plannerDaysOff"
 
 /** Preferences DataStore named "settings". See docs/PLAN.md §6.3 for the key list. */
 class SettingsStore(context: Context) {
@@ -317,6 +320,11 @@ class SettingsStore(context: Context) {
         dataStore.edit { it[PlannerKeys.FREE] = PlannerSettingsCodec.encodeFree(settings) }
     }
 
+    /** Changes the free-time settings in one step, so quick changes in a row don't undo each other. */
+    suspend fun updatePlannerFree(change: (FreeSettings) -> FreeSettings) {
+        dataStore.edit { it[PlannerKeys.FREE] = PlannerSettingsCodec.encodeFree(change(PlannerSettingsCodec.decodeFree(it[PlannerKeys.FREE]))) }
+    }
+
     /** The running timer, or null (device-specific: not in backups). */
     val plannerTimer: Flow<TimerState?> = dataStore.data.map { prefs -> PlannerSettingsCodec.decodeTimer(prefs[PlannerKeys.TIMER]) }
         .distinctUntilChanged()
@@ -324,6 +332,35 @@ class SettingsStore(context: Context) {
     suspend fun setPlannerTimer(state: TimerState?) {
         dataStore.edit { prefs ->
             if (state == null) prefs.remove(PlannerKeys.TIMER) else prefs[PlannerKeys.TIMER] = PlannerSettingsCodec.encodeTimer(state)
+        }
+    }
+
+    /** How study is suggested (docs/PLAN.md §13.6). In backups. */
+    val plannerStudy: Flow<StudyPrefs> = dataStore.data.map { prefs -> PlannerSettingsCodec.decodeStudy(prefs[PlannerKeys.STUDY]) }
+        .distinctUntilChanged()
+
+    suspend fun setPlannerStudy(prefs: StudyPrefs) {
+        dataStore.edit { it[PlannerKeys.STUDY] = PlannerSettingsCodec.encodeStudy(prefs) }
+    }
+
+    /** Changes how study is suggested in one step, so quick changes in a row don't undo each other. */
+    suspend fun updatePlannerStudy(change: (StudyPrefs) -> StudyPrefs) {
+        dataStore.edit { it[PlannerKeys.STUDY] = PlannerSettingsCodec.encodeStudy(change(PlannerSettingsCodec.decodeStudy(it[PlannerKeys.STUDY]))) }
+    }
+
+    /** Dates switched off for suggestions; past ones are dropped when the set is next written. In backups. */
+    val plannerDaysOff: Flow<Set<LocalDate>> = dataStore.data.map { prefs -> PlannerSettingsCodec.decodeDaysOff(prefs[PlannerKeys.DAYS_OFF]) }
+        .distinctUntilChanged()
+
+    suspend fun setPlannerDaysOff(days: Set<LocalDate>, today: LocalDate) {
+        dataStore.edit { it[PlannerKeys.DAYS_OFF] = PlannerSettingsCodec.encodeDaysOff(days.filter { d -> !d.isBefore(today) }.toSet()) }
+    }
+
+    /** Switches [date] off for suggestions, or back on, in one step; past days are dropped. */
+    suspend fun setPlannerDayOff(date: LocalDate, off: Boolean, today: LocalDate) {
+        dataStore.edit { prefs ->
+            val days = PlannerSettingsCodec.decodeDaysOff(prefs[PlannerKeys.DAYS_OFF]).let { if (off) it + date else it - date }
+            prefs[PlannerKeys.DAYS_OFF] = PlannerSettingsCodec.encodeDaysOff(days.filter { d -> !d.isBefore(today) }.toSet())
         }
     }
 
@@ -335,6 +372,8 @@ class SettingsStore(context: Context) {
             prefs[PlannerKeys.TEMPLATES]?.let { put(PLANNER_TEMPLATES_BACKUP_KEY, it) }
             prefs[PlannerKeys.DAY]?.let { put(PLANNER_DAY_BACKUP_KEY, it) }
             prefs[PlannerKeys.FREE]?.let { put(PLANNER_FREE_BACKUP_KEY, it) }
+            prefs[PlannerKeys.STUDY]?.let { put(PLANNER_STUDY_BACKUP_KEY, it) }
+            prefs[PlannerKeys.DAYS_OFF]?.let { put(PLANNER_DAYS_OFF_BACKUP_KEY, it) }
         }
     }
 
@@ -348,6 +387,8 @@ class SettingsStore(context: Context) {
             map[PLANNER_TEMPLATES_BACKUP_KEY]?.let { prefs[PlannerKeys.TEMPLATES] = it }
             map[PLANNER_DAY_BACKUP_KEY]?.let { prefs[PlannerKeys.DAY] = it }
             map[PLANNER_FREE_BACKUP_KEY]?.let { prefs[PlannerKeys.FREE] = it }
+            map[PLANNER_STUDY_BACKUP_KEY]?.let { prefs[PlannerKeys.STUDY] = it }
+            map[PLANNER_DAYS_OFF_BACKUP_KEY]?.let { prefs[PlannerKeys.DAYS_OFF] = it }
         }
     }
 
@@ -358,6 +399,8 @@ class SettingsStore(context: Context) {
         val CALENDARS = stringPreferencesKey("planner_calendars")
         val DAY = stringPreferencesKey("planner_day")
         val FREE = stringPreferencesKey("planner_free")
+        val STUDY = stringPreferencesKey("planner_study")
+        val DAYS_OFF = stringPreferencesKey("planner_days_off")
         val TIMER = stringPreferencesKey("planner_timer")
     }
 

@@ -20,6 +20,7 @@ import io.github.matteopi.budgeting.data.repo.TransactionRepository
 import io.github.matteopi.budgeting.data.repo.planner.DayRepository
 import io.github.matteopi.budgeting.data.repo.planner.HabitRepository
 import io.github.matteopi.budgeting.data.repo.planner.ModuleRepository
+import io.github.matteopi.budgeting.data.repo.planner.SuggestionRepository
 import io.github.matteopi.budgeting.data.repo.planner.TaskRepository
 import io.github.matteopi.budgeting.data.repo.planner.TimetableRepository
 import io.github.matteopi.budgeting.data.settings.SettingsStore
@@ -31,6 +32,7 @@ import io.github.matteopi.budgeting.domain.planner.PlannerCalendarSync
 import io.github.matteopi.budgeting.domain.planner.HabitService
 import io.github.matteopi.budgeting.domain.planner.PlannerService
 import io.github.matteopi.budgeting.domain.planner.PlannerTimer
+import io.github.matteopi.budgeting.domain.planner.SuggestionService
 import io.github.matteopi.budgeting.ui.food.timers.CookingTimers
 import io.github.matteopi.budgeting.widget.WidgetUpdater
 import io.github.matteopi.budgeting.widget.planner.PlannerWidget
@@ -183,6 +185,13 @@ class AppContainer(context: Context) {
         clock = clock,
     )
 
+    val suggestionRepository: SuggestionRepository = SuggestionRepository(
+        studyDao = database.studyDao(),
+        dayRepository = dayRepository,
+        clock = clock,
+        plannerUpdater = plannerUpdater,
+    )
+
     /** The phone's calendars (docs/PLAN.md §13.7): read offline, and written to only when the user turns it on. */
     val calendarAccess = CalendarAccess(context.applicationContext)
 
@@ -199,6 +208,7 @@ class AppContainer(context: Context) {
         taskRepository = taskRepository,
         timetableRepository = timetableRepository,
         planRepository = planRepository,
+        dayRepository = dayRepository,
         clock = clock,
     )
 
@@ -221,6 +231,20 @@ class AppContainer(context: Context) {
         taskRepository = taskRepository,
         planRepository = planRepository,
         plannerCalendar = plannerCalendar,
+        settingsStore = settingsStore,
+        clock = clock,
+    )
+
+    /** Suggested study time (docs/PLAN.md §13.9), for Today and the timetable. */
+    val suggestionService = SuggestionService(
+        dayRepository = dayRepository,
+        timetableRepository = timetableRepository,
+        taskRepository = taskRepository,
+        planRepository = planRepository,
+        moduleRepository = moduleRepository,
+        suggestionRepository = suggestionRepository,
+        plannerCalendar = plannerCalendar,
+        habitService = habitService,
         settingsStore = settingsStore,
         clock = clock,
     )
@@ -256,6 +280,7 @@ class AppContainer(context: Context) {
         timetableDao = database.timetableDao(),
         dayDao = database.dayDao(),
         habitDao = database.habitDao(),
+        studyDao = database.studyDao(),
         settingsStore = settingsStore,
         widgetUpdater = widgetUpdater,
         plannerUpdater = plannerUpdater,

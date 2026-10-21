@@ -48,9 +48,11 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,6 +64,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -113,6 +117,7 @@ fun TimetableScreen(
     onAddEntry: () -> Unit,
     onEditEntry: (Long) -> Unit,
     onOpenTask: (Long) -> Unit,
+    onOpenDay: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TimetableViewModel = viewModel(factory = TimetableViewModel.Factory),
 ) {
@@ -126,6 +131,14 @@ fun TimetableScreen(
     var menuOpen by remember { mutableStateOf(false) }
     // The calendar permission can change in Android's settings while the app is away.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshCalendar() }
+    LaunchedEffect(viewModel) {
+        viewModel.eventFlow.collect { event ->
+            scope.launch {
+                val result = snackbarHostState.showSnackbar(event.message, actionLabel = "Undo")
+                if (result == SnackbarResult.ActionPerformed) viewModel.undo(event)
+            }
+        }
+    }
 
     val clashes = state.week?.clashes.orEmpty()
     Scaffold(
@@ -232,6 +245,18 @@ fun TimetableScreen(
             onOpenTask = {
                 selected = null
                 item.taskId?.let(onOpenTask)
+            },
+            onOpenDay = {
+                selected = null
+                onOpenDay(item.date)
+            },
+            onAccept = {
+                selected = null
+                viewModel.acceptSuggestion(item)
+            },
+            onAnotherTime = {
+                selected = null
+                viewModel.anotherTime(item)
             },
             onOpenEvent = {
                 selected = null
@@ -350,6 +375,7 @@ private fun WeekGrid(week: WeekUi, onItem: (TimetableItemUi) -> Unit, onDay: (Lo
                         val height = (HOUR_HEIGHT * ((item.endMinute - item.startMinute) / 60f)).coerceAtLeast(18.dp)
                         val colour = itemColour(item, primary)
                         val cancelled = item.kind == ItemKind.CANCELLED
+                        val suggested = item.kind == ItemKind.SUGGESTION
                         Box(
                             modifier = Modifier
                                 .offset(x = laneWidth * item.lane, y = top)
@@ -357,8 +383,23 @@ private fun WeekGrid(week: WeekUi, onItem: (TimetableItemUi) -> Unit, onDay: (Lo
                                 .height(height)
                                 .padding(1.dp)
                                 .clip(RoundedCornerShape(4.dp))
-                                .background(if (cancelled) MaterialTheme.colorScheme.surfaceVariant else colour.copy(alpha = 0.22f))
-                                .drawBehind { if (!cancelled) drawRect(colour, size = size.copy(width = 3.dp.toPx())) }
+                                .background(
+                                    when {
+                                        cancelled -> MaterialTheme.colorScheme.surfaceVariant
+                                        suggested -> Color.Transparent
+                                        else -> colour.copy(alpha = 0.22f)
+                                    },
+                                )
+                                .drawBehind {
+                                    when {
+                                        // A suggestion is a dashed outline until it is accepted.
+                                        suggested -> drawRect(
+                                            colour,
+                                            style = Stroke(width = 1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f))),
+                                        )
+                                        !cancelled -> drawRect(colour, size = size.copy(width = 3.dp.toPx()))
+                                    }
+                                }
                                 .testTag(TimetableTags.ITEM)
                                 .semantics { contentDescription = describe(item) + if (cancelled) ", cancelled" else "" }
                                 .clickable(role = Role.Button) { onItem(item) }
@@ -471,6 +512,9 @@ private fun ItemSheet(
     onEdit: () -> Unit,
     onOpenTask: () -> Unit,
     onOpenEvent: () -> Unit,
+    onOpenDay: () -> Unit,
+    onAccept: () -> Unit,
+    onAnotherTime: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(modifier = Modifier.fillMaxWidth().testTag(TimetableTags.SHEET).padding(horizontal = 24.dp, vertical = 8.dp)) {
@@ -496,6 +540,11 @@ private fun ItemSheet(
                 }
                 ItemKind.EVENT -> TextButton(onClick = onOpenEvent) { Text("Open in your calendar") }
                 ItemKind.EXAM, ItemKind.TASK -> TextButton(onClick = onOpenTask) { Text("Open") }
+                ItemKind.PLAN -> TextButton(onClick = onOpenDay) { Text("Open the day") }
+                ItemKind.SUGGESTION -> {
+                    TextButton(onClick = onAccept) { Text("Accept") }
+                    TextButton(onClick = onAnotherTime) { Text("Another time") }
+                }
             }
             Spacer(Modifier.height(24.dp))
         }
