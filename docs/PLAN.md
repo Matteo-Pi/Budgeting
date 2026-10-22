@@ -3343,7 +3343,9 @@ committed. Settled while building (also in §13.4):
     - a limit habit going over.
 
 **P5: free time settings and study suggestions (Room 9, backup 9)**
-**Status (2026-10-21)**: built; waiting for CI. Settled while building:
+**Status (2026-10-22)**: built and published as build 78 (459 of 459 device tests, with P6). The first two runs failed
+only `SuggestionsTest`'s check of the day editor, which names a plan "Study · EC101" with its time after two spaces.
+`9.json` is committed. Settled while building:
 - *Another time* dismisses the suggestion's key (kept 30 days, pruned by the daily worker). The planner passes over the
   whole dismissed block, so the next run offers the time after it. Moving an accepted block is done in the day
   editor;
@@ -3375,7 +3377,8 @@ committed. Settled while building (also in §13.4):
     - a day off clearing the day.
 
 **P6: Insights and the weekly review (no schema change)**
-**Status (2026-10-22)**: built; waiting for CI. Settled while building (also in §13.4):
+**Status (2026-10-22)**: built and published as build 78 (459 of 459 device tests). The weekly review also opens from
+the Insights top bar: the test's tap on the list's last item didn't register. Settled while building (also in §13.4):
 - `Period` (whole days) carries a week, a month and "the period before" (the same number of days);
 - the tips look at the 28 days to today; the phone tip compares the last 7 days with the 7 before. Best hours'
   "below it" is below the overall mean, and each shorter-blocks branch needs 3 samples;
