@@ -49,7 +49,7 @@ class PlannerAlarms(
     /** False when Android refuses exact alarms, so reminders may come a few minutes late. */
     fun exactAlarmsAllowed(): Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
 
-    /** Every reminder the Planner has now: tasks, habits, the end-of-day review, and the widget's next class changes. */
+    /** Every reminder the Planner has now: tasks, habits, the end-of-day and weekly reviews, and the widget's next class changes. */
     suspend fun reminders(): List<Reminder> {
         val settings = settingsStore.plannerReminders.first()
         val zone = clock.zone()
@@ -62,6 +62,7 @@ class PlannerAlarms(
         return ReminderPlan.taskReminders(taskRepository.getOpenTasks(), settings.taskTime, zone, today) +
             ReminderPlan.habitReminders(habits.statuses, habits.today, zone) +
             ReminderPlan.dayReviewReminders(settings.reviewTime, dayRepository.getReviews(today, today.plusDays(1)), today, zone) +
+            ReminderPlan.weeklyReviewReminders(settings.weeklyDayOfWeek, settings.weeklyTime, today, zone) +
             ReminderPlan.widgetRefreshes(occurrences, Instant.ofEpochMilli(clock.nowMillis()))
     }
 

@@ -3375,6 +3375,21 @@ committed. Settled while building (also in §13.4):
     - a day off clearing the day.
 
 **P6: Insights and the weekly review (no schema change)**
+**Status (2026-10-22)**: built; waiting for CI. Settled while building (also in §13.4):
+- `Period` (whole days) carries a week, a month and "the period before" (the same number of days);
+- the tips look at the 28 days to today; the phone tip compares the last 7 days with the 7 before. Best hours'
+  "below it" is below the overall mean, and each shorter-blocks branch needs 3 samples;
+- a deadline is at risk when the minutes a day recorded on it over the last 7 days, from today to the due date,
+  fall short of the work left;
+- the weekly review up to Wednesday reviews last week and plans this one; from Thursday it reviews this week and
+  plans the next. *Accept all* is one change with one Undo; *Move* takes `StudyPlanner.alternatives` (the other
+  free pieces for the demand, best first) and plans the suggestion there;
+- the weekly review reminds on Sunday at 19:00 by default (`planner_reminders`: on, ISO day, minute), on the reviews
+  channel, and opens `Route.WeeklyReview`;
+- the day bars name the period's 4 biggest categories in their own colours and order, with everything else in
+  grey: the default category colours fail the palette check as an 11-hue chart palette (Study and Lecture are both
+  blue), so the rows below the bars carry each name and number, and a tap shows the day's figures;
+- the timetable draws planned blocks (P5's accepted suggestions included) with *Open the day*.
 - **Core**: `TimeInsights`, `StudyInsights`, `FocusInsights`, `HabitInsights`, `EfficiencyRules`,
   `WeeklyReview`, `ReminderPlan` (weekly).
 - **App**: the Insights tab, the weekly review screen and its notification.

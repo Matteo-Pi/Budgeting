@@ -30,6 +30,7 @@ import io.github.matteopi.budgeting.domain.PostingService
 import io.github.matteopi.budgeting.domain.planner.PlannerCalendar
 import io.github.matteopi.budgeting.domain.planner.PlannerCalendarSync
 import io.github.matteopi.budgeting.domain.planner.HabitService
+import io.github.matteopi.budgeting.domain.planner.InsightsService
 import io.github.matteopi.budgeting.domain.planner.PlannerService
 import io.github.matteopi.budgeting.domain.planner.PlannerTimer
 import io.github.matteopi.budgeting.domain.planner.SuggestionService
@@ -244,6 +245,18 @@ class AppContainer(context: Context) {
         moduleRepository = moduleRepository,
         suggestionRepository = suggestionRepository,
         plannerCalendar = plannerCalendar,
+        habitService = habitService,
+        settingsStore = settingsStore,
+        clock = clock,
+    )
+
+    /** The Planner's Insights tab (docs/PLAN.md §13.9). */
+    val insightsService = InsightsService(
+        dayRepository = dayRepository,
+        timetableRepository = timetableRepository,
+        taskRepository = taskRepository,
+        planRepository = planRepository,
+        moduleRepository = moduleRepository,
         habitService = habitService,
         settingsStore = settingsStore,
         clock = clock,

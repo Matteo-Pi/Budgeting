@@ -24,13 +24,15 @@ object PlannerNotifications {
 
     /**
      * `MainActivity` opens the Planner on this action: [EXTRA_TASK_ID] picks a task, [EXTRA_HABIT_ID] a habit,
-     * [EXTRA_REVIEW_DATE] (an epoch day) opens that day's review, and [EXTRA_TODAY] the Today tab.
+     * [EXTRA_REVIEW_DATE] (an epoch day) opens that day's review, [EXTRA_WEEKLY_REVIEW] the weekly review, and
+     * [EXTRA_TODAY] the Today tab.
      */
     const val ACTION_OPEN_PLANNER = "io.github.matteopi.budgeting.OPEN_PLANNER"
     const val EXTRA_TASK_ID = "planner_task_id"
     const val EXTRA_HABIT_ID = "planner_habit_id"
     const val EXTRA_REVIEW_DATE = "planner_review_date"
     const val EXTRA_TODAY = "planner_today"
+    const val EXTRA_WEEKLY_REVIEW = "planner_weekly_review"
 
     /** The running timer's notification, one at a time. */
     const val TIMER_NOTIFICATION_ID = 7302
@@ -44,7 +46,7 @@ object PlannerNotifications {
         )
         manager.createNotificationChannel(
             NotificationChannel(REVIEWS_CHANNEL_ID, "Planner reviews", NotificationManager.IMPORTANCE_DEFAULT).apply {
-                description = "The end-of-day review, at the time you chose."
+                description = "The end-of-day and weekly reviews, at the times you chose."
             },
         )
         manager.createNotificationChannel(
@@ -98,10 +100,11 @@ object PlannerNotifications {
     fun post(context: Context, reminder: Reminder) {
         if (!canPost(context) || reminder.kind == ReminderKind.WIDGET) return
         val id = idOf(reminder)
-        val review = reminder.kind == ReminderKind.DAY_REVIEW
+        val review = reminder.kind == ReminderKind.DAY_REVIEW || reminder.kind == ReminderKind.WEEKLY_REVIEW
         val open = openIntent(context) {
             when (reminder.kind) {
                 ReminderKind.DAY_REVIEW -> putExtra(EXTRA_REVIEW_DATE, reminder.itemId)
+                ReminderKind.WEEKLY_REVIEW -> putExtra(EXTRA_WEEKLY_REVIEW, true)
                 ReminderKind.HABIT -> putExtra(EXTRA_HABIT_ID, reminder.itemId)
                 else -> putExtra(EXTRA_TASK_ID, reminder.itemId)
             }

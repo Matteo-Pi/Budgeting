@@ -8,6 +8,7 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,11 +51,13 @@ import io.github.matteopi.budgeting.data.settings.PlannerCalendarSettings
 import io.github.matteopi.budgeting.ui.planner.components.TimeField
 import io.github.matteopi.budgeting.work.planner.PlannerNotifications
 import java.time.DayOfWeek
+import java.time.format.TextStyle
+import java.util.Locale
 
 /**
  * The Planner's settings (docs/PLAN.md §12.11), opened from the gear on every Planner tab: modules, breakdown
- * templates, the day and its categories, term dates, calendars, and reminders with the end-of-day review. Later
- * builds add free time and study suggestions.
+ * templates, the day and its categories, free time, suggested study, term dates, calendars, and reminders with the
+ * end-of-day and weekly reviews.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -172,6 +176,33 @@ fun PlannerSettingsScreen(
                     label = "Review reminder time",
                     time = state.reminders.reviewTime,
                     onTimeChange = { time -> if (time != null) viewModel.setReviewTime(time) },
+                )
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Weekly review")
+                    Text(
+                        "How the week went, then next week's suggested study to accept in one place.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(checked = state.reminders.weeklyOn, onCheckedChange = viewModel::setWeeklyOn)
+            }
+            if (!state.loading && state.reminders.weeklyOn) {
+                Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    DayOfWeek.entries.forEach { day ->
+                        FilterChip(
+                            selected = state.reminders.weeklyDayOfWeek == day,
+                            onClick = { viewModel.setWeeklyDay(day) },
+                            label = { Text(day.getDisplayName(TextStyle.SHORT, Locale.ENGLISH)) },
+                        )
+                    }
+                }
+                TimeField(
+                    label = "Weekly review time",
+                    time = state.reminders.weeklyTime,
+                    onTimeChange = { time -> if (time != null) viewModel.setWeeklyTime(time) },
                 )
             }
             if (!canNotify) {

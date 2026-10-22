@@ -46,13 +46,17 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 
-/** The coming fortnight's suggestions (docs/PLAN.md §12.7), with what accepting one needs. */
+/**
+ * The coming fortnight's suggestions (docs/PLAN.md §12.7), with what accepting one needs and the planner's [input], from
+ * which the weekly review's *Move* finds other times.
+ */
 data class SuggestionsModel(
     val today: LocalDate,
     val suggestions: List<Suggestion>,
     val studyCategoryId: Long?,
     val prefs: StudyPrefs,
     val daysOff: Set<LocalDate>,
+    val input: StudyInput? = null,
 )
 
 /**
@@ -141,20 +145,18 @@ class SuggestionService(
                     habits = habits.statuses,
                     plannedByHabit = totals.plannedByHabit,
                 )
-                val suggestions = StudyPlanner.suggest(
-                    StudyInput(
-                        now = now,
-                        zone = zone,
-                        free = FreeTime.unplanned(free, st.plans),
-                        demands = demands,
-                        prefs = s.study,
-                        dismissed = pl.dismissed,
-                        daysOff = s.daysOff,
-                        usedByDay = totals.usedByDay,
-                        focus = FocusProfile.from(st.records, st.plans, study, now, zone),
-                    ),
+                val input = StudyInput(
+                    now = now,
+                    zone = zone,
+                    free = FreeTime.unplanned(free, st.plans),
+                    demands = demands,
+                    prefs = s.study,
+                    dismissed = pl.dismissed,
+                    daysOff = s.daysOff,
+                    usedByDay = totals.usedByDay,
+                    focus = FocusProfile.from(st.records, st.plans, study, now, zone),
                 )
-                SuggestionsModel(today, suggestions, study.firstOrNull(), s.study, s.daysOff)
+                SuggestionsModel(today, StudyPlanner.suggest(input), study.firstOrNull(), s.study, s.daysOff, input)
             }
         }
         .debounce(300)

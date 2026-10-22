@@ -118,6 +118,23 @@ object StudyPlanner {
         return out.sortedBy { it.interval.start }
     }
 
+    /**
+     * Where [suggestion] could move instead (docs/PLAN.md §13.9, the weekly review's *Move*): the free pieces the
+     * planner would use for its demand, best first, with the time of [others] (the other suggestions) taken out. Each
+     * is as long as the suggestion and starts its piece; its own time is not offered.
+     */
+    fun alternatives(input: StudyInput, suggestion: Suggestion, others: List<Suggestion>, limit: Int = 5): List<Interval> {
+        val prefs = input.prefs.sanitized()
+        val length = Duration.between(suggestion.interval.start, suggestion.interval.end)
+        val ahead = Intervals.merge(input.free).mapNotNull { it.intersect(Interval(input.now, maxOf(it.end, input.now))) }
+        val free = Intervals.subtract(ahead, others.filter { it.key != suggestion.key }.map { it.interval })
+        return candidates(suggestion.demand, free, listOf(suggestion.interval), input, prefs)
+            .filter { it.piece.minutes >= length.toMinutes() }
+            .map { Interval(it.piece.start, it.piece.start.plus(length)) }
+            .distinct()
+            .take(limit)
+    }
+
     private class Candidate(val piece: Interval, val stretchEnd: Instant, val score: Double)
 
     /**

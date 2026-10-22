@@ -22,9 +22,16 @@ object SuggestionTags {
     const val ROW = "suggestion-row"
 }
 
-/** A suggestion, outlined as a proposal: its time, what for and why, with *Accept* and *Another time*. */
+/** A suggestion, outlined as a proposal: its time, what for and why, with *Accept*, *Move* (when given) and *Another time*. */
 @Composable
-fun SuggestionRow(row: SuggestionRowUi, onAccept: () -> Unit, onDismiss: () -> Unit, modifier: Modifier = Modifier, showDay: Boolean = false) {
+fun SuggestionRow(
+    row: SuggestionRowUi,
+    onAccept: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    showDay: Boolean = false,
+    onMove: (() -> Unit)? = null,
+) {
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -43,6 +50,7 @@ fun SuggestionRow(row: SuggestionRowUi, onAccept: () -> Unit, onDismiss: () -> U
         Text(row.reason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TextButton(onClick = onAccept) { Text("Accept") }
+            if (onMove != null) TextButton(onClick = onMove) { Text("Move") }
             TextButton(onClick = onDismiss) { Text("Another time") }
         }
     }

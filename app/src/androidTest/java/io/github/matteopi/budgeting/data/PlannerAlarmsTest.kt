@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.matteopi.budgeting.core.planner.model.Task
+import io.github.matteopi.budgeting.core.planner.reminders.ReminderKind
 import io.github.matteopi.budgeting.core.planner.reminders.ReminderPlan
 import io.github.matteopi.budgeting.data.settings.PlannerReminderSettings
 import io.github.matteopi.budgeting.testing.DataTestSupport
@@ -38,8 +39,8 @@ class PlannerAlarmsTest {
     fun allowNotificationsAndTurnTheReviewOff() {
         InstrumentationRegistry.getInstrumentation().uiAutomation
             .executeShellCommand("pm grant ${DataTestSupport.app.packageName} android.permission.POST_NOTIFICATIONS").close()
-        // The end-of-day review reminds by default; these tests are about tasks until the last one.
-        runBlocking { container.settingsStore.setPlannerReminders(PlannerReminderSettings(reviewOn = false)) }
+        // The end-of-day and weekly reviews remind by default; these tests are about tasks until the last ones.
+        runBlocking { container.settingsStore.setPlannerReminders(PlannerReminderSettings(reviewOn = false, weeklyOn = false)) }
     }
 
     @After
@@ -58,7 +59,7 @@ class PlannerAlarmsTest {
         alarms.reschedule()
         assertEquals(at(tomorrow, ReminderPlan.DEFAULT_TASK_TIME), alarms.scheduledAt, "09:00 for the untimed task comes first")
 
-        container.settingsStore.setPlannerReminders(PlannerReminderSettings(taskMinute = 7 * 60, reviewOn = false))
+        container.settingsStore.setPlannerReminders(PlannerReminderSettings(taskMinute = 7 * 60, reviewOn = false, weeklyOn = false))
         alarms.reschedule()
         assertEquals(at(tomorrow, LocalTime.of(7, 0)), alarms.scheduledAt, "the default time follows the setting")
 
@@ -102,7 +103,7 @@ class PlannerAlarmsTest {
         // A review time a minute from now (or tomorrow's, so late in the day that a minute from now is tomorrow).
         val reviewAt = now.plusSeconds(60).atZone(clock.zone())
         val minute = reviewAt.hour * 60 + reviewAt.minute
-        container.settingsStore.setPlannerReminders(PlannerReminderSettings(reviewOn = true, reviewMinute = minute))
+        container.settingsStore.setPlannerReminders(PlannerReminderSettings(reviewOn = true, reviewMinute = minute, weeklyOn = false))
         alarms.reschedule()
         assertEquals(reviewAt.withSecond(0).withNano(0).toInstant(), alarms.scheduledAt)
 
@@ -114,5 +115,21 @@ class PlannerAlarmsTest {
         } else {
             assertNull(alarms.scheduledAt, "today's review time has passed and tomorrow's day is finished")
         }
+    }
+
+    @Test
+    fun theWeeklyReviewRemindsOnItsDayAndTime() = runBlocking<Unit> {
+        // A minute from now, on that day of the week (or the next day's, late in the day).
+        val at = Instant.ofEpochMilli(clock.nowMillis()).plusSeconds(60).atZone(clock.zone())
+        val settings = PlannerReminderSettings(reviewOn = false, weeklyDay = at.dayOfWeek.value, weeklyMinute = at.hour * 60 + at.minute)
+        container.settingsStore.setPlannerReminders(settings)
+        alarms.reschedule()
+        assertEquals(at.withSecond(0).withNano(0).toInstant(), alarms.scheduledAt)
+        val weekly = alarms.reminders().single { it.kind == ReminderKind.WEEKLY_REVIEW && it.at == alarms.scheduledAt }
+        assertEquals("Plan your week", weekly.title)
+
+        container.settingsStore.setPlannerReminders(settings.copy(weeklyOn = false))
+        alarms.reschedule()
+        assertNull(alarms.scheduledAt, "the weekly review turned off")
     }
 }

@@ -8,18 +8,20 @@ import io.github.matteopi.budgeting.core.planner.habits.HabitText
 import io.github.matteopi.budgeting.core.planner.model.DayReview
 import io.github.matteopi.budgeting.core.planner.model.Occurrence
 import io.github.matteopi.budgeting.core.planner.model.Task
+import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.time.temporal.TemporalAdjusters
 
 /**
- * What a reminder is about; a later stage adds the weekly review (docs/PLAN.md §13.4). [WIDGET] posts nothing: it
- * redraws the Planner widget when a class starts or ends.
+ * What a reminder is about (docs/PLAN.md §13.4). [WIDGET] posts nothing: it redraws the Planner widget when a class
+ * starts or ends.
  */
-enum class ReminderKind { TASK, DAY_REVIEW, WIDGET, HABIT }
+enum class ReminderKind { TASK, DAY_REVIEW, WIDGET, HABIT, WEEKLY_REVIEW }
 
 /**
  * One reminder to post at [at]. [key] is stable for the same reminder and changes when what it reminds of changes
@@ -109,6 +111,25 @@ object ReminderPlan {
                 )
             }
         }
+
+    /**
+     * The weekly review at [time] on [day], this week's and next week's (so the alarm moves on once this week's has
+     * gone). Null [time]: the weekly review's reminder is off. [itemId] is the date's epoch day.
+     */
+    fun weeklyReviewReminders(day: DayOfWeek, time: LocalTime?, today: LocalDate, zone: ZoneId): List<Reminder> {
+        if (time == null) return emptyList()
+        val first = today.with(TemporalAdjusters.nextOrSame(day))
+        return listOf(first, first.plusWeeks(1)).map { date ->
+            Reminder(
+                key = "weekly:$date:$time",
+                kind = ReminderKind.WEEKLY_REVIEW,
+                itemId = date.toEpochDay(),
+                at = ZonedDateTime.of(date, time, zone).toInstant(),
+                title = "Plan your week",
+                text = "See how the week went and accept the study suggested for the next.",
+            )
+        }
+    }
 
     /** The next class start and end after [now], when the widget's *next class* changes. */
     fun widgetRefreshes(occurrences: List<Occurrence>, now: Instant): List<Reminder> =

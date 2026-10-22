@@ -158,6 +158,7 @@ class MainActivity : FragmentActivity() {
                 val reviewDate = intent.getLongExtra(PlannerNotifications.EXTRA_REVIEW_DATE, Long.MIN_VALUE)
                 receiptRequest.value = when {
                     reviewDate != Long.MIN_VALUE -> Route.Day(epochDay = reviewDate, review = true)
+                    intent.getBooleanExtra(PlannerNotifications.EXTRA_WEEKLY_REVIEW, false) -> Route.WeeklyReview
                     intent.getBooleanExtra(PlannerNotifications.EXTRA_TODAY, false) -> Route.Today
                     taskId >= 0 -> Route.TaskDetail(taskId)
                     habitId >= 0 -> Route.HabitDetail(habitId)

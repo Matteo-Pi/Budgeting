@@ -35,9 +35,15 @@ class SuggestionRepository(
      * [suggestion] as a plan block, in [studyCategoryId] unless its demand has a category of its own (a habit's).
      * Returns the plan as applied, for Undo.
      */
-    suspend fun accept(suggestion: Suggestion, studyCategoryId: Long): EditPlan<PlanBlock> {
+    suspend fun accept(suggestion: Suggestion, studyCategoryId: Long): EditPlan<PlanBlock> = acceptAll(listOf(suggestion), studyCategoryId)
+
+    /** The weekly review's *Accept all*: every one of [suggestions] as a plan block, in one change (one Undo). */
+    suspend fun acceptAll(suggestions: List<Suggestion>, studyCategoryId: Long): EditPlan<PlanBlock> =
+        if (suggestions.isEmpty()) EditPlan() else dayRepository.applyPlans(EditPlan(inserts = suggestions.map { blockOf(it, studyCategoryId) }))
+
+    private fun blockOf(suggestion: Suggestion, studyCategoryId: Long): PlanBlock {
         val d = suggestion.demand
-        val block = PlanBlock(
+        return PlanBlock(
             start = suggestion.interval.start,
             end = suggestion.interval.end,
             categoryId = d.categoryId ?: studyCategoryId,
@@ -48,7 +54,6 @@ class SuggestionRepository(
             origin = if (d.kind == DemandKind.HABIT) PlanOrigin.HABIT else PlanOrigin.SUGGESTION,
             note = d.title,
         )
-        return dayRepository.applyPlans(EditPlan(inserts = listOf(block)))
     }
 
     fun observeDismissed(): Flow<Set<String>> = studyDao.observeDismissed().map { list -> list.map { it.key }.toSet() }

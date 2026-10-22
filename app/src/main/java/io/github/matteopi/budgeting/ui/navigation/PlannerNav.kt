@@ -5,11 +5,12 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import io.github.matteopi.budgeting.ui.plan.TermDatesScreen
-import io.github.matteopi.budgeting.ui.planner.components.PlannerComingSoonScreen
+import io.github.matteopi.budgeting.ui.planner.insights.PlannerInsightsScreen
 import io.github.matteopi.budgeting.ui.planner.day.DayScreen
 import io.github.matteopi.budgeting.ui.planner.habits.HabitDetailScreen
 import io.github.matteopi.budgeting.ui.planner.habits.HabitEditScreen
 import io.github.matteopi.budgeting.ui.planner.habits.HabitsScreen
+import io.github.matteopi.budgeting.ui.planner.review.WeeklyReviewScreen
 import io.github.matteopi.budgeting.ui.planner.settings.CalendarsScreen
 import io.github.matteopi.budgeting.ui.planner.settings.CategoriesScreen
 import io.github.matteopi.budgeting.ui.planner.settings.DaySettingsScreen
@@ -88,11 +89,10 @@ fun NavGraphBuilder.plannerDestinations(navController: NavHostController) {
         )
     }
     composable<Route.PlannerInsights> {
-        PlannerComingSoonScreen(
-            title = "Insights",
-            message = "Where your time goes, study against your targets, focus and the weekly review come in a later build of the Planner.",
-            onOpenSettings = openSettings,
-        )
+        PlannerInsightsScreen(onOpenSettings = openSettings, onOpenWeeklyReview = { navController.navigate(Route.WeeklyReview) })
+    }
+    composable<Route.WeeklyReview> {
+        WeeklyReviewScreen(onBack = { navController.popBackStack() })
     }
     composable<Route.TaskEdit> { backStackEntry ->
         val args = backStackEntry.toRoute<Route.TaskEdit>()

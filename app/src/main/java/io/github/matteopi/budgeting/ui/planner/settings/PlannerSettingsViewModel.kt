@@ -18,6 +18,7 @@ import io.github.matteopi.budgeting.data.settings.SettingsStore
 import io.github.matteopi.budgeting.ui.settings.budgetViewModelFactory
 import io.github.matteopi.budgeting.work.planner.PlannerAlarms
 import io.github.matteopi.budgeting.work.planner.PlannerUpdater
+import java.time.DayOfWeek
 import java.time.LocalTime
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -59,26 +60,25 @@ class PlannerSettingsViewModel(
     /** False when Android refuses exact alarms. */
     fun exactAlarmsAllowed(): Boolean = plannerAlarms.exactAlarmsAllowed()
 
-    fun setTaskReminderTime(time: LocalTime) {
+    /** Applied to what is stored, not to the screen's copy, so quick changes in a row all count. */
+    private fun setReminders(change: (PlannerReminderSettings) -> PlannerReminderSettings) {
         viewModelScope.launch {
-            settingsStore.setPlannerReminders(state.value.reminders.copy(taskMinute = time.hour * 60 + time.minute))
+            settingsStore.updatePlannerReminders(change)
             plannerUpdater.changed()
         }
     }
 
-    fun setReviewOn(on: Boolean) {
-        viewModelScope.launch {
-            settingsStore.setPlannerReminders(state.value.reminders.copy(reviewOn = on))
-            plannerUpdater.changed()
-        }
-    }
+    fun setTaskReminderTime(time: LocalTime) = setReminders { it.copy(taskMinute = time.hour * 60 + time.minute) }
 
-    fun setReviewTime(time: LocalTime) {
-        viewModelScope.launch {
-            settingsStore.setPlannerReminders(state.value.reminders.copy(reviewMinute = time.hour * 60 + time.minute))
-            plannerUpdater.changed()
-        }
-    }
+    fun setReviewOn(on: Boolean) = setReminders { it.copy(reviewOn = on) }
+
+    fun setReviewTime(time: LocalTime) = setReminders { it.copy(reviewMinute = time.hour * 60 + time.minute) }
+
+    fun setWeeklyOn(on: Boolean) = setReminders { it.copy(weeklyOn = on) }
+
+    fun setWeeklyDay(day: DayOfWeek) = setReminders { it.copy(weeklyDay = day.value) }
+
+    fun setWeeklyTime(time: LocalTime) = setReminders { it.copy(weeklyMinute = time.hour * 60 + time.minute) }
 
     // ---- The day ----
 

@@ -134,6 +134,9 @@ sealed interface Route {
 
     /** Suggested study: times, days off, blocks, caps, revision and modules. */
     @Serializable data object PlannerStudy : Route
+
+    /** The weekly review: how the week went, then next week's suggestions to accept, move or turn down. */
+    @Serializable data object WeeklyReview : Route
 }
 
 /**
@@ -182,6 +185,7 @@ val plannerRoutes: List<KClass<out Route>> = listOf(
     Route.HabitDetail::class,
     Route.PlannerFreeTime::class,
     Route.PlannerStudy::class,
+    Route.WeeklyReview::class,
 )
 
 /** True if this destination is one of [plannerRoutes]. */

@@ -272,6 +272,13 @@ class SettingsStore(context: Context) {
         dataStore.edit { it[PlannerKeys.REMINDERS] = PlannerSettingsCodec.encodeReminders(settings) }
     }
 
+    /** Changes the reminder settings in one step, so quick changes in a row don't undo each other. */
+    suspend fun updatePlannerReminders(change: (PlannerReminderSettings) -> PlannerReminderSettings) {
+        dataStore.edit { prefs ->
+            prefs[PlannerKeys.REMINDERS] = PlannerSettingsCodec.encodeReminders(change(PlannerSettingsCodec.decodeReminders(prefs[PlannerKeys.REMINDERS])))
+        }
+    }
+
     /** The breakdown templates: the user's own, or the defaults. In backups. */
     val breakdownTemplates: Flow<List<BreakdownTemplate>> = dataStore.data.map { prefs ->
         PlannerSettingsCodec.decodeTemplates(prefs[PlannerKeys.TEMPLATES])

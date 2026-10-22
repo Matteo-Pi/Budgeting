@@ -34,6 +34,12 @@ data class StackedBarSegment(val label: String, val color: Color, val amount: Mo
 /** One stacked bar, e.g. one week's spending split by category. */
 data class StackedBarGroup(val label: String, val segments: List<StackedBarSegment>)
 
+/** One segment of a [StackedBarChart] bar: a positive [value] in the chart's own unit. */
+data class StackedValueSegment(val label: String, val color: Color, val value: Long)
+
+/** One bar of a [StackedBarChart]. */
+data class StackedValueGroup(val label: String, val segments: List<StackedValueSegment>)
+
 /** One bar. [value] may be negative (drawn below the zero baseline). */
 data class BarChartEntry(val label: String, val value: Money, val color: Color)
 

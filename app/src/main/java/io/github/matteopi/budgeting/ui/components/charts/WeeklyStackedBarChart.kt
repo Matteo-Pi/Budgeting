@@ -27,6 +27,29 @@ fun WeeklyStackedBarChart(
     modifier: Modifier = Modifier,
     onSelect: (Int) -> Unit = {},
 ) {
+    StackedBarChart(
+        groups = groups.map { g -> StackedValueGroup(g.label, g.segments.map { StackedValueSegment(it.label, it.color, it.amount.pence) }) },
+        axisLabel = { Money(it).format(showPence = false) },
+        minimumTop = 100L,
+        modifier = modifier,
+        onSelect = onSelect,
+    )
+}
+
+/**
+ * Stacked bars of any positive amount (pence, minutes): one bar per [StackedValueGroup], segments bottom up with a
+ * 2 dp gap between them, the top value on the axis as [axisLabel] gives it, and the first and last labels under the
+ * bars. [selected] draws the other bars faded; a tap reports the bar's index.
+ */
+@Composable
+fun StackedBarChart(
+    groups: List<StackedValueGroup>,
+    axisLabel: (Long) -> String,
+    modifier: Modifier = Modifier,
+    minimumTop: Long = 1L,
+    selected: Int? = null,
+    onSelect: (Int) -> Unit = {},
+) {
     if (groups.isEmpty()) return
     val colors = rememberChartColors()
     val textMeasurer = rememberTextMeasurer()
@@ -46,7 +69,7 @@ fun WeeklyStackedBarChart(
         val plotTop = 8.dp.toPx()
         val plotBottom = size.height - 20.dp.toPx()
         val plotHeight = (plotBottom - plotTop).coerceAtLeast(1f)
-        val maxTotal = groups.maxOf { g -> g.segments.sumOf { it.amount.pence } }.coerceAtLeast(100L)
+        val maxTotal = groups.maxOf { g -> g.segments.sumOf { it.value.coerceAtLeast(0) } }.coerceAtLeast(minimumTop)
 
         val slotWidth = (size.width - plotLeft) / groups.size
         val barWidth = (slotWidth * 0.6f).coerceAtLeast(4f)
@@ -56,22 +79,23 @@ fun WeeklyStackedBarChart(
         drawLine(colors.baseline, Offset(plotLeft, plotBottom), Offset(size.width, plotBottom), strokeWidth = 1.dp.toPx())
         drawText(
             textMeasurer = textMeasurer,
-            text = Money(maxTotal).format(showPence = false),
+            text = axisLabel(maxTotal),
             topLeft = Offset(0f, plotTop),
             style = labelStyle,
         )
 
         groups.forEachIndexed { index, group ->
             val slotCenter = plotLeft + slotWidth * (index + 0.5f)
+            val faded = selected != null && selected != index
             var yCursor = plotBottom
             for (segment in group.segments) {
-                if (segment.amount.pence <= 0) continue
-                val segmentHeight = (segment.amount.pence.toFloat() / maxTotal) * plotHeight
+                if (segment.value <= 0) continue
+                val segmentHeight = (segment.value.toFloat() / maxTotal) * plotHeight
                 val top = (yCursor - segmentHeight).coerceAtLeast(plotTop)
                 val drawnHeight = (yCursor - top - gap).coerceAtLeast(0f)
                 if (drawnHeight > 0f) {
                     drawRect(
-                        color = segment.color,
+                        color = if (faded) segment.color.copy(alpha = 0.35f) else segment.color,
                         topLeft = Offset(slotCenter - barWidth / 2, top),
                         size = Size(barWidth, drawnHeight),
                     )

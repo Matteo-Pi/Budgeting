@@ -5,6 +5,7 @@ import io.github.matteopi.budgeting.core.planner.freetime.FreeSettings
 import io.github.matteopi.budgeting.core.planner.suggest.StudyPrefs
 import io.github.matteopi.budgeting.core.planner.todo.BreakdownTemplate
 import io.github.matteopi.budgeting.core.planner.todo.BreakdownTemplates
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -13,8 +14,8 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 
 /**
- * The Planner's reminder settings (docs/PLAN.md §13.6), stored as one JSON value. Stage P6 adds the weekly review
- * here; a field missing from an older value takes its default.
+ * The Planner's reminder settings (docs/PLAN.md §13.6), stored as one JSON value; a field missing from an older value
+ * takes its default.
  */
 @Serializable
 data class PlannerReminderSettings(
@@ -23,11 +24,20 @@ data class PlannerReminderSettings(
     /** The end-of-day review's reminder (default 21:30), when [reviewOn]. */
     val reviewOn: Boolean = true,
     val reviewMinute: Int = 21 * 60 + 30,
+    /** The weekly review's reminder (default Sunday 19:00), when [weeklyOn]; [weeklyDay] is the ISO day, Monday 1. */
+    val weeklyOn: Boolean = true,
+    val weeklyDay: Int = 7,
+    val weeklyMinute: Int = 19 * 60,
 ) {
     val taskTime: LocalTime get() = timeOf(taskMinute)
 
     /** The review reminder's time, or null when it is off. */
     val reviewTime: LocalTime? get() = if (reviewOn) timeOf(reviewMinute) else null
+
+    val weeklyDayOfWeek: DayOfWeek get() = DayOfWeek.of(weeklyDay.coerceIn(1, 7))
+
+    /** The weekly review reminder's time, or null when it is off. */
+    val weeklyTime: LocalTime? get() = if (weeklyOn) timeOf(weeklyMinute) else null
 
     private fun timeOf(minute: Int) = LocalTime.of((minute / 60).coerceIn(0, 23), (minute % 60).coerceIn(0, 59))
 }
