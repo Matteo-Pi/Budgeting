@@ -142,9 +142,9 @@ class SuggestionsTest : UiTest() {
         val again = suggestedBlocks().single()
         tapText("Edit day")
         waitForText("Day record")
-        // The day editor names a plan by its category and module; the note is its detail.
+        // The day editor names a plan by its category and module (the note is its detail), with its time after.
         val time = DayMapping.range(again.start, again.end, appContainer.clock.zone())
-        waitForExists(tagged(DayTags.SEGMENT, "Study · EC101") and tagged(DayTags.SEGMENT, time), "the planned block, $time, in the day editor")
+        waitForExists(tagged(DayTags.SEGMENT, "Study · EC101") and tagged(DayTags.SEGMENT, time, substring = true), "the planned block, $time, in the day editor")
         shot("suggest-03-day-editor")
     }
 
