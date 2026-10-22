@@ -26,6 +26,7 @@ import io.github.matteopi.budgeting.testing.seedModule
 import io.github.matteopi.budgeting.testing.seedPlannerSection
 import io.github.matteopi.budgeting.testing.seedTask
 import io.github.matteopi.budgeting.testing.tagged
+import io.github.matteopi.budgeting.ui.planner.day.DayMapping
 import io.github.matteopi.budgeting.ui.planner.day.DayTags
 import io.github.matteopi.budgeting.ui.planner.settings.StudySettingsTags
 import io.github.matteopi.budgeting.ui.planner.suggest.SuggestionTags
@@ -138,9 +139,12 @@ class SuggestionsTest : UiTest() {
         firstShown()
         tap(inRow("Accept"), "Accept on the first suggestion")
         waitFor("the plan again") { suggestedBlocks().size == 1 }
+        val again = suggestedBlocks().single()
         tapText("Edit day")
         waitForText("Day record")
-        waitForExists(tagged(DayTags.SEGMENT, "EC101 essay"), "the planned block in the day editor")
+        // The day editor names a plan by its category and module; the note is its detail.
+        val time = DayMapping.range(again.start, again.end, appContainer.clock.zone())
+        waitForExists(tagged(DayTags.SEGMENT, "Study · EC101") and tagged(DayTags.SEGMENT, time), "the planned block, $time, in the day editor")
         shot("suggest-03-day-editor")
     }
 
