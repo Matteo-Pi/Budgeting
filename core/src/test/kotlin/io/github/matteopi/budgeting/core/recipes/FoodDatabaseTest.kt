@@ -19,8 +19,8 @@ class FoodDatabaseTest {
     private fun matched(line: String): String? = FoodDatabase.match(IngredientLines.parse(line).name, line)?.key
 
     @Test
-    fun `it decodes with about 380 foods and no recipes`() {
-        assertTrue(foods.size in 360..420, "${foods.size} foods")
+    fun `it decodes with about 550 foods and no recipes`() {
+        assertTrue(foods.size in 520..600, "${foods.size} foods")
         assertTrue(FoodDatabase.bundle.recipes.isEmpty())
         assertEquals(foods.size, foods.map { it.key }.toSet().size, "keys are unique")
         assertEquals(foods.size, foods.map { it.name.lowercase() }.toSet().size, "names are unique")
@@ -48,7 +48,7 @@ class FoodDatabaseTest {
     fun `the foods this list adds are typical values for the food as weighed`() {
         val starter = RecipeBundle.starter().ingredients.map { it.key }.toSet()
         val added = foods.filter { it.key !in starter }
-        assertTrue(added.size >= 320, "${added.size} added")
+        assertTrue(added.size >= 480, "${added.size} added")
         for (food in added) {
             assertEquals(NutritionSource.ESTIMATE, food.ingredient.nutritionSource, food.key)
             assertEquals(FoodDatabase.PRICES_FOUND, food.ingredient.priceDate, food.key)
@@ -68,8 +68,10 @@ class FoodDatabaseTest {
         }
     }
 
-    /** Vinegar's energy is acetic acid and vanilla extract's alcohol, which labels count at 3.6 and 7 kcal/g and these factors don't. */
-    private val acidAndAlcohol = setOf("vinegar_white_wine", "vanilla_extract")
+    /** Vinegars' energy is acetic acid and vanilla extract's and rice wine's alcohol, which labels count at 3.6 and 7 kcal/g and these factors don't. */
+    private val acidAndAlcohol = setOf(
+        "vinegar_white_wine", "red_wine_vinegar", "cider_vinegar", "malt_vinegar", "rice_vinegar", "vanilla_extract", "shaoxing",
+    )
 
     @Test
     fun `energy agrees with the fat, carbs, protein and fibre`() {
@@ -206,6 +208,11 @@ class FoodDatabaseTest {
         assertEquals("beef_stock", matched("500 ml beef stock"))
         assertEquals("stock_cube_beef", matched("1 beef stock cube"))
         assertEquals("stock_pot_chicken", matched("1 chicken stock pot"))
+        assertEquals("fish_stock", matched("500 ml fish stock"))
+        assertEquals("stock_cube_fish", matched("1 fish stock cube"))
+        assertEquals("lamb_stock", matched("300 ml lamb stock"))
+        assertEquals("stock_pot_beef", matched("1 beef stock pot"))
+        assertEquals("bouillon", matched("1 tsp vegetable bouillon powder"))
         // A litre of stock costs a cube's share, not a kilo of cubes.
         val stock = FoodDatabase.byKey("chicken_stock")!!.ingredient
         assertEquals(BaseUnit.ML, stock.unit)
@@ -269,8 +276,43 @@ class FoodDatabaseTest {
             "200 g houmous" to "houmous",
             "a handful of rocket" to "rocket",
             "1 tbsp hummus" to "houmous",
+            "1 tsp paprika" to "paprika",
+            "1 tsp smoked paprika" to "smoked_paprika",
+            "2 tbsp fish sauce" to "fish_sauce",
+            "1 tbsp dark soy sauce" to "soy_dark",
+            "2 tbsp soy sauce" to "soy_light",
+            "1 tbsp red wine vinegar" to "red_wine_vinegar",
+            "1 tbsp white wine vinegar" to "vinegar_white_wine",
+            "1 tbsp wholegrain mustard" to "mustard_wholegrain",
+            "1 tsp dijon mustard" to "dijon",
+            "1 tsp ground ginger" to "ginger_ground",
+            "1 tbsp grated ginger" to "ginger",
+            "1 tsp cumin seeds" to "cumin_seeds",
+            "1 tsp ground cumin" to "cumin",
+            "200 g cherries" to "cherries",
+            "250 g cherry tomatoes" to "cherry_tomatoes",
+            "1 tin cherry tomatoes" to "cherry_tomatoes_tin",
+            "2 tbsp miso paste" to "miso",
+            "1 tbsp gochujang" to "gochujang",
+            "1 jar korma sauce" to "korma_sauce",
+            "1 jar bolognese sauce" to "bolognese_sauce",
+            "500 g tomato pasta sauce" to "pasta_sauce",
+            "8 sprays of spray oil" to "spray_oil",
+            "2 tbsp tahini" to "tahini",
+            "2 chicken kievs" to "chicken_kievs",
+            "100 g chicken livers" to "chicken_livers",
+            "6 slices of prosciutto" to "prosciutto",
+            "200 g squid rings" to "squid_rings",
+            "1 tin pinto beans" to "pinto_beans",
+            "400 ml coconut cream" to "coconut_cream",
+            "150 ml whipping cream" to "whipping_cream",
+            "1 tbsp half fat creme fraiche" to "creme_fraiche_light",
+            "100 g smoked tofu" to "tofu_smoked",
+            "200 g firm tofu" to "tofu",
+            "1 litre orange juice" to "orange_juice",
         )
-        for ((line, key) in lines) assertEquals(key, matched(line), line)
+        val wrong = lines.filter { (line, key) -> matched(line) != key }.map { (line, key) -> "$line: ${matched(line)}, not $key" }
+        assertTrue(wrong.isEmpty(), wrong.joinToString("; "))
     }
 
     @Test
@@ -279,7 +321,7 @@ class FoodDatabaseTest {
         assertNull(matched("200 g venison"))
         // A close name for something else: the line hasn't the food's last word.
         assertNull(matched("300 ml red wine"), "not red wine vinegar")
-        assertNull(matched("200 g cherries"), "not cherry tomatoes")
+        assertNull(matched("200 g lychees"), "not cherry tomatoes or cherries")
         assertNull(matched("2 lamb kidneys"), "not kidney beans")
         assertNull(matched("300 ml water"), "nothing is called water")
         assertNull(FoodDatabase.match(""))

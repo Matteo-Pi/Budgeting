@@ -2237,15 +2237,16 @@ Six changes the user asked for once the section was built. Room goes to **versio
   - `MigrationTest` 3 → 4.
 - **After the first green build**, commit `4.json` from `refs/ci/room-schemas`.
 
-### 11.12 The built-in food database (asked for 2026-10-22; built, then made bigger the same day)
+### 11.12 The built-in food database (asked for 2026-10-22; built, then made bigger twice the same day)
 The user asked for "a built in database of all of the costs and nutritional values of food/ingredients I might use in
 my meals", then for "even more … anything that I could possibly use in a recipe - all vegetables, stock types, carb
-types, mince types, meat formats (e.g. meatballs)". The app ships a list of 377 foods with a Tesco pack and price and
+types, mince types, meat formats (e.g. meatballs)", and then to "search for as many more things as you can". The app
+ships a list of 547 foods with a Tesco pack and price and
 nutrition per 100 g (100 ml for liquids), so a new recipe gets its cost and nutrition without typing them in. Nothing
 about it is stored until the user adds a food: **no schema change** (Room stays 9, backups stay 9).
 
 **What is in it** (`core/src/main/resources/recipes/food-database.json`)
-- 337 foods a student cooks with: fresh veg and fruit (cabbages, sprouts, greens, roots, salad leaves, squash,
+- 507 foods a student cooks with: fresh veg and fruit (cabbages, sprouts, greens, roots, salad leaves, squash,
   sweetcorn, fruit fresh, tinned, frozen and dried), fresh and dried herbs, meat and fish, dairy and eggs, frozen,
   tins and jars, pulses (tinned and dried), rice, pasta, noodles and grains, bread, pastry, baking, nuts and seeds,
   sauces, herbs and spices, breakfast and meat-free.
@@ -2253,9 +2254,16 @@ about it is stored until the user adds a food: **no schema change** (Room stays 
   meat-free mince; meatballs (beef, pork, turkey), burgers, sausages, chipolatas, sausage meat, frankfurters,
   nuggets; diced, steaks, chops, belly, wings, bone-in thighs and a whole chicken; bacon, lardons, ham, gammon,
   salami, pepperoni, corned beef; raw and cooked prawns, white, smoked, tinned and breaded fish.
-- **Every stock type**: chicken, vegetable and beef cubes, chicken stock pots, and the stock made up with a cube (1
-  cube to 500 ml) as its own food in ml, so "500 ml chicken stock" costs a cube's share (11p a litre) rather than
+- **Every stock type**: chicken, vegetable, beef, fish and lamb cubes, chicken, vegetable and beef stock pots, bouillon
+  powder, gravy granules, and the stock made up with a cube (1 cube to 500 ml) as its own food in ml, so "500 ml chicken stock" costs a cube's share (11p a litre) rather than
   500 g of cubes. Its nutrition is the cube's at a fiftieth.
+- **The third round** (168 more): the sauces, condiments and pastes (fish, dark soy, sriracha, BBQ, brown, mint,
+  teriyaki, gochujang, miso, tahini, harissa, red pesto, the mustards, vinegars, curry and pasta sauces in jars,
+  chutneys), the spices and seasonings (paprika, cayenne, nutmeg, seeds, cardamom, cloves, star anise, Cajun, fajita,
+  peri peri, za'atar), oils and fats (spray oil, coconut oil, ghee), more beans, cheeses, creams and yogurts, joints,
+  steaks, duck, livers, kievs, fishcakes, mussels and squid, breads, bases and shells, frozen sides, breakfast and
+  baking extras. Where Tesco's own label had no product (jackfruit, giant couscous, black pudding, frozen tuna steaks,
+  polenta, semolina) the food was left out rather than priced elsewhere.
 - **Every carb type**: long-grain, basmati, brown, jasmine, risotto and cooked microwave rice; penne, fusilli,
   spaghetti, macaroni, farfalle, tagliatelle, orzo, lasagne, wholewheat, fresh pasta, filled pasta and gnocchi; egg,
   rice, udon, ready-to-wok and instant noodles; couscous, bulgur, quinoa, pearl barley and oats; white, wholemeal,

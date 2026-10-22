@@ -14,7 +14,7 @@ data class Food(val key: String, val ingredient: Ingredient, val aliases: List<S
 }
 
 /**
- * The built-in food list (docs/PLAN.md §11.12): about 380 foods with a Tesco pack and price and nutrition per 100 g
+ * The built-in food list (docs/PLAN.md §11.12): about 550 foods with a Tesco pack and price and nutrition per 100 g
  * (100 ml for liquids), read once from [RESOURCE]. Nothing of it is stored until the user adds a food as an ingredient.
  */
 object FoodDatabase {
