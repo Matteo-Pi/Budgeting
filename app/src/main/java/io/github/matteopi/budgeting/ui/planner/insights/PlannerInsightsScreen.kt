@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.Button
@@ -78,7 +79,11 @@ fun PlannerInsightsScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     Scaffold(
         modifier = modifier,
-        topBar = { PlannerTabTopBar(title = "Insights", onOpenSettings = onOpenSettings) },
+        topBar = {
+            PlannerTabTopBar(title = "Insights", onOpenSettings = onOpenSettings) {
+                IconButton(onClick = onOpenWeeklyReview) { Icon(Icons.Default.DateRange, contentDescription = "Weekly review") }
+            }
+        },
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier.padding(innerPadding).fillMaxSize(),

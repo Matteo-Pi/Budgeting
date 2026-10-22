@@ -147,7 +147,7 @@ class PlannerInsightsTest : UiTest() {
         shot("planner-insights-04-tips")
 
         // The weekly review: Accept all plans the week's suggestions in one go, and Undo takes them back.
-        tapText("Weekly review")
+        tapIcon("Weekly review")
         waitForText(if (today in planning) "This week" else "Next week")
         val acceptAll = hasTestTag(WeeklyReviewTags.ACCEPT_ALL) and isEnabled()
         waitForExists(acceptAll, "Accept all with suggestions", HEAVY_TIMEOUT_MS)
