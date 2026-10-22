@@ -159,6 +159,27 @@ class ReviewRulesTest {
     }
 
     @Test
+    fun aLineInMillilitresTakesTheStockRatherThanTheCubes() {
+        val cubes = ingredients.first { it.name == "Chicken stock cubes" }
+        fun matched(text: String, foods: Boolean = true, aliases: Map<String, Long> = emptyMap()) =
+            ReviewRules.matchLine(ReviewLine(key = 1, text = text), ingredients, aliases, foods)
+
+        // 300 ml of the book's cubes would be 300 g of them; the list's stock made with a cube is in millilitres.
+        val stock = matched("300 ml chicken stock (1 cube)")
+        assertEquals("Chicken stock (made with a cube)", ReviewFoods.food(stock.ingredientId!!)?.name)
+        assertEquals(cubes.id, stock.suggestionIds.first(), "the cubes stay one tap away")
+        val derived = ReviewRules.derive(
+            ReviewEdit(lines = listOf(stock)), null, ingredientsById + ReviewFoods.ingredients, prices + ReviewFoods.prices(today), true,
+        )
+        // 300 ml of 5 litres for £1.10: 6.6p.
+        assertEquals(6.6, derived.numbers.cost.totalPence, 1e-9)
+
+        assertEquals(cubes.id, matched("1 chicken stock cube").ingredientId, "a cube is the cubes")
+        assertEquals(cubes.id, matched("300 ml chicken stock (1 cube)", foods = false).ingredientId, "no food list, no change")
+        assertEquals(cubes.id, matched("300 ml chicken stock", aliases = mapOf("chicken stock" to cubes.id)).ingredientId, "a taught name stays")
+    }
+
+    @Test
     fun theFoodListIsOnlyAskedWhenWantedAndNeverForASavedRecipe() {
         val plain = ReviewRules.fromDraft(RecipeText.parse(curry), ingredients, emptyMap())
         assertTrue(plain.lines.none { ReviewFoods.isFood(it.ingredientId) })

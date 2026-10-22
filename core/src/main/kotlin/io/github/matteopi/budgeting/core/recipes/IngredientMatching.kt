@@ -132,6 +132,9 @@ object IngredientMatching {
     /** A recipe line's name as [match] compares it. */
     internal fun lineTokens(name: String): Set<String> = tokens(name, withBrackets = true).toSet()
 
+    /** The last word of a name as [match] compares it, bracketed words left out: what it is ("vinegar" in "red wine vinegar"). */
+    internal fun head(name: String): String? = tokens(name, withBrackets = false).lastOrNull() ?: tokens(name, withBrackets = true).lastOrNull()
+
     /**
      * How well a line fits a name, 0 to 1, as [match] scores it: 1.0 for the same words (the name's bracketed words
      * may be left out), else the word overlap.
@@ -165,14 +168,16 @@ object IngredientMatching {
      *
      * 1. A learned alias: [aliases] maps a [nameKey] to an ingredient id.
      * 2. An exact name: the same words once both are normalised (bracketed words of the ingredient's
-     *    name may be left out: "White (closed cup) mushrooms" is "white mushrooms").
+     *    name may be left out: "White (closed cup) mushrooms" is "white mushrooms"). Of two with the same
+     *    name, the one in [unit] (the line's grams or millilitres) is taken: "500 ml chicken stock" is the
+     *    stock rather than the stock cubes.
      * 3. Word overlap, scored 0 to 1. The best is applied automatically only from [AUTO_APPLY_SCORE]
      *    and when it is [AUTO_APPLY_MARGIN] ahead of the next; otherwise the top few are offered as
      *    suggestions.
      *
      * Archived ingredients are never matched.
      */
-    fun match(name: String, ingredients: List<Ingredient>, aliases: Map<String, Long> = emptyMap()): IngredientMatch {
+    fun match(name: String, ingredients: List<Ingredient>, aliases: Map<String, Long> = emptyMap(), unit: BaseUnit? = null): IngredientMatch {
         val lineTokens = tokens(name, withBrackets = true)
         val line = lineTokens.toSet()
         if (line.isEmpty()) return IngredientMatch(MatchKind.NONE, null, 0.0, emptyList())
@@ -182,7 +187,8 @@ object IngredientMatching {
         if (aliasId != null && all.any { it.ingredient.id == aliasId }) {
             return withOthers(MatchKind.ALIAS, aliasId, line, all)
         }
-        val exact = all.firstOrNull { it.core == line || it.full == line }
+        val same = all.filter { it.core == line || it.full == line }
+        val exact = same.firstOrNull { it.ingredient.unit == unit } ?: same.firstOrNull()
         if (exact != null) return withOthers(MatchKind.EXACT, exact.ingredient.id, line, all)
 
         val scored = scoredSuggestions(line, all)

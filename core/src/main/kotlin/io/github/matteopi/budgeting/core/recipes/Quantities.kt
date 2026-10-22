@@ -40,6 +40,13 @@ object Quantities {
     /** The measure a word names ("tbsp", "Tablespoons", "g."), or null. */
     fun measureOf(word: String): Measure? = MEASURE_WORDS[word.trim().trimEnd('.').lowercase(Locale.ROOT)]
 
+    /** The base unit [measure] weighs or measures in: grams for g, kg, oz and lb, ml for ml and l, else null (spoons, cups). */
+    fun unitOf(measure: Measure): BaseUnit? = when (measure) {
+        Measure.G, Measure.KG, Measure.OZ, Measure.LB -> BaseUnit.G
+        Measure.ML, Measure.L -> BaseUnit.ML
+        Measure.TSP, Measure.TBSP, Measure.PINCH, Measure.CUP -> null
+    }
+
     /**
      * Converts [amount] of [measure] to [ingredient]'s base unit.
      *

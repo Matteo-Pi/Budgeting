@@ -47,7 +47,7 @@ class FoodListTest : UiTest() {
         waitForText("Tesco prices", substring = true)
         shot("foods-01-list")
 
-        typeInTag(FoodListTags.SEARCH, "chick")
+        typeInTag(FoodListTags.SEARCH, "chickpea")
         val chickpeas = hasTestTag(FoodListTags.row("chickpeas"))
         waitForExists(tagged(FoodListTags.row("chickpeas"), "£0.41", substring = true), "the chickpeas at 41p")
         waitForExists(tagged(FoodListTags.row("chickpeas"), "121 kcal", substring = true), "121 kcal per 100 g")

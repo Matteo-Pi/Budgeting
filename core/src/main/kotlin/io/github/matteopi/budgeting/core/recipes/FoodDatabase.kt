@@ -14,8 +14,8 @@ data class Food(val key: String, val ingredient: Ingredient, val aliases: List<S
 }
 
 /**
- * The built-in food list (docs/PLAN.md §11.12): about 170 everyday foods with a Tesco pack and price and nutrition
- * per 100 g, read once from [RESOURCE]. Nothing of it is stored until the user adds a food as an ingredient.
+ * The built-in food list (docs/PLAN.md §11.12): about 380 foods with a Tesco pack and price and nutrition per 100 g
+ * (100 ml for liquids), read once from [RESOURCE]. Nothing of it is stored until the user adds a food as an ingredient.
  */
 object FoodDatabase {
 
@@ -34,18 +34,27 @@ object FoodDatabase {
     /** Taken off a same name for each describing word it has that the line hasn't, so the plainer name wins a tie. */
     private const val EXTRA_WORD = 0.001
 
+    /** A close name whose last word the line hasn't is something else ("red wine" isn't red wine vinegar): its score is cut by this. */
+    private const val OTHER_THING = 0.5
+
     private val BRACKET = Regex("""\([^)]*\)""")
 
-    /** Words that say a line's food comes in a tin. */
-    private val TINNED = setOf("tin", "tinned", "can", "canned").map { Quantities.stem(it) }.toSet()
+    /** Words that say what a line's food comes in, and the portion a food has when it comes in that: "1 tin", "2 cubes". */
+    private val CONTAINERS: Map<String, String> = mapOf(
+        "tin" to "tin", "tinned" to "tin", "can" to "tin", "canned" to "tin",
+        "cube" to "cube", "pot" to "pot", "sachet" to "sachet", "sprig" to "sprig",
+    ).mapKeys { Quantities.stem(it.key) }
 
     private class Entry(
         val food: Food,
         val names: List<IngredientMatching.NameTokens>,
+        /** Each name's last word ([IngredientMatching.head]). */
+        val heads: List<String?>,
         /** Each name's words with its describing words kept and its bracketed ones left out. */
         val words: List<Set<String>>,
         val texts: List<String>,
-        val tinned: Boolean,
+        /** The stems of the food's portions ("tin", "cube"), and "tin" for a name that says it is tinned. */
+        val portions: Set<String>,
     )
 
     val bundle: RecipeBundle by lazy {
@@ -66,9 +75,11 @@ object FoodDatabase {
             Entry(
                 food = food,
                 names = names.map { IngredientMatching.nameTokens(it) },
+                heads = names.map { IngredientMatching.head(it) },
                 words = names.map { words(it) },
                 texts = names.map { searchText(it) },
-                tinned = Quantities.portion(food.ingredient, "tin") != null || "tin" in words(food.name.substringAfter('(', "")),
+                portions = food.ingredient.portions.map { Quantities.stem(it.name) }.toSet() +
+                    listOfNotNull("tin".takeIf { "tin" in words(food.name.substringAfter('(', "")) }),
             )
         }.sortedWith(compareBy { it.food.name.lowercase() })
     }
@@ -105,18 +116,25 @@ object FoodDatabase {
     /**
      * The food for a recipe line's [name] (from `IngredientLines.parse(...).name`), or null: one whose name or other
      * name is the same, or one that [IngredientMatching] would apply automatically, at least
-     * [IngredientMatching.AUTO_APPLY_SCORE] and [IngredientMatching.AUTO_APPLY_MARGIN] ahead of the next food.
+     * [IngredientMatching.AUTO_APPLY_SCORE] and [IngredientMatching.AUTO_APPLY_MARGIN] ahead of the next food, and
+     * only one whose last word the line has ("cherries" are not cherry tomatoes, nor "red wine" red wine vinegar).
      *
      * A same name with the line's own describing words wins ("chopped tomatoes" is the tin, "tomatoes" the fresh
-     * ones), and a line whose [text] says the food is tinned looks among the tinned foods first.
+     * ones). A line whose [text] weighs the food looks first among the foods weighed the same way ("500 ml chicken
+     * stock" is the stock, not the cubes), and one that says what it comes in among the foods that come in it ("1 tin
+     * of tomatoes", "2 stock cubes", "a sprig of thyme"); both together first.
      */
     fun match(name: String, text: String = name): Food? {
         val line = IngredientMatching.lineTokens(name)
         if (line.isEmpty()) return null
         val lineWords = words(name)
         val scored = entries.map { it to score(line, lineWords, it) }.filter { it.second > 0.0 }
-        val tinned = Quantities.words(text).any { Quantities.stem(it) in TINNED }
-        return (if (tinned) pick(scored.filter { it.first.tinned }) else null) ?: pick(scored)
+        val container = Quantities.words(text).firstNotNullOfOrNull { CONTAINERS[Quantities.stem(it)] }
+        val unit = IngredientLines.parse(text).measure?.let { Quantities.unitOf(it) }
+        fun comesIn(entry: Entry) = container != null && container in entry.portions
+        fun weighed(entry: Entry) = unit != null && entry.food.ingredient.unit == unit
+        val firsts = listOf<(Entry) -> Boolean>({ weighed(it) && comesIn(it) }, { weighed(it) }, { comesIn(it) })
+        return firsts.firstNotNullOfOrNull { first -> pick(scored.filter { first(it.first) }) } ?: pick(scored)
     }
 
     private fun pick(scored: List<Pair<Entry, Double>>): Food? {
@@ -133,7 +151,7 @@ object FoodDatabase {
             val same = when (line) {
                 name.full -> 1.0
                 name.core -> SAME_CORE
-                else -> return@maxOf IngredientMatching.nameScore(line, name)
+                else -> return@maxOf IngredientMatching.nameScore(line, name) * if (entry.heads[i] in line) 1.0 else OTHER_THING
             }
             val words = entry.words[i]
             if (words == lineWords) SAME_WORDS else same - EXTRA_WORD * words.count { it !in lineWords }

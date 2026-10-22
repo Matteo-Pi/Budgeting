@@ -14,12 +14,14 @@ object FoodGroups {
         "stock", "cube", "gravy", "bouillon", "sauce", "paste", "powder", "seasoning", "oil", "vinegar", "wine",
         "flour", "starch", "extract", "granules", "flavouring",
     )
-    private val MEAT_FREE = stems("tofu", "tempeh", "quorn", "seitan", "paneer", "halloumi", "vegetarian", "vegan", "plant", "soya")
+    private val MEAT_FREE = stems(
+        "tofu", "tempeh", "quorn", "seitan", "paneer", "halloumi", "vegetarian", "vegan", "veggie", "plant", "soya", "falafel",
+    )
     private val NOODLES = stems("noodle", "ramen", "udon", "soba", "vermicelli")
     private val RICE = stems("rice", "risotto", "arborio", "basmati", "jasmine")
     private val PASTA = stems(
         "pasta", "spaghetti", "penne", "fusilli", "linguine", "tagliatelle", "macaroni", "lasagne", "lasagna", "rigatoni",
-        "farfalle", "orzo", "conchiglie", "gnocchi", "ravioli", "tortellini", "pappardelle", "orecchiette",
+        "farfalle", "orzo", "conchiglie", "gnocchi", "ravioli", "tortellini", "tortelloni", "pappardelle", "orecchiette",
     )
     private val POTATOES = stems("potato", "chips", "wedges", "hash")
     private val BREAD = stems(
@@ -35,15 +37,21 @@ object FoodGroups {
     private val CHICKEN = stems("chicken")
     private val TURKEY = stems("turkey")
     private val LAMB = stems("lamb", "mutton")
-    private val BEEF = stems("beef", "steak", "brisket")
+    private val BEEF = stems("beef", "brisket")
+
+    /** A steak that doesn't say what of is beef; a gammon, lamb or tuna steak says. */
+    private val STEAK = stems("steak")
     private val PORK = stems(
-        "pork", "bacon", "ham", "gammon", "sausage", "chorizo", "pancetta", "lardon", "salami", "prosciutto",
+        "pork", "bacon", "ham", "gammon", "sausage", "chorizo", "pancetta", "lardon", "salami", "prosciutto", "pepperoni",
+        "chipolata", "frankfurter",
     )
     private val MINCE = stems("mince", "meatball", "burger")
     private val EGG = stems("egg")
 
     /** Words that mean meat or fish in any form ("chicken stock" too), for *No meat or fish*. */
-    private val ANIMAL = CHICKEN + TURKEY + LAMB + BEEF + PORK + FISH + SEAFOOD + MINCE
+    private val ANIMAL = CHICKEN + TURKEY + LAMB + BEEF + STEAK + PORK + FISH + SEAFOOD + MINCE
+
+    private val MEAT_FREE_WORDS = Regex("""\bmeat[\s-]*free\b|\bmeatless\b""")
 
     /** The name's words as stems, without anything in brackets. */
     private fun nameStems(name: String): Set<String> =
@@ -65,7 +73,7 @@ object FoodGroups {
         fun has(set: Set<String>) = words.any { it in set }
         return when {
             has(NOT_A_FOOD) -> null
-            has(MEAT_FREE) -> FoodGroup.MEAT_FREE
+            has(MEAT_FREE) || MEAT_FREE_WORDS.containsMatchIn(Quantities.fold(ingredient.name)) -> FoodGroup.MEAT_FREE
             has(NOODLES) -> FoodGroup.NOODLES
             has(RICE) -> FoodGroup.RICE
             has(PASTA) -> FoodGroup.PASTA
@@ -79,6 +87,7 @@ object FoodGroups {
             has(LAMB) -> FoodGroup.LAMB
             has(BEEF) -> FoodGroup.BEEF
             has(PORK) -> FoodGroup.PORK
+            has(STEAK) -> FoodGroup.BEEF
             has(MINCE) -> FoodGroup.BEEF
             has(EGG) -> FoodGroup.EGGS
             ingredient.vegKind == VegKind.PULSE -> FoodGroup.BEANS_LENTILS
@@ -86,9 +95,15 @@ object FoodGroups {
         }
     }
 
-    /** True when [ingredient] is meat or fish in any form: its shelf, its group or a word of its name. */
-    fun isAnimal(ingredient: Ingredient): Boolean =
-        ingredient.shelf == Shelf.MEAT || of(ingredient)?.isMeatOrFish == true || nameStems(ingredient.name).any { it in ANIMAL }
+    /**
+     * True when [ingredient] is meat or fish in any form: its shelf, its group or a word of its name. Something that
+     * counts as meat-free ("Meat-free sausages", "Quorn chicken-style pieces") never is.
+     */
+    fun isAnimal(ingredient: Ingredient): Boolean {
+        val group = of(ingredient)
+        if (group == FoodGroup.MEAT_FREE) return false
+        return ingredient.shelf == Shelf.MEAT || group?.isMeatOrFish == true || nameStems(ingredient.name).any { it in ANIMAL }
+    }
 }
 
 /** How a recipe is cooked. */

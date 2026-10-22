@@ -23,6 +23,9 @@ class RecipeFacetsTest {
         assertEquals(FoodGroup.PORK, guess("Smoked streaky bacon"))
         assertEquals(FoodGroup.PORK, guess("Cooking chorizo"))
         assertEquals(FoodGroup.LAMB, guess("Lamb leg steaks"), "lamb before steak")
+        assertEquals(FoodGroup.PORK, guess("Gammon steaks"), "gammon before steak")
+        assertEquals(FoodGroup.PORK, guess("Pork loin steaks"), "pork before steak")
+        assertEquals(FoodGroup.PORK, guess("Pepperoni slices"))
         assertEquals(FoodGroup.FISH, guess("Salmon fillets"))
         assertEquals(FoodGroup.FISH, guess("Tuna chunks in spring water"))
         assertEquals(FoodGroup.SEAFOOD, guess("King prawns"))
@@ -30,6 +33,9 @@ class RecipeFacetsTest {
         assertEquals(FoodGroup.MEAT_FREE, guess("Firm tofu"))
         assertEquals(FoodGroup.MEAT_FREE, guess("Quorn mince"), "meat-free before mince")
         assertEquals(FoodGroup.MEAT_FREE, guess("Vegetarian sausages"))
+        assertEquals(FoodGroup.MEAT_FREE, guess("Meat-free sausages"), "meat-free before sausage")
+        assertEquals(FoodGroup.MEAT_FREE, guess("Meat free mince"))
+        assertEquals(FoodGroup.MEAT_FREE, guess("Veggie burgers"))
         assertEquals(FoodGroup.BEANS_LENTILS, guess("Red split lentils (dried)", VegKind.PULSE))
         assertEquals(FoodGroup.BEANS_LENTILS, guess("Chickpeas", VegKind.PULSE))
     }
@@ -73,6 +79,13 @@ class RecipeFacetsTest {
         assertTrue(FoodGroups.isAnimal(Ingredient(name = "Black pudding", shelf = Shelf.MEAT)))
         assertFalse(FoodGroups.isAnimal(Ingredient(name = "Vegetable stock cubes")))
         assertFalse(FoodGroups.isAnimal(Ingredient(name = "Free range eggs")))
+        assertTrue(FoodGroups.isAnimal(Ingredient(name = "Beef meatballs")))
+        assertTrue(FoodGroups.isAnimal(Ingredient(name = "Gammon steaks")))
+        // Meat-free stays meat-free, whatever its name copies.
+        assertFalse(FoodGroups.isAnimal(Ingredient(name = "Vegetarian sausages")))
+        assertFalse(FoodGroups.isAnimal(Ingredient(name = "Meat-free burgers")))
+        assertFalse(FoodGroups.isAnimal(Ingredient(name = "Quorn chicken-style pieces")))
+        assertFalse(FoodGroups.isAnimal(Ingredient(name = "Soya mince", shelf = Shelf.MEAT)))
     }
 
     @Test

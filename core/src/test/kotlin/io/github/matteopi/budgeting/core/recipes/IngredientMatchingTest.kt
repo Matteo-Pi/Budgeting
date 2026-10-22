@@ -194,4 +194,15 @@ class IngredientMatchingTest {
         assertEquals("", IngredientMatching.nameKey("fresh, chopped"))
         assertNotNull(IngredientMatching.nameKey("Olive oil"))
     }
+
+    @Test
+    fun `of two with the same name the one in the line's unit is taken`() {
+        val cubes = Ingredient(id = 1, name = "Chicken stock cubes", unit = BaseUnit.G)
+        val stock = Ingredient(id = 2, name = "Chicken stock (made with a cube)", unit = BaseUnit.ML)
+        val both = listOf(cubes, stock)
+        assertEquals(2L, IngredientMatching.match("chicken stock", both, unit = BaseUnit.ML).ingredientId)
+        assertEquals(1L, IngredientMatching.match("chicken stock", both, unit = BaseUnit.G).ingredientId)
+        assertEquals(1L, IngredientMatching.match("chicken stock", both).ingredientId, "no unit: the first")
+        assertEquals(1L, IngredientMatching.match("chicken stock", listOf(cubes), unit = BaseUnit.ML).ingredientId, "the only one")
+    }
 }

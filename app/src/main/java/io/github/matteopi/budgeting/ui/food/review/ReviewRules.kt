@@ -4,6 +4,7 @@ import io.github.matteopi.budgeting.core.recipes.FoodDatabase
 import io.github.matteopi.budgeting.core.recipes.Ingredient
 import io.github.matteopi.budgeting.core.recipes.IngredientLines
 import io.github.matteopi.budgeting.core.recipes.IngredientMatching
+import io.github.matteopi.budgeting.core.recipes.MatchKind
 import io.github.matteopi.budgeting.core.recipes.Quantities
 import io.github.matteopi.budgeting.core.recipes.Recipe
 import io.github.matteopi.budgeting.core.recipes.RecipeDraft
@@ -113,15 +114,26 @@ object ReviewRules {
      * Matches [line]'s text to an ingredient: applied when sure ([LineOrigin.AUTO]), else the suggestions are kept.
      * With [foods], a line none of the ingredients fits takes a food of the built-in list when one fits
      * ([ReviewFoods], docs/PLAN.md §11.12), keeping the suggestions too; a food with the name of one of the
-     * ingredients ("rice" is the list's *Long-grain white rice*) gives that ingredient.
+     * ingredients ("rice" is the list's *Long-grain white rice*) gives that ingredient. So does a line weighed in
+     * the other unit from the ingredient its name found, when a food in the line's unit fits: "500 ml chicken stock"
+     * is the list's stock made with a cube rather than 500 g of the person's stock cubes, which stay one tap away.
+     * A name the person taught is kept whatever the unit.
      */
     fun matchLine(line: ReviewLine, ingredients: List<Ingredient>, aliases: Map<String, Long>, foods: Boolean = false): ReviewLine {
-        val name = IngredientLines.parse(line.text).name
-        val match = IngredientMatching.match(name, ingredients, aliases)
+        val parsed = IngredientLines.parse(line.text)
+        val name = parsed.name
+        val unit = parsed.measure?.let { Quantities.unitOf(it) }
+        val match = IngredientMatching.match(name, ingredients, aliases, unit)
         val suggestions = match.suggestions.map { it.ingredientId }
-        val food = if (match.ingredientId == null && foods) FoodDatabase.match(name, line.text) else null
+        val found = match.ingredientId?.let { id -> ingredients.firstOrNull { it.id == id } }
+        val otherUnit = unit != null && found != null && found.unit != unit && match.kind != MatchKind.ALIAS
+        val food = if (foods && (found == null || otherUnit)) {
+            FoodDatabase.match(name, line.text)?.takeIf { found == null || it.ingredient.unit == unit }
+        } else {
+            null
+        }
         val same = food?.let { f -> ingredients.firstOrNull { !it.archived && it.name.equals(f.name, ignoreCase = true) } }
-        val id = match.ingredientId ?: same?.id
+        val id = if (food != null) same?.id else match.ingredientId
         return when {
             id != null -> line.copy(ingredientId = id, origin = LineOrigin.AUTO, suggestionIds = emptyList())
             food != null -> line.copy(ingredientId = ReviewFoods.idOf(food), origin = LineOrigin.AUTO, suggestionIds = suggestions)

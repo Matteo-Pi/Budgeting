@@ -50,7 +50,7 @@ class FoodListMappingTest {
 
     @Test
     fun aSearchIsOneListBestFirst() {
-        val sections = FoodListMapping.sections(FoodDatabase.search("chick"), "chick", emptyMap(), today)
+        val sections = FoodListMapping.sections(FoodDatabase.search("chickpea"), "chickpea", emptyMap(), today)
         assertEquals(1, sections.size)
         assertNull(sections.single().title)
         assertEquals("chickpeas", sections.single().rows.first().key)

@@ -19,8 +19,8 @@ class FoodDatabaseTest {
     private fun matched(line: String): String? = FoodDatabase.match(IngredientLines.parse(line).name, line)?.key
 
     @Test
-    fun `it decodes with about 170 foods and no recipes`() {
-        assertTrue(foods.size in 160..200, "${foods.size} foods")
+    fun `it decodes with about 380 foods and no recipes`() {
+        assertTrue(foods.size in 360..420, "${foods.size} foods")
         assertTrue(FoodDatabase.bundle.recipes.isEmpty())
         assertEquals(foods.size, foods.map { it.key }.toSet().size, "keys are unique")
         assertEquals(foods.size, foods.map { it.name.lowercase() }.toSet().size, "names are unique")
@@ -48,7 +48,7 @@ class FoodDatabaseTest {
     fun `the foods this list adds are typical values for the food as weighed`() {
         val starter = RecipeBundle.starter().ingredients.map { it.key }.toSet()
         val added = foods.filter { it.key !in starter }
-        assertTrue(added.size >= 120, "${added.size} added")
+        assertTrue(added.size >= 320, "${added.size} added")
         for (food in added) {
             assertEquals(NutritionSource.ESTIMATE, food.ingredient.nutritionSource, food.key)
             assertEquals(FoodDatabase.PRICES_FOUND, food.ingredient.priceDate, food.key)
@@ -68,13 +68,13 @@ class FoodDatabaseTest {
         }
     }
 
-    /** Vinegar's energy is acetic acid, which labels count at 3.6 kcal/g and these factors don't. */
-    private val acids = setOf("vinegar_white_wine")
+    /** Vinegar's energy is acetic acid and vanilla extract's alcohol, which labels count at 3.6 and 7 kcal/g and these factors don't. */
+    private val acidAndAlcohol = setOf("vinegar_white_wine", "vanilla_extract")
 
     @Test
     fun `energy agrees with the fat, carbs, protein and fibre`() {
         for (food in foods) {
-            if (food.key in acids) continue
+            if (food.key in acidAndAlcohol) continue
             val n = food.ingredient.per100
             val worked = 4 * n.carbs!! + 4 * n.protein!! + 9 * n.fat!! + 2 * n.fibre!!
             assertTrue(abs(worked - n.kcal!!) <= 0.15 * n.kcal!! + 10, "${food.key}: ${n.kcal} kcal, worked out $worked")
@@ -84,10 +84,16 @@ class FoodDatabaseTest {
     @Test
     fun `sugar, honey, jam and sweet sauces are the foods with added sugars`() {
         val sweet = foods.filter { it.ingredient.per100.addedSugars!! > 0 }.map { it.key }.toSet()
-        for (key in listOf("sugar_granulated", "sugar_brown", "honey", "jam", "ketchup", "sweet_chilli", "hoisin", "baked_beans")) {
+        for (key in listOf(
+            "sugar_granulated", "sugar_brown", "honey", "jam", "ketchup", "sweet_chilli", "hoisin", "baked_beans", "caster_sugar",
+            "icing_sugar", "golden_syrup", "maple_syrup", "condensed_milk", "dark_chocolate", "sweet_sour_sauce",
+        )) {
             assertTrue(key in sweet, key)
         }
-        for (key in listOf("milk_semi", "apples", "bananas", "sultanas", "rice", "oat_drink", "chickpeas")) {
+        for (key in listOf(
+            "milk_semi", "apples", "bananas", "sultanas", "rice", "oat_drink", "chickpeas", "dates", "dried_apricots", "peaches_tin",
+            "evaporated_milk", "milk_skimmed",
+        )) {
             assertFalse(key in sweet, key)
         }
     }
@@ -108,10 +114,12 @@ class FoodDatabaseTest {
 
     @Test
     fun `names and other names belong to one food`() {
-        // Each name and other name, with its describing words ("chopped") but not its bracketed ones, is one food's.
+        // Each name and other name, with its describing words ("chopped") but not its bracketed ones, is one food's of
+        // those weighed in grams and one of those in millilitres: "chicken stock" is the cubes and the stock made with one.
         val owner = HashMap<String, String>()
         for (source in FoodDatabase.bundle.ingredients) {
-            for (key in (listOf(source.name) + source.aliases).map { FoodDatabase.words(it).sorted().joinToString(" ") }.toSet()) {
+            for (name in (listOf(source.name) + source.aliases).map { FoodDatabase.words(it).sorted().joinToString(" ") }.toSet()) {
+                val key = "${source.unit} $name"
                 val before = owner.put(key, source.key)
                 assertTrue(before == null, "\"$key\" is a name of both $before and ${source.key}")
             }
@@ -125,7 +133,10 @@ class FoodDatabaseTest {
 
     @Test
     fun `pulses are pulses and counted lines have portions`() {
-        for (key in listOf("chickpeas", "black_beans", "butter_beans", "cannellini", "green_lentils", "kidney_beans", "red_lentils")) {
+        for (key in listOf(
+            "chickpeas", "black_beans", "butter_beans", "cannellini", "green_lentils", "kidney_beans", "red_lentils", "mixed_beans",
+            "green_lentils_tin", "chickpeas_dried", "split_peas", "edamame", "mushy_peas",
+        )) {
             assertEquals(VegKind.PULSE, FoodDatabase.byKey(key)!!.ingredient.vegKind, key)
         }
         assertEquals(240.0, Quantities.portion(FoodDatabase.byKey("chickpeas")!!.ingredient, "tins")?.amount)
@@ -140,6 +151,32 @@ class FoodDatabaseTest {
     }
 
     @Test
+    fun `each food counts as the protein or carb it is`() {
+        fun group(key: String) = FoodGroups.of(FoodDatabase.byKey(key)!!.ingredient)
+        fun animal(key: String) = FoodGroups.isAnimal(FoodDatabase.byKey(key)!!.ingredient)
+        val expected = mapOf(
+            "gammon_steaks" to FoodGroup.PORK, "pork_loin_steaks" to FoodGroup.PORK, "rump_steak" to FoodGroup.BEEF,
+            "turkey_steaks" to FoodGroup.TURKEY, "pepperoni" to FoodGroup.PORK, "chipolatas" to FoodGroup.PORK,
+            "beef_meatballs" to FoodGroup.BEEF, "turkey_meatballs" to FoodGroup.TURKEY, "sardines_tin" to FoodGroup.FISH,
+            "prawns_raw" to FoodGroup.SEAFOOD, "tortelloni" to FoodGroup.PASTA, "fresh_pasta" to FoodGroup.PASTA,
+            "rice_arborio" to FoodGroup.RICE, "udon" to FoodGroup.NOODLES, "english_muffins" to FoodGroup.BREAD,
+            "brioche_buns" to FoodGroup.BREAD, "hash_browns" to FoodGroup.POTATOES, "bulgur" to FoodGroup.GRAINS,
+            "quorn_pieces" to FoodGroup.MEAT_FREE, "veggie_sausages" to FoodGroup.MEAT_FREE, "veggie_burgers" to FoodGroup.MEAT_FREE,
+            "plant_mince" to FoodGroup.MEAT_FREE, "falafel" to FoodGroup.MEAT_FREE, "edamame" to FoodGroup.BEANS_LENTILS,
+        )
+        for ((key, group) in expected) assertEquals(group, group(key), key)
+        for (key in listOf("tortilla_chips", "soya_drink", "pasta_sauce", "chicken_stock", "stock_pot_chicken", "flour_bread", "breadcrumbs")) {
+            assertNull(group(key), key)
+        }
+        for (key in listOf("chicken_stock", "beef_stock", "stock_pot_chicken", "anchovies", "lardons", "beef_burgers", "chicken_nuggets")) {
+            assertTrue(animal(key), key)
+        }
+        for (key in listOf("veg_stock", "quorn_pieces", "veggie_sausages", "veggie_burgers", "plant_mince", "brioche_buns", "hot_dog_rolls")) {
+            assertFalse(animal(key), key)
+        }
+    }
+
+    @Test
     fun `recipe lines find their food`() {
         assertEquals("chickpeas", matched("2 × 400 g tins chickpeas"))
         assertEquals("red_onions", matched("1 red onion, finely chopped"))
@@ -150,23 +187,108 @@ class FoodDatabaseTest {
         assertEquals("eggs", matched("3 large eggs"))
         assertEquals("tomatoes_chopped", matched("400 g tin chopped tomatoes"))
         assertEquals("veg_oil", matched("1 tbsp oil"))
-        assertEquals("stock_cube_veg", matched("500 ml vegetable stock"))
+        assertEquals("veg_stock", matched("500 ml vegetable stock"))
         assertEquals("black_pepper", matched("black pepper"))
-        assertEquals("yogurt_greek_0", matched("150 g Greek yoghurt"))
+        assertEquals("greek_yogurt", matched("150 g Greek yoghurt"))
+        assertEquals("yogurt_greek_0", matched("150 g fat free Greek yogurt"))
         assertEquals("creme_fraiche", matched("2 tbsp crème fraîche"))
         assertEquals("coriander_fresh", matched("a handful of fresh coriander"))
+    }
+
+    @Test
+    fun `stock is the liquid, the cubes or the pots as the line says`() {
+        assertEquals("chicken_stock", matched("300 ml chicken stock (1 cube)"))
+        assertEquals("chicken_stock", matched("chicken stock"))
+        assertEquals("stock_cube", matched("1 chicken stock cube"))
+        assertEquals("stock_cube", matched("2 stock cubes"))
+        assertEquals("veg_stock", matched("1 litre vegetable stock"))
+        assertEquals("stock_cube_veg", matched("1 vegetable stock cube"))
+        assertEquals("beef_stock", matched("500 ml beef stock"))
+        assertEquals("stock_cube_beef", matched("1 beef stock cube"))
+        assertEquals("stock_pot_chicken", matched("1 chicken stock pot"))
+        // A litre of stock costs a cube's share, not a kilo of cubes.
+        val stock = FoodDatabase.byKey("chicken_stock")!!.ingredient
+        assertEquals(BaseUnit.ML, stock.unit)
+        assertEquals(Money(110), stock.price)
+        assertEquals(5000.0, stock.packSize)
+        assertEquals(0.84, stock.per100.salt!!, 1e-9)
+    }
+
+    @Test
+    fun `cuts, formats and kinds find their own food`() {
+        val lines = mapOf(
+            "500 g beef mince" to "beef_mince_20",
+            "250 g steak mince" to "beef_mince_15",
+            "500 g lean beef mince" to "beef_mince_5",
+            "500 g chicken mince" to "chicken_mince",
+            "500 g minced chicken" to "chicken_mince",
+            "12 beef meatballs" to "beef_meatballs",
+            "4 pork chops" to "pork_chops",
+            "2 gammon steaks" to "gammon_steaks",
+            "8 chipolatas" to "chipolatas",
+            "500 g lamb" to "lamb_diced",
+            "2 chicken breasts" to "chicken_breast",
+            "500 g diced chicken breast" to "chicken_pieces",
+            "4 chicken thighs" to "chicken_thigh",
+            "6 bone-in chicken thighs" to "chicken_thighs_bone",
+            "200 g raw king prawns" to "prawns_raw",
+            "200 g king prawns" to "prawns_cooked",
+            "1 tin salmon" to "salmon_tin",
+            "2 salmon fillets" to "salmon_fillets",
+            "100 g smoked salmon" to "smoked_salmon",
+            "2 sprigs of thyme" to "thyme_fresh",
+            "1 tsp thyme" to "thyme",
+            "1 sprig rosemary" to "rosemary_fresh",
+            "100 g grated mozzarella" to "mozzarella_grated",
+            "1 ball of mozzarella" to "mozzarella",
+            "300 g fresh egg noodles" to "noodles_ready",
+            "200 g egg noodles" to "egg_noodles",
+            "250 g fresh tagliatelle" to "fresh_pasta",
+            "250 g tagliatelle" to "tagliatelle",
+            "200 g macaroni" to "macaroni",
+            "200 g pasta" to "penne",
+            "1 tin green lentils" to "green_lentils_tin",
+            "100 g green lentils" to "green_lentils",
+            "200 g dried chickpeas" to "chickpeas_dried",
+            "1 tin of peaches" to "peaches_tin",
+            "1 sachet fast-action yeast" to "yeast",
+            "50 g sliced almonds" to "flaked_almonds",
+            "50 g ground almonds" to "ground_almonds",
+            "250 g cooked rice" to "rice_microwave",
+            "200 g risotto rice" to "rice_arborio",
+            "2 tbsp sun-dried tomatoes" to "sun_dried_tomatoes",
+            "1 red cabbage" to "red_cabbage",
+            "1 cabbage" to "white_cabbage",
+            "500 g new potatoes" to "new_potatoes",
+            "1 kg potatoes" to "potatoes_white",
+            "100 g caster sugar" to "caster_sugar",
+            "1 tbsp sugar" to "sugar_granulated",
+            "1 tin coconut milk" to "coconut_milk",
+            "1 tin light coconut milk" to "coconut_milk_light",
+            "100 ml soured cream" to "sour_cream",
+            "200 g houmous" to "houmous",
+            "a handful of rocket" to "rocket",
+            "1 tbsp hummus" to "houmous",
+        )
+        for ((line, key) in lines) assertEquals(key, matched(line), line)
     }
 
     @Test
     fun `a food it doesn't have is no match`() {
         assertNull(matched("1 dragon fruit"))
         assertNull(matched("200 g venison"))
+        // A close name for something else: the line hasn't the food's last word.
+        assertNull(matched("300 ml red wine"), "not red wine vinegar")
+        assertNull(matched("200 g cherries"), "not cherry tomatoes")
+        assertNull(matched("2 lamb kidneys"), "not kidney beans")
+        assertNull(matched("300 ml water"), "nothing is called water")
         assertNull(FoodDatabase.match(""))
     }
 
     @Test
     fun `search starts with the names that start with the text`() {
-        assertEquals("chickpeas", FoodDatabase.search("chick").first().key)
+        assertEquals("chickpeas", FoodDatabase.search("chickpea").first().key)
+        assertTrue(FoodDatabase.search("chick").take(8).all { it.name.startsWith("Chick") })
         assertEquals("chickpeas", FoodDatabase.search("garbanzo").first().key)
         assertEquals("creme_fraiche", FoodDatabase.search("creme").first().key)
         assertTrue(FoodDatabase.search("rice").take(4).all { it.ingredient.name.contains("rice", ignoreCase = true) })
