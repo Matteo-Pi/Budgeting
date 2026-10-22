@@ -127,10 +127,14 @@ class RecipeReviewViewModel(
     private val countOptional: StateFlow<Boolean> = settingsStore.countOptionalExtras
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
-    private val ingredientsById: Flow<Map<Long, Ingredient>> = ingredients.map { list -> list.associateBy { it.id } }
+    /** The food list's foods' prices, for lines that take a food (docs/PLAN.md §11.12). */
+    private val foodPrices: Map<Long, ResolvedPrice> by lazy { ReviewFoods.prices(clock.today()) }
+
+    /** Every ingredient by id, and the food list's foods by their provisional ids. */
+    private val ingredientsById: Flow<Map<Long, Ingredient>> = ingredients.map { list -> list.associateBy { it.id } + ReviewFoods.ingredients }
 
     val derived: StateFlow<ReviewDerived?> = combine(mutableEdit, ingredientsById, prices, countOptional) { edit, byId, priced, optional ->
-        ReviewRules.derive(edit, base, byId, priced, optional)
+        ReviewRules.derive(edit, base, byId, priced + foodPrices, optional)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     init {
@@ -193,7 +197,7 @@ class RecipeReviewViewModel(
 
     private suspend fun review(text: String) {
         val draft = RecipeText.parse(text)
-        val first = ReviewRules.fromDraft(draft, ingredientRepository.observeAll().first(), ingredientRepository.aliasMap())
+        val first = ReviewRules.fromDraft(draft, ingredientRepository.observeAll().first(), ingredientRepository.aliasMap(), foods = true)
         initialEdit = first
         mutableEdit.value = first
         mutableWarnings.value = draft.warnings
@@ -232,7 +236,7 @@ class RecipeReviewViewModel(
     fun setLineText(key: Long, text: String) {
         val all = ingredients.value
         val known = aliases.value
-        updateLine(key) { ReviewRules.withText(it, text, all, known) }
+        updateLine(key) { ReviewRules.withText(it, text, all, known, foods = true) }
     }
 
     fun setLineGroup(key: Long, text: String) = updateLine(key) { it.copy(group = text) }
@@ -258,7 +262,7 @@ class RecipeReviewViewModel(
     fun recount(key: Long) {
         val all = ingredients.value
         val known = aliases.value
-        updateLine(key) { ReviewRules.recount(it, all, known) }
+        updateLine(key) { ReviewRules.recount(it, all, known, foods = true) }
     }
 
     fun deleteLine(key: Long) {
@@ -346,12 +350,15 @@ class RecipeReviewViewModel(
     /**
      * Saves the recipe through the repository (a new one as "mine", or the same id when editing), then learns
      * the name of every line whose ingredient was chosen by hand, and calls [onSaved] with the recipe's id.
-     * Unmatched lines are allowed. Does nothing while the title or a number is not valid.
+     * Foods of the food list on its lines are added as ingredients first (or the ingredient with the food's name
+     * is used), and the lines point at them. Unmatched lines are allowed. Does nothing while the title or a number
+     * is not valid.
      */
     fun save(onSaved: (Long) -> Unit) {
         if (mutableSaving.value) return
         val current = mutableEdit.value
-        val worked = ReviewRules.derive(current, base, ingredients.value.associateBy { it.id }, prices.value, countOptional.value)
+        val byId = ingredients.value.associateBy { it.id } + ReviewFoods.ingredients
+        val worked = ReviewRules.derive(current, base, byId, prices.value + foodPrices, countOptional.value)
         val problem = worked.problems.firstOrNull()
         if (problem != null) {
             mutableSaveError.value = problem
@@ -361,9 +368,18 @@ class RecipeReviewViewModel(
         mutableSaveError.value = null
         viewModelScope.launch {
             try {
-                val id = recipeRepository.save(worked.recipe)
+                val added = HashMap<Long, Long>()
+                for (foodId in worked.recipe.lines.mapNotNull { it.ingredientId }.filter { ReviewFoods.isFood(it) }.distinct()) {
+                    val food = ReviewFoods.food(foodId) ?: continue
+                    added[foodId] = ingredientRepository.addFood(food)
+                }
+                val recipe = worked.recipe.copy(
+                    lines = worked.recipe.lines.map { line -> line.ingredientId?.let { added[it] }?.let { line.copy(ingredientId = it) } ?: line },
+                )
+                val id = recipeRepository.save(recipe)
                 for ((name, ingredientId) in ReviewRules.aliasesToLearn(current)) {
-                    ingredientRepository.mapAlias(name, ingredientId)
+                    val real = if (ReviewFoods.isFood(ingredientId)) added[ingredientId] ?: continue else ingredientId
+                    ingredientRepository.mapAlias(name, real)
                 }
                 onSaved(id)
             } catch (e: CancellationException) {

@@ -1,6 +1,8 @@
 package io.github.matteopi.budgeting.core.recipes
 
 import io.github.matteopi.budgeting.core.model.Money
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -58,6 +60,10 @@ data class BundleIngredient(
     val note: String = "",
     /** What the recipe filters count it as (a [FoodGroup] name, `NONE` for neither); left out, it is guessed. */
     val group: String? = null,
+    /** Other names it goes by, for the built-in food list (docs/PLAN.md §11.12); left out of files the app writes. */
+    @OptIn(ExperimentalSerializationApi::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val aliases: List<String> = emptyList(),
 )
 
 @Serializable
@@ -312,6 +318,7 @@ data class RecipeBundle(
                 for (portion in ingredient.portions) {
                     if (portion.name.isBlank() || !(portion.amount > 0.0)) problems += "$label has a portion without a name or an amount."
                 }
+                if (ingredient.aliases.any { it.isBlank() }) problems += "$label has a blank other name."
             }
 
             val recipeKeys = HashSet<String>()

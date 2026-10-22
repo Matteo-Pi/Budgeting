@@ -121,6 +121,27 @@ object IngredientMatching {
      */
     fun nameKey(name: String): String = tokens(name, withBrackets = true).joinToString(" ")
 
+    /** A name's words as [match] compares them: with its bracketed words ([full]) and without them ([core]). */
+    internal class NameTokens(val core: Set<String>, val full: Set<String>)
+
+    internal fun nameTokens(name: String): NameTokens {
+        val full = tokens(name, withBrackets = true).toSet()
+        return NameTokens(tokens(name, withBrackets = false).toSet().ifEmpty { full }, full)
+    }
+
+    /** A recipe line's name as [match] compares it. */
+    internal fun lineTokens(name: String): Set<String> = tokens(name, withBrackets = true).toSet()
+
+    /**
+     * How well a line fits a name, 0 to 1, as [match] scores it: 1.0 for the same words (the name's bracketed words
+     * may be left out), else the word overlap.
+     */
+    internal fun nameScore(line: Set<String>, name: NameTokens): Double = when {
+        line.isEmpty() -> 0.0
+        line == name.core || line == name.full -> 1.0
+        else -> maxOf(score(line, name.core), score(line, name.full))
+    }
+
     private class Candidate(val ingredient: Ingredient, val core: Set<String>, val full: Set<String>)
 
     private fun candidates(ingredients: List<Ingredient>): List<Candidate> =

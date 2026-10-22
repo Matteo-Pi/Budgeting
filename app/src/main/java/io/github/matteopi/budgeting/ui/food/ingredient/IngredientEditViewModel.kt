@@ -9,6 +9,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.matteopi.budgeting.BudgetApp
 import io.github.matteopi.budgeting.core.recipes.BaseUnit
+import io.github.matteopi.budgeting.core.recipes.Food
+import io.github.matteopi.budgeting.core.recipes.FoodDatabase
 import io.github.matteopi.budgeting.core.recipes.FoodGroup
 import io.github.matteopi.budgeting.core.recipes.Ingredient
 import io.github.matteopi.budgeting.core.recipes.LabelReading
@@ -24,11 +26,14 @@ import io.github.matteopi.budgeting.domain.Clock
 import io.github.matteopi.budgeting.ui.receipts.list.ReceiptMapping
 import java.time.LocalDate
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -95,6 +100,13 @@ class IngredientEditViewModel(
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** The food of the food list that fits the name, while no nutrition has been typed in (docs/PLAN.md §11.12). */
+    val foodMatch: StateFlow<Food?> = mutableForm
+        .map { form -> if (ScanRules.hasNoNutrition(form)) FoodDatabase.match(form.name) else null }
+        .distinctUntilChanged()
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** The non-archived recipes that have a line for this ingredient. */
     val usedIn: StateFlow<List<UsedInRecipe>> = recipeRepository.observeAll().map { recipes ->
@@ -164,6 +176,9 @@ class IngredientEditViewModel(
 
     /** What Open Food Facts gave for the scanned barcode (checked on the review dialog first). */
     fun applyDraft(draft: OffDraft) = change { ScanRules.applyDraft(it, draft) }
+
+    /** *Fill in from the food list*: the empty fields from [food], and its price if there is none. */
+    fun fillFromFood(food: Food) = change { ScanRules.applyFood(it, food) }
 
     fun setVegKind(kind: VegKind) = change { it.copy(vegKind = kind) }
 

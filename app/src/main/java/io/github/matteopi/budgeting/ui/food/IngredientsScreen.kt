@@ -28,6 +28,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -58,6 +59,7 @@ import kotlinx.coroutines.launch
 object IngredientsTags {
     const val SEARCH = "ingredients-search"
     const val SCAN = "ingredients-scan"
+    const val FOOD_LIST = "ingredients-food-list"
 
     fun row(ingredientId: Long) = "ingredients-row-$ingredientId"
 
@@ -71,7 +73,8 @@ object IngredientsTags {
  * The Ingredients tab (docs/PLAN.md §11.8): the ingredients grouped by shelf in shop order, with a search.
  * Each row shows the price per pack with where it came from and when ("£0.99 · 1 kg bag · typed 15 Oct", or
  * "paid £0.89 at Tesco 3 Nov" from a receipt), an *old* tag for a price over 120 days old, and hints for
- * "no price" and "no nutrition". The button adds an ingredient; a row opens it.
+ * "no price" and "no nutrition". The button adds an ingredient; a row opens it; *Food list* adds one from the built-in
+ * food list (§11.12).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,6 +83,7 @@ fun IngredientsScreen(
     onOpenIngredient: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
     onNewWithBarcode: (String) -> Unit = {},
+    onOpenFoodList: () -> Unit = {},
     viewModel: IngredientsViewModel = viewModel(factory = IngredientsViewModel.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -97,6 +101,7 @@ fun IngredientsScreen(
                 title = { Text("Ingredients") },
                 navigationIcon = { SectionSwitchButton(AppSection.RECIPES) },
                 actions = {
+                    TextButton(onClick = onOpenFoodList, modifier = Modifier.testTag(IngredientsTags.FOOD_LIST)) { Text("Food list") }
                     // A known barcode opens its ingredient; an unknown one starts a new ingredient with it filled in.
                     PackPhotoButton(
                         label = "Scan barcode",
@@ -160,7 +165,7 @@ fun IngredientsScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) { CircularProgressIndicator() }
                 !state.hasAny -> EmptyState(
-                    "No ingredients yet — tap + to add one, or add the starter recipes from the Recipes tab.",
+                    "No ingredients yet — tap + to add one, pick foods from the Food list, or add the starter recipes from the Recipes tab.",
                 )
                 state.sections.isEmpty() && state.filter == OwnedFilter.OWNED && query.isBlank() -> EmptyState(
                     "Nothing here yet. Tap the fridge on an ingredient to say how much of it you have.",

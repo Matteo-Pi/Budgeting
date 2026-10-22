@@ -29,6 +29,7 @@ import io.github.matteopi.budgeting.ui.food.IngredientsScreen
 import io.github.matteopi.budgeting.ui.food.RecipeSettingsScreen
 import io.github.matteopi.budgeting.ui.food.RecipesScreen
 import io.github.matteopi.budgeting.ui.food.ShoppingScreen
+import io.github.matteopi.budgeting.ui.food.foods.FoodListScreen
 import io.github.matteopi.budgeting.ui.food.ingredient.IngredientEditScreen
 import io.github.matteopi.budgeting.ui.food.recipe.CookingScreen
 import io.github.matteopi.budgeting.ui.food.recipe.RecipeDetailScreen
@@ -336,6 +337,13 @@ fun BudgetNavHost(
                         onAddIngredient = { navController.navigate(Route.IngredientEdit()) },
                         onOpenIngredient = { id -> navController.navigate(Route.IngredientEdit(id)) },
                         onNewWithBarcode = { code -> navController.navigate(Route.IngredientEdit(barcode = code)) },
+                        onOpenFoodList = { navController.navigate(Route.FoodList) },
+                    )
+                }
+                composable<Route.FoodList> {
+                    FoodListScreen(
+                        onBack = { navController.popBackStack() },
+                        onOpenIngredient = { id -> navController.navigate(Route.IngredientEdit(id)) },
                     )
                 }
                 composable<Route.RecipeDetail> { backStackEntry ->

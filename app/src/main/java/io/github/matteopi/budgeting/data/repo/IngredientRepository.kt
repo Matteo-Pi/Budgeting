@@ -1,5 +1,6 @@
 package io.github.matteopi.budgeting.data.repo
 
+import io.github.matteopi.budgeting.core.recipes.Food
 import io.github.matteopi.budgeting.core.recipes.Ingredient
 import io.github.matteopi.budgeting.core.recipes.IngredientAliasRecord
 import io.github.matteopi.budgeting.core.recipes.IngredientMatching
@@ -9,6 +10,7 @@ import io.github.matteopi.budgeting.data.db.dao.FoodDao
 import io.github.matteopi.budgeting.data.db.entities.IngredientAliasEntity
 import io.github.matteopi.budgeting.domain.Clock
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 /**
@@ -74,6 +76,17 @@ class IngredientRepository(
         )
         return foodDao.saveIngredient(tidy.toEntity(), tidy.toPortionEntities())
     }
+
+    /** The ingredient (not archived) with this name, case ignored, if any. */
+    suspend fun findByName(name: String): Ingredient? =
+        observeAll().first().firstOrNull { !it.archived && it.name.equals(name.trim(), ignoreCase = true) }
+
+    /**
+     * Adds a food of the built-in food list (docs/PLAN.md §11.12) as an ingredient, with its price, nutrition,
+     * portions, veg kind and shelf, and returns its id. When an ingredient already has the food's name, nothing is
+     * added and that one's id is returned.
+     */
+    suspend fun addFood(food: Food): Long = findByName(food.name)?.id ?: save(food.toIngredient(clock.nowMillis()))
 
     /** Hides the ingredient from pickers and matching (or brings it back). Recipe lines keep pointing at it. */
     suspend fun setArchived(id: Long, archived: Boolean) {

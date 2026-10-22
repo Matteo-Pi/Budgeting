@@ -2,6 +2,7 @@ package io.github.matteopi.budgeting.ui.food.review
 
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.recipes.BaseUnit
+import io.github.matteopi.budgeting.core.recipes.FoodDatabase
 import io.github.matteopi.budgeting.core.recipes.Ingredient
 import io.github.matteopi.budgeting.core.recipes.Nutrient
 import io.github.matteopi.budgeting.core.recipes.Prices
@@ -120,6 +121,58 @@ class ReviewRulesTest {
         val line = derived.lines.getValue(1)
         assertTrue(line.estimated)
         assertEquals("10", line.amountText)
+    }
+
+    // ---- the food list (docs/PLAN.md §11.12) ---------------------------------------------------
+
+    private val curry = "# Chickpea pilau\nServes: 2\n\n## Ingredients\n- 240 g chickpeas\n- 1 red onion\n- 150 g basmati rice\n" +
+        "- 400 g rice\n- 300 ml water\n\n## Method\n1. Cook it all.\n"
+
+    @Test
+    fun linesNoIngredientFitsTakeAFoodAndCountInTheNumbers() {
+        val edit = ReviewRules.fromDraft(RecipeText.parse(curry), ingredients, emptyMap(), foods = true)
+        val names = edit.lines.map { line -> line.ingredientId?.let { (ingredientsById[it] ?: ReviewFoods.ingredients.getValue(it)).name } }
+        // Chickpeas, red onions and basmati rice are only on the food list; "rice" is the list's name for the book's
+        // own Long-grain white rice, so that line takes the ingredient; nothing is called water.
+        assertEquals(listOf("Chickpeas (tin, drained)", "Red onions", "Basmati rice", "Long-grain white rice", null), names)
+        assertEquals(listOf(true, true, true, false, false), edit.lines.map { ReviewFoods.isFood(it.ingredientId) })
+        assertTrue(edit.lines.all { it.origin == LineOrigin.AUTO })
+        // "red onion" is close to the book's Brown onions too, which stays one tap away.
+        val onion = edit.lines[1]
+        assertEquals("Brown onions", ingredientsById.getValue(onion.suggestionIds.first()).name)
+
+        val noRice = edit.copy(lines = edit.lines.filter { it.text != "400 g rice" }.map { if ("water" in it.text) ReviewRules.notCounted(it) else it })
+        val derived = ReviewRules.derive(noRice, null, ingredientsById + ReviewFoods.ingredients, prices + ReviewFoods.prices(today), true)
+        assertEquals(0, derived.unmatched)
+        assertEquals(3, derived.counted)
+        // 41p of chickpeas, 120 g of a 95p kilo of onions, 150 g of a £1.79 kilo of rice: 79.25p for two.
+        assertEquals(79.25, derived.numbers.cost.totalPence, 1e-9)
+        assertEquals(Money(40), derived.numbers.cost.perPortion)
+        assertEquals(120.0, derived.lines.getValue(onion.key).quantity)
+
+        // Saving learns the names of the lines that took a food (with their provisional ids, swapped on save).
+        assertEquals(
+            setOf("chickpeas", "red onion", "basmati rice"),
+            ReviewRules.aliasesToLearn(noRice).map { it.first }.toSet(),
+        )
+        assertTrue(ReviewRules.aliasesToLearn(noRice).all { ReviewFoods.isFood(it.second) })
+    }
+
+    @Test
+    fun theFoodListIsOnlyAskedWhenWantedAndNeverForASavedRecipe() {
+        val plain = ReviewRules.fromDraft(RecipeText.parse(curry), ingredients, emptyMap())
+        assertTrue(plain.lines.none { ReviewFoods.isFood(it.ingredientId) })
+
+        val saved = chilli.copy(lines = chilli.lines + chilli.lines.first().copy(text = "240 g chickpeas", ingredientId = null, quantity = null))
+        val opened = ReviewRules.fromRecipe(saved, ingredients, emptyMap())
+        assertEquals(LineOrigin.NOT_COUNTED, opened.lines.last().origin)
+
+        // Typing a line again asks the list; a food chosen by hand stays when the text changes.
+        val line = ReviewRules.withText(opened.lines.last().copy(origin = LineOrigin.AUTO), "1 tin chickpeas", ingredients, emptyMap(), foods = true)
+        assertEquals("Chickpeas (tin, drained)", ReviewFoods.food(line.ingredientId!!)?.name)
+        val butterBeans = ReviewFoods.idOf(FoodDatabase.byKey("butter_beans")!!)
+        val chosen = ReviewRules.choose(line, butterBeans)
+        assertEquals(butterBeans, ReviewRules.withText(chosen, "1 tin of beans", ingredients, emptyMap(), foods = true).ingredientId)
     }
 
     // ---- editing a line -----------------------------------------------------------------------

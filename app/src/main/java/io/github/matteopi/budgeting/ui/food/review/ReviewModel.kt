@@ -28,9 +28,10 @@ data class ReviewLine(
     val group: String = "",
     val text: String = "",
     val optional: Boolean = false,
+    /** The line's ingredient; a negative id is a food of the built-in list that saving adds ([ReviewFoods]). */
     val ingredientId: Long? = null,
     val origin: LineOrigin = LineOrigin.AUTO,
-    /** Other ingredients that might be the one meant, best first. Only while [ingredientId] is null. */
+    /** Other ingredients that might be the one meant, best first. Only while [ingredientId] is null or a food. */
     val suggestionIds: List<Long> = emptyList(),
     /** The amount in the ingredient's unit as typed; null follows what the line's text says. */
     val quantityText: String? = null,

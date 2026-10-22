@@ -51,10 +51,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.matteopi.budgeting.core.recipes.BaseUnit
+import io.github.matteopi.budgeting.core.recipes.Food
 import io.github.matteopi.budgeting.core.recipes.FoodGroup
 import io.github.matteopi.budgeting.core.recipes.FoodGroups
 import io.github.matteopi.budgeting.core.recipes.Ingredient
+import io.github.matteopi.budgeting.core.recipes.Nutrient
 import io.github.matteopi.budgeting.core.recipes.NutritionSource
+import io.github.matteopi.budgeting.core.recipes.RecipeMaths
 import io.github.matteopi.budgeting.core.recipes.Shelf
 import io.github.matteopi.budgeting.core.recipes.VegKind
 import io.github.matteopi.budgeting.ui.components.ConfirmDialog
@@ -66,6 +69,7 @@ import io.github.matteopi.budgeting.ui.food.scan.LabelReviewDialog
 import io.github.matteopi.budgeting.ui.food.scan.PackPhotoButton
 import io.github.matteopi.budgeting.ui.food.scan.PackScanTags
 import io.github.matteopi.budgeting.ui.food.scan.PackScanViewModel
+import java.time.LocalDate
 
 /** Test tags of the ingredient editor. Portion rows are tagged by their position in the list, counted from 0. */
 object IngredientEditTags {
@@ -76,6 +80,7 @@ object IngredientEditTags {
     const val LINK_REMOVE = "ingredient-link-remove"
     const val PRODUCT_SEARCH = "ingredient-product-search"
     const val FOOD_GROUP = "ingredient-food-group"
+    const val FILL_FROM_FOODS = "ingredient-fill-from-foods"
 
     fun portionName(position: Int) = "ingredient-portion-$position-name"
 
@@ -125,6 +130,7 @@ fun IngredientEditScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
     val products by viewModel.products.collectAsStateWithLifecycle()
     val usedIn by viewModel.usedIn.collectAsStateWithLifecycle()
+    val foodMatch by viewModel.foodMatch.collectAsStateWithLifecycle()
     var confirmArchive by remember { mutableStateOf(false) }
     var pickingProduct by remember { mutableStateOf(false) }
     val errors = IngredientFormRules.errors(form)
@@ -179,6 +185,7 @@ fun IngredientEditScreen(
                     onLabel = { uri -> scanViewModel.readLabel(context, uri) },
                     onBarcode = { uri -> scanViewModel.scanBarcode(context, uri) { code -> viewModel.setBarcode(code) } },
                 )
+                foodMatch?.let { food -> FoodListCard(food, today = viewModel.today, onFill = { viewModel.fillFromFood(food) }) }
                 BasicsCard(form, errors, submitted, viewModel)
                 PriceCard(form, errors, submitted, viewModel)
                 NutritionCard(form, errors, submitted, viewModel)
@@ -605,6 +612,31 @@ private fun ProductPickerSheet(
                     }
                 }
             }
+        }
+    }
+}
+
+/** A food of the food list that fits the name of an ingredient with no nutrition yet (docs/PLAN.md §11.12). */
+@Composable
+private fun FoodListCard(food: Food, today: LocalDate, onFill: () -> Unit) {
+    val ingredient = food.ingredient
+    val kcal = ingredient.per100.kcal?.let { "${RecipeMaths.formatNutrient(Nutrient.KCAL, it)} kcal per 100 ${FoodTexts.unitSymbol(ingredient.unit)}" }
+    val price = ingredient.price?.let { price ->
+        "${price.format()} for ${FoodTexts.packText(ingredient)} at ${ingredient.store ?: "Tesco"}" +
+            ingredient.priceDate?.let { " (${FoodTexts.shortDate(it, today)})" }.orEmpty()
+    }
+    SectionCard(title = "From the food list") {
+        Text(
+            listOfNotNull(food.name, kcal, price).joinToString(" · "),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Text(
+            "Fills in the boxes that are empty, and the price if there is none. You can change anything after.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        OutlinedButton(onClick = onFill, modifier = Modifier.testTag(IngredientEditTags.FILL_FROM_FOODS)) {
+            Text("Fill in from the food list")
         }
     }
 }

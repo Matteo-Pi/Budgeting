@@ -47,6 +47,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.matteopi.budgeting.core.recipes.BaseUnit
+import io.github.matteopi.budgeting.core.recipes.FoodDatabase
 import io.github.matteopi.budgeting.core.recipes.Ingredient
 import io.github.matteopi.budgeting.core.recipes.Light
 import io.github.matteopi.budgeting.core.recipes.Nutrient
@@ -74,7 +75,8 @@ internal fun ReviewBody(viewModel: RecipeReviewViewModel, modifier: Modifier = M
     val warnings by viewModel.warnings.collectAsStateWithLifecycle()
     val create by viewModel.create.collectAsStateWithLifecycle()
     var choosingFor by remember { mutableStateOf<Long?>(null) }
-    val byId = remember(ingredients) { ingredients.associateBy { it.id } }
+    // The food list's foods too, under their provisional ids, for lines that take one (docs/PLAN.md §11.12).
+    val byId = remember(ingredients) { ingredients.associateBy { it.id } + ReviewFoods.ingredients }
 
     Column(
         modifier = modifier
@@ -274,16 +276,32 @@ private fun LineEditor(
                 )
                 TextButton(onClick = { viewModel.recount(key) }) { Text("Count it") }
             }
-            ingredient != null -> Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "→ ${ingredient.name}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f).testTag(ReviewTags.line(key, "status")),
-                )
-                TextButton(onClick = { onChoose(key) }, modifier = Modifier.testTag(ReviewTags.line(key, "change"))) {
-                    Text("Change")
+            ingredient != null -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                val fromFoods = ReviewFoods.isFood(ingredient.id)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        if (fromFoods) "From the food list: ${ingredient.name}" else "→ ${ingredient.name}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f).testTag(ReviewTags.line(key, "status")),
+                    )
+                    TextButton(onClick = { onChoose(key) }, modifier = Modifier.testTag(ReviewTags.line(key, "change"))) {
+                        Text("Change")
+                    }
+                    TextButton(onClick = { viewModel.markNotCounted(key) }) { Text("Not counted") }
                 }
-                TextButton(onClick = { viewModel.markNotCounted(key) }) { Text("Not counted") }
+                // A food stands in for an ingredient of the user's that only partly fits; those stay one tap away.
+                val suggestions = if (fromFoods) line.suggestionIds.mapNotNull { byId[it] }.filter { !it.archived }.take(3) else emptyList()
+                if (suggestions.isNotEmpty()) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        suggestions.forEach { suggestion ->
+                            AssistChip(
+                                onClick = { viewModel.chooseIngredient(key, suggestion.id) },
+                                label = { Text(suggestion.name) },
+                                modifier = Modifier.testTag(ReviewTags.line(key, "suggestion-${suggestion.id}")),
+                            )
+                        }
+                    }
+                }
             }
             line.text.isBlank() -> Unit
             else -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -437,7 +455,7 @@ private fun StepsCard(kind: StepKind, edit: ReviewEdit, viewModel: RecipeReviewV
     }
 }
 
-/** Choosing the ingredient of one line: its suggestions first, then every ingredient, searchable. */
+/** Choosing the ingredient of one line: its suggestions first, then every ingredient, searchable, then the food list's matches. */
 @Composable
 private fun IngredientChooserSheet(
     line: ReviewLine,
@@ -452,6 +470,8 @@ private fun IngredientChooserSheet(
     val suggested = line.suggestionIds.mapNotNull { id -> live.firstOrNull { it.id == id } }
     val ordered = (suggested + live.sortedBy { it.name.lowercase() }).distinctBy { it.id }
     val shown = ordered.filter { query.isBlank() || it.name.contains(query.trim(), ignoreCase = true) }
+    // What the food list has for the search, for a line none of the user's ingredients fits (docs/PLAN.md §11.12).
+    val foods = remember(query) { if (query.isBlank()) emptyList() else FoodDatabase.search(query).take(MAX_FOODS) }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(modifier = Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Choose the ingredient", style = MaterialTheme.typography.titleLarge)
@@ -484,11 +504,42 @@ private fun IngredientChooserSheet(
                     }
                     HorizontalDivider()
                 }
+                if (foods.isNotEmpty()) {
+                    item(key = "foods") {
+                        Text(
+                            "From the food list",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
+                        )
+                    }
+                    items(foods, key = { "food-${it.key}" }) { food ->
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 56.dp)
+                                .clickable { onPick(ReviewFoods.idOf(food)) }
+                                .padding(vertical = 8.dp)
+                                .testTag(ReviewTags.chooserFood(food.key)),
+                        ) {
+                            Text(food.name, style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                "Added to your ingredients when you save · ${FoodTexts.shelfName(food.ingredient.shelf)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        HorizontalDivider()
+                    }
+                }
             }
             Spacer(Modifier.height(16.dp))
         }
     }
 }
+
+/** How many of the food list's foods the chooser shows for a search. */
+private const val MAX_FOODS = 8
 
 /** The short form that creates an ingredient for a line and puts it on the line (docs/PLAN.md §11.4). */
 @Composable

@@ -52,6 +52,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.matteopi.budgeting.AppContainer
 import io.github.matteopi.budgeting.BudgetApp
+import io.github.matteopi.budgeting.core.recipes.FoodDatabase
 import io.github.matteopi.budgeting.ui.components.ConfirmDialog
 import io.github.matteopi.budgeting.ui.components.SectionCard
 import io.github.matteopi.budgeting.ui.food.components.BundleImportDialogs
@@ -205,6 +206,16 @@ fun RecipeSettingsScreen(
                         checked = state.lookUpBarcodesOnline,
                         onChange = viewModel::setLookUpBarcodesOnline,
                         tag = RecipeSettingsTags.LOOK_UP_BARCODES,
+                    )
+                }
+                SectionCard(title = "Food list") {
+                    Text(
+                        "The Ingredients tab's Food list has ${FoodDatabase.all().size} everyday foods. Prices are Tesco's " +
+                            "online prices (not Clubcard) found on 22 Oct 2026 (the starter foods' on 15 to 17 Oct); a price " +
+                            "paid on a receipt replaces them once an ingredient is linked to the product. Nutrition is typical " +
+                            "values per 100 g of the food as weighed in recipes (raw meat and veg, dry rice and pasta, drained " +
+                            "tins), from standard food tables, so a pack's own label can differ a little.",
+                        style = MaterialTheme.typography.bodyMedium,
                     )
                 }
                 SectionCard(title = "Recipes") {

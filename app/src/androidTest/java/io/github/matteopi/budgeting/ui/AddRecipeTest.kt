@@ -25,8 +25,8 @@ import org.junit.runner.RunWith
 
 /**
  * Adding recipes (docs/PLAN.md §11.4, §11.8): the chilli pasted as text and matched line by line against the starter
- * book, an ingredient created on the review and matched by itself the next time, and recipe text shared into the app
- * opening the recipe review while a receipt's text still opens the receipt review.
+ * book (with the food list's names), an ingredient created on the review and matched by itself the next time, and
+ * recipe text shared into the app opening the recipe review while a receipt's text still opens the receipt review.
  */
 @RunWith(AndroidJUnit4::class)
 class AddRecipeTest : UiTest() {
@@ -59,10 +59,10 @@ class AddRecipeTest : UiTest() {
         pasteAndRead(chilliText())
         shot("add-recipe-01-review")
 
-        // Rice and lemon are only close matches, so the review suggests them; the water doesn't count.
-        val rice = ingredientNamed("Long-grain white rice").id
+        // "Rice" is the food list's Long-grain white rice, which the book has; the lemon is only a close match, so the
+        // review suggests it; the water doesn't count.
+        waitForExists(tagged(ReviewTags.line(chilliLineKey("400 g rice"), "status"), "→ Long-grain white rice"), "the rice")
         val lemon = ingredientNamed("Lemon (juice)").id
-        tap(hasTestTag(ReviewTags.line(chilliLineKey("400 g rice"), "suggestion-$rice")), "the rice suggestion")
         tap(hasTestTag(ReviewTags.line(chilliLineKey("½ lemon"), "suggestion-$lemon")), "the lemon suggestion")
         tap(hasTestTag(ReviewTags.line(chilliLineKey("boiling water"), "not-counted")), "Not counted on the water")
 
@@ -87,27 +87,27 @@ class AddRecipeTest : UiTest() {
     fun anIngredientCreatedOnTheReviewIsMatchedByItselfNextTime() {
         seedStarterBook()
         openRecipes()
-        pasteAndRead("# Halloumi salad\nServes: 2\n\n## Ingredients\n- 200 g halloumi\n\n## Method\n1. Fry the halloumi.\n")
+        pasteAndRead("# Tempeh salad\nServes: 2\n\n## Ingredients\n- 200 g tempeh\n\n## Method\n1. Fry the tempeh.\n")
 
-        // The halloumi isn't in the book: create it on the line.
-        tap(hasTestTag(ReviewTags.line(1, "create")), "Create ingredient on the halloumi line")
+        // The tempeh is in neither the book nor the food list: create it on the line.
+        tap(hasTestTag(ReviewTags.line(1, "create")), "Create ingredient on the tempeh line")
         waitForExists(hasTestTag(ReviewTags.CREATE_NAME), "the new ingredient form")
         typeInTag(ReviewTags.CREATE_PACK_SIZE, "225")
         typeInTag(ReviewTags.CREATE_PRICE, "2.50")
         shot("add-recipe-04-create")
         tap(hasTestTag(ReviewTags.CREATE_SUBMIT), "Create")
-        waitForExists(tagged(ReviewTags.line(1, "status"), "→ Halloumi"), "the halloumi on its line")
+        waitForExists(tagged(ReviewTags.line(1, "status"), "→ Tempeh"), "the tempeh on its line")
 
         // 200 g of a £2.50 pack of 225 g, for two: £1.11 a portion.
         waitForExists(tagged(ReviewTags.COST, "£1.11"), "the cost per portion")
         tap(hasTestTag(ReviewTags.SAVE), "Save recipe")
-        waitForText("Halloumi salad", timeoutMs = HEAVY_TIMEOUT_MS)
-        assertNotNull(allRecipes().firstOrNull { it.title == "Halloumi salad" })
+        waitForText("Tempeh salad", timeoutMs = HEAVY_TIMEOUT_MS)
+        assertNotNull(allRecipes().firstOrNull { it.title == "Tempeh salad" })
         tapBack()
 
-        // A second recipe with halloumi finds it by name.
-        pasteAndRead("# Halloumi wrap\nServes: 1\n\n## Ingredients\n- 50 g halloumi\n\n## Method\n1. Wrap it.\n")
-        waitForExists(tagged(ReviewTags.line(1, "status"), "→ Halloumi"), "the halloumi matched by itself")
+        // A second recipe with tempeh finds it by name.
+        pasteAndRead("# Tempeh wrap\nServes: 1\n\n## Ingredients\n- 50 g tempeh\n\n## Method\n1. Wrap it.\n")
+        waitForExists(tagged(ReviewTags.line(1, "status"), "→ Tempeh"), "the tempeh matched by itself")
         waitForExists(tagged(ReviewTags.COST, "£0.56"), "the wrap's cost")
         shot("add-recipe-05-matched-by-itself")
     }

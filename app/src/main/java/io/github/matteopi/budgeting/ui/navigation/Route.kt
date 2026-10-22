@@ -76,6 +76,8 @@ sealed interface Route {
     @Serializable data class EditRecipe(val recipeId: Long) : Route
     /** [barcode]: a barcode scanned on the Ingredients tab that no ingredient has yet, for a new one. */
     @Serializable data class IngredientEdit(val ingredientId: Long? = null, val barcode: String? = null) : Route
+    /** The built-in food list (docs/PLAN.md §11.12), reached from the Ingredients tab. */
+    @Serializable data object FoodList : Route
     @Serializable data object RecipeSettings : Route
 
     // ----- The Planner section (docs/PLAN.md §13.8) -----
@@ -153,6 +155,7 @@ val foodRoutes: List<KClass<out Route>> = listOf(
     Route.AddRecipe::class,
     Route.EditRecipe::class,
     Route.IngredientEdit::class,
+    Route.FoodList::class,
     Route.RecipeSettings::class,
 )
 

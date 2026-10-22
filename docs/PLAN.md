@@ -1282,8 +1282,8 @@ now an overlay); daily worker snapshots before any account exists and its widget
     - `ui/CookingAndCompareTest` (`cooking-*`, `compare-*`): ticks kept until *Done cooking*, the screen kept on
       only while cooking, and Compare sorted by cost and by protein.
     - `ui/AddRecipeTest` (`add-recipe-*`):
-      - the chilli pasted, with the rice and lemon suggestions taken and the water not counted, at £2.54 and
-        897 kcal;
+      - the chilli pasted, with the rice found through the food list's names (§11.12), the lemon suggestion taken and
+        the water not counted, at £2.54 and 897 kcal;
       - an ingredient created on the review that matches by itself next time;
       - recipe text shared into the app opening the review, while receipt text still opens the receipt review.
     - `ui/IngredientsAndShoppingTest` (`ingredients-*`, `shopping-*`): a new onion price changing the stir-fry
@@ -1307,6 +1307,13 @@ now an overlay); daily worker snapshots before any account exists and its widget
     the shopping list covered; filtering by Beef, Oven and 45 minutes, and the mince counted as pork; a chat recipe
     pasted in one tap; *Copy recipe* pasted back. `MigrationTest` gains 3 → 4 and 1 → 4. `seedRecipesSection` turns
     *Start timers on the phone's clock* off, so no test hands a timer to the emulator's clock app.
+- **The food list (2026-10-22, §11.12)**:
+  - **Core tests**: `FoodDatabaseTest` (the data checks and the matching checkpoints).
+  - **JVM tests**: `ui/food/foods/FoodListMappingTest`, filling from a food in `ScanRulesTest`, and lines that take a
+    food in `ReviewRulesTest`.
+  - **Device tests**: `ui/FoodListTest` (`foods-*`): chickpeas added from the list; a new ingredient filled in from
+    it; a pasted recipe whose unknown lines come from it, saved at £0.40 a portion. `AddRecipeTest` creates tempeh,
+    which the list doesn't have.
 - **Labels and barcodes (2026-10-17)**:
   - **Core tests**: `NutritionLabelTest` (per 100 g first or second, kJ and kcal on one or two rows, "<0.5 g",
     "trace", sodium to salt, no heading, not a label) and `OpenFoodFactsTest` (found, missing values, kJ and
@@ -2226,6 +2233,76 @@ Six changes the user asked for once the section was built. Room goes to **versio
   - *Copy recipe* then pasting it back.
   - `MigrationTest` 3 → 4.
 - **After the first green build**, commit `4.json` from `refs/ci/room-schemas`.
+
+### 11.12 The built-in food database (asked for 2026-10-22; built)
+The user asked for "a built in database of all of the costs and nutritional values of food/ingredients I might use in
+my meals". The app ships a list of 171 everyday foods with a Tesco pack and price and nutrition per 100 g, so a new
+recipe gets its cost and nutrition without typing them in. Nothing about it is stored until the user adds a food:
+**no schema change** (Room stays 9, backups stay 9).
+
+**What is in it** (`core/src/main/resources/recipes/food-database.json`)
+- 131 foods a student cooks with: fresh veg and fruit, herbs, meat and fish, dairy and eggs, frozen, tins and jars,
+  pulses, rice, pasta, noodles and grains, bread, baking, sauces, herbs and spices, breakfast and meat-free.
+- The 40 starter ingredients, unchanged (their Tesco labels and prices, checked 15–17 Oct 2026), so a food and a
+  starter ingredient never disagree. (The checks below found the starter's cumin and mixed herbs counting fibre in
+  their carbs twice; both books now have the corrected carbs.)
+- The format is a recipe bundle (§11.7) with no recipes. Each food is a bundle ingredient, plus `aliases` (other
+  names it goes by: "chick peas", "garbanzo beans"), which files the app writes leave out.
+- **Prices**: Tesco's own label where there is one, otherwise the usual brand. Each has its pack, price, date and
+  the product name, and a link where Tesco's page was found. The prices are Tesco's online prices as listed on its
+  product pages and price trackers on 22 Oct 2026; they are a guide, and a store's shelf price can differ. A receipt
+  price for a linked product still wins (§11.5). Packs are what a recipe weighs: a squash is 800 g once peeled, two
+  avocados 200 g of flesh, a tin of beans its drained weight.
+- **Nutrition**: typical values per 100 g (or 100 ml) of the food **as weighed in recipes**: raw meat, fish and
+  veg; dry rice, pasta, lentils and oats; drained tins; drumsticks with the bone. They come from standard food
+  composition tables (the UK's CoFID and USDA FoodData Central), not from one product's label, and are marked
+  `ESTIMATE` with a note. Added sugars are 0 except for sugars, honey, jam, peanut butter, cereals, stock cubes, baked
+  beans and sauces with sugar in.
+- **Portions** for counted lines: an onion, an egg, a clove, a tin (drained weight for beans), a slice, a wrap, a
+  knob of butter, a tsp of a spice.
+- **Checks** (`FoodDatabaseTest`): it decodes; keys and names are unique; every food has a pack, a dated Tesco
+  price, a product and all eight label nutrients plus added sugars; saturates ≤ fat, sugars ≤ carbs, added sugars ≤
+  sugars, salt ≤ 100 g; energy agrees with 4 kcal/g carbs and protein, 9 kcal/g fat and 2 kcal/g fibre to within
+  15 % + 10 kcal (vinegar aside: its energy is acetic acid); the starter foods equal the starter book's; each name and
+  other name, with its describing words, belongs to one food; the matching checkpoints below.
+
+**Finding a food** (`FoodDatabase`)
+- `FoodDatabase.all()` reads the file once. `search(text)` puts first the foods whose name starts with the text,
+  then those with another name or a word that does, then any name containing it, then names `IngredientMatching`
+  scores as close; by name within each.
+- `match(name, text)` is the food for a recipe line's name: one whose name or other name is the same, else the best
+  one only above `IngredientMatching.AUTO_APPLY_SCORE` and clear of the next, like an ingredient match. Two foods can
+  share a name to the matching ("Chopped tomatoes (tin)" and "Tomatoes (round)" are both "tomato"): the one that also
+  has the line's describing words wins ("chopped tomatoes"), else the plainer name ("tomatoes"), and a line whose text
+  says tin or can looks among the tinned foods first ("1 tin of tomatoes").
+- **Checkpoints**: "2 × 400 g tins chickpeas" finds *Chickpeas (tin, drained)*; "1 red onion" *Red onions*;
+  "200 g penne" *Penne pasta (dried)*; "a knob of butter" *Butter (salted)*; "garbanzo beans" the chickpeas;
+  "4 tomatoes" the fresh ones and "400 g chopped tomatoes" the tin; "dragon fruit" and "venison" nothing.
+
+**Using it** (no new tables)
+- **Ingredients tab**: a *Food list* button opens the list: a search field, the foods by shelf (or best first for a
+  search), each with its pack price and kcal and protein per 100. A tap adds it as the user's own ingredient (price,
+  date and store, nutrition, portions, veg and shelf; `IngredientRepository.addFood`), then opens its editor. A food
+  whose name the user already has says *Already in your ingredients* and opens that one instead.
+- **Adding a recipe** (review, §11.4): a line that none of the user's ingredients fits but a food does shows
+  *From the food list: Chickpeas (tin, drained)*, under a provisional negative id so the live numbers count it; the
+  user's close ingredients stay as chips. A food with the name of one of the user's ingredients gives that ingredient
+  ("rice" is the list's *Long-grain white rice*, which the starter book has). The chooser lists the food list's
+  matches below the user's ingredients. Saving adds the foods as ingredients (or uses the ones with their names),
+  points the lines at them and learns the lines' names, as *Create ingredient* would. Editing a saved recipe never
+  takes foods by itself.
+- **Ingredient editor**: an ingredient with no nutrition typed in offers *Fill in from the food list* when a food
+  matches its name; it fills the empty fields only (nutrition, veg kind, shelf, counts-as, note, missing portions),
+  and the price with its pack, date, store and link only if there is no price and the unit is the food's.
+- **Recipe settings** say where the numbers come from and when the prices were found.
+
+**Tests**
+- **Core**: `FoodDatabaseTest` (above).
+- **App JVM**: `FoodListMappingTest` (prices, kcal, *Already in your ingredients*, by shelf or best first),
+  `ScanRulesTest` (filling from a food), `ReviewRulesTest` (lines that take a food, their numbers and names).
+- **Device** `ui/FoodListTest` (`foods-*`): chickpeas added from the list into the Ingredients tab with their price and
+  nutrition; a new ingredient filled in from the list; a pasted recipe whose unknown lines come from the list, saved
+  with its cost per portion. `AddRecipeTest`'s created ingredient is tempeh now, which the list doesn't have.
 
 ## 12. Planner: to-do list, timetable, habits and study planner (planned 2026-10-19; being built in stages, §13.10)
 

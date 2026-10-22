@@ -74,6 +74,8 @@ object ReviewTags {
 
     fun chooserRow(ingredientId: Long) = "review-chooser-row-$ingredientId"
 
+    fun chooserFood(key: String) = "review-chooser-food-$key"
+
     fun step(key: Long, part: String) = "review-step-$key-$part"
 
     fun add(kind: StepKind) = "review-add-${kind.name.lowercase()}"

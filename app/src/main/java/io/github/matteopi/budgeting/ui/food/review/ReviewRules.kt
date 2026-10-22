@@ -1,5 +1,6 @@
 package io.github.matteopi.budgeting.ui.food.review
 
+import io.github.matteopi.budgeting.core.recipes.FoodDatabase
 import io.github.matteopi.budgeting.core.recipes.Ingredient
 import io.github.matteopi.budgeting.core.recipes.IngredientLines
 import io.github.matteopi.budgeting.core.recipes.IngredientMatching
@@ -34,12 +35,13 @@ object ReviewRules {
     /**
      * The review of a recipe read from text. Every line is matched with [IngredientMatching.match]; an
      * ingredient is applied only when the match says to ([io.github.matteopi.budgeting.core.recipes.IngredientMatch.ingredientId]),
-     * otherwise the suggestions are kept for the person to choose from.
+     * otherwise the suggestions are kept for the person to choose from. With [foods], the food list fills in where
+     * no ingredient fits ([matchLine]).
      */
-    fun fromDraft(draft: RecipeDraft, ingredients: List<Ingredient>, aliases: Map<String, Long>): ReviewEdit {
+    fun fromDraft(draft: RecipeDraft, ingredients: List<Ingredient>, aliases: Map<String, Long>, foods: Boolean = false): ReviewEdit {
         var key = 1L
         val lines = draft.lines.map { line ->
-            matchLine(ReviewLine(key = key++, group = line.group.orEmpty(), text = line.text, optional = line.optional), ingredients, aliases)
+            matchLine(ReviewLine(key = key++, group = line.group.orEmpty(), text = line.text, optional = line.optional), ingredients, aliases, foods)
         }
         val steps = draft.steps.map { step ->
             ReviewStep(key = key++, kind = step.kind, title = step.title.orEmpty(), time = step.time.orEmpty(), body = step.body)
@@ -81,6 +83,7 @@ object ReviewRules {
             if (saved.ingredientId != null) {
                 line
             } else {
+                // Not from the food list: a recipe opened to change its title shouldn't add ingredients on save.
                 val matched = matchLine(line.copy(origin = LineOrigin.AUTO), ingredients, aliases)
                 if (matched.ingredientId != null) matched else notCounted(matched)
             }
@@ -106,15 +109,23 @@ object ReviewRules {
 
     // ---- changing a line --------------------------------------------------------------------
 
-    /** Matches [line]'s text to an ingredient: applied when sure ([LineOrigin.AUTO]), else the suggestions are kept. */
-    fun matchLine(line: ReviewLine, ingredients: List<Ingredient>, aliases: Map<String, Long>): ReviewLine {
+    /**
+     * Matches [line]'s text to an ingredient: applied when sure ([LineOrigin.AUTO]), else the suggestions are kept.
+     * With [foods], a line none of the ingredients fits takes a food of the built-in list when one fits
+     * ([ReviewFoods], docs/PLAN.md §11.12), keeping the suggestions too; a food with the name of one of the
+     * ingredients ("rice" is the list's *Long-grain white rice*) gives that ingredient.
+     */
+    fun matchLine(line: ReviewLine, ingredients: List<Ingredient>, aliases: Map<String, Long>, foods: Boolean = false): ReviewLine {
         val name = IngredientLines.parse(line.text).name
         val match = IngredientMatching.match(name, ingredients, aliases)
-        val id = match.ingredientId
-        return if (id != null) {
-            line.copy(ingredientId = id, origin = LineOrigin.AUTO, suggestionIds = emptyList())
-        } else {
-            line.copy(ingredientId = null, origin = LineOrigin.AUTO, suggestionIds = match.suggestions.map { it.ingredientId })
+        val suggestions = match.suggestions.map { it.ingredientId }
+        val food = if (match.ingredientId == null && foods) FoodDatabase.match(name, line.text) else null
+        val same = food?.let { f -> ingredients.firstOrNull { !it.archived && it.name.equals(f.name, ignoreCase = true) } }
+        val id = match.ingredientId ?: same?.id
+        return when {
+            id != null -> line.copy(ingredientId = id, origin = LineOrigin.AUTO, suggestionIds = emptyList())
+            food != null -> line.copy(ingredientId = ReviewFoods.idOf(food), origin = LineOrigin.AUTO, suggestionIds = suggestions)
+            else -> line.copy(ingredientId = null, origin = LineOrigin.AUTO, suggestionIds = suggestions)
         }
     }
 
@@ -123,13 +134,13 @@ object ReviewRules {
      * or marked not counted keeps its ingredient. A saved quantity is dropped once the text changes (the text
      * is the source again); a quantity the person typed stays.
      */
-    fun withText(line: ReviewLine, text: String, ingredients: List<Ingredient>, aliases: Map<String, Long>): ReviewLine {
+    fun withText(line: ReviewLine, text: String, ingredients: List<Ingredient>, aliases: Map<String, Long>, foods: Boolean = false): ReviewLine {
         val changed = line.copy(
             text = text,
             quantityText = if (line.quantityKept) null else line.quantityText,
             quantityKept = false,
         )
-        return if (changed.origin == LineOrigin.AUTO) matchLine(changed, ingredients, aliases) else changed
+        return if (changed.origin == LineOrigin.AUTO) matchLine(changed, ingredients, aliases, foods) else changed
     }
 
     /** The person chose [ingredientId] for the line: it is kept and its name is learned when the recipe is saved. */
@@ -151,8 +162,8 @@ object ReviewRules {
     )
 
     /** Back to matching the line by its name. */
-    fun recount(line: ReviewLine, ingredients: List<Ingredient>, aliases: Map<String, Long>): ReviewLine =
-        matchLine(line.copy(quantityText = null, quantityKept = false), ingredients, aliases)
+    fun recount(line: ReviewLine, ingredients: List<Ingredient>, aliases: Map<String, Long>, foods: Boolean = false): ReviewLine =
+        matchLine(line.copy(quantityText = null, quantityKept = false), ingredients, aliases, foods)
 
     /** The amount typed into the line's amount field (in the ingredient's unit). */
     fun withQuantityText(line: ReviewLine, text: String): ReviewLine = line.copy(quantityText = text, quantityKept = false)
@@ -303,13 +314,14 @@ object ReviewRules {
 
     /**
      * The names to learn when the recipe is saved: the parsed name of every line whose ingredient the person
-     * chose by hand (or created), with that ingredient. The repository folds each name with
+     * chose by hand (or created), or that takes a food of the food list (its provisional id, which the save swaps
+     * for the new ingredient's), with that ingredient. The repository folds each name with
      * [IngredientMatching.nameKey].
      */
     fun aliasesToLearn(edit: ReviewEdit): List<Pair<String, Long>> =
         edit.lines.mapNotNull { line ->
             val id = line.ingredientId
-            if (line.origin != LineOrigin.CHOSEN || id == null || line.text.isBlank()) {
+            if ((line.origin != LineOrigin.CHOSEN && !ReviewFoods.isFood(id)) || id == null || line.text.isBlank()) {
                 null
             } else {
                 val name = IngredientLines.parse(line.text).name

@@ -1,0 +1,6578 @@
+{
+ "format": "budgeting-recipes",
+ "version": 1,
+ "about": "The built-in food list (docs/PLAN.md §11.12): Tesco prices (online, not Clubcard) found 22 Oct 2026 and typical nutrition per 100 g as weighed in recipes; the 40 starter foods are as in the starter book (prices checked 15-17 Oct 2026).",
+ "ingredients": [
+  {
+   "key": "apples",
+   "name": "Apples (Gala)",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "5 apples (about 750 g)",
+    "size": 750.0,
+    "pricePence": 180,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Gala Apple Minimum 5 Pack",
+   "url": "https://www.tesco.com/shop/en-GB/products/284474735",
+   "per100": {
+    "kcal": 52,
+    "fat": 0.2,
+    "saturates": 0.0,
+    "carbs": 11.6,
+    "sugars": 10.4,
+    "fibre": 2.0,
+    "protein": 0.3,
+    "salt": 0.0,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 150
+    }
+   ],
+   "note": "Typical values for a raw eating apple with its skin. One is about 150 g.",
+   "aliases": [
+    "apple",
+    "eating apples"
+   ]
+  },
+  {
+   "key": "aubergine",
+   "name": "Aubergine",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "1 aubergine (about 250 g)",
+    "size": 250.0,
+    "pricePence": 99,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Aubergine Each",
+   "url": "https://www.tesco.com/groceries/en-GB/products/293610620",
+   "per100": {
+    "kcal": 18,
+    "fat": 0.4,
+    "saturates": 0.1,
+    "carbs": 2.2,
+    "sugars": 2.0,
+    "fibre": 2.5,
+    "protein": 0.9,
+    "salt": 0.0,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 250
+    }
+   ],
+   "note": "Typical values for raw aubergine. One is about 250 g.",
+   "aliases": [
+    "eggplant"
+   ]
+  },
+  {
+   "key": "avocados",
+   "name": "Avocados",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "2 avocados (about 200 g of flesh)",
+    "size": 200.0,
+    "pricePence": 150,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Perfectly Ripe Avocados Twin Pack",
+   "url": "https://www.tesco.com/shop/en-GB/products/265299741",
+   "per100": {
+    "kcal": 160,
+    "fat": 14.7,
+    "saturates": 2.1,
+    "carbs": 1.8,
+    "sugars": 0.7,
+    "fibre": 6.7,
+    "protein": 2.0,
+    "salt": 0.02,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 100
+    }
+   ],
+   "note": "Typical values for avocado flesh. One gives about 100 g once the stone and skin are off.",
+   "aliases": [
+    "avocado"
+   ]
+  },
+  {
+   "key": "spinach_baby",
+   "name": "Baby spinach",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "250 g bag",
+    "size": 250.0,
+    "pricePence": 130,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Baby Spinach 250g",
+   "url": null,
+   "per100": {
+    "kcal": 25,
+    "fat": 0.8,
+    "saturates": 0.1,
+    "carbs": 1.6,
+    "sugars": 1.5,
+    "fibre": 2.1,
+    "protein": 2.8,
+    "salt": 0.35,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "handful",
+     "amount": 30
+    }
+   ],
+   "note": "Typical values for raw spinach. A handful is about 30 g; it cooks down to almost nothing.",
+   "aliases": [
+    "spinach",
+    "spinach leaves",
+    "fresh spinach"
+   ]
+  },
+  {
+   "key": "potato",
+   "name": "Baking potatoes",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "4 pack (about 1 kg)",
+    "size": 1000,
+    "pricePence": 79,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Baking Potatoes 4 Pack",
+   "url": "https://www.trolley.co.uk/product/tesco-baking-potatoes/NQV109",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 15.5,
+    "fat": 0.2,
+    "fibre": 1.6,
+    "kcal": 75,
+    "protein": 2,
+    "salt": 0.02,
+    "saturates": 0.1,
+    "sugars": 1
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 250
+    }
+   ],
+   "note": "Label gives 188 kcal per typical potato (about 250 g). Potatoes are a starchy food, so they don't count towards 5 a day.",
+   "aliases": [
+    "baking potato",
+    "jacket potatoes"
+   ]
+  },
+  {
+   "key": "bananas",
+   "name": "Bananas",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "5 bananas (about 600 g, 400 g peeled)",
+    "size": 400.0,
+    "pricePence": 78,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Ripe Bananas 5 Pack",
+   "url": "https://www.tesco.com/shop/en-GB/products/266419328",
+   "per100": {
+    "kcal": 89,
+    "fat": 0.3,
+    "saturates": 0.1,
+    "carbs": 20.2,
+    "sugars": 12.2,
+    "fibre": 2.6,
+    "protein": 1.1,
+    "salt": 0.0,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 80
+    }
+   ],
+   "note": "Typical values for banana, weighed peeled. A banana from a 5 pack gives about 80 g.",
+   "aliases": [
+    "banana"
+   ]
+  },
+  {
+   "key": "beansprouts",
+   "name": "Beansprouts",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "300 g bag",
+    "size": 300.0,
+    "pricePence": 85,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Beansprouts 300g",
+   "url": null,
+   "per100": {
+    "kcal": 31,
+    "fat": 0.5,
+    "saturates": 0.1,
+    "carbs": 4.0,
+    "sugars": 2.3,
+    "fibre": 1.5,
+    "protein": 2.9,
+    "salt": 0.01,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [],
+   "note": "Typical values for raw beansprouts.",
+   "aliases": [
+    "bean sprouts",
+    "mung bean sprouts"
+   ]
+  },
+  {
+   "key": "chilli",
+   "name": "Bird's eye chillies",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "25 g pack",
+    "size": 25,
+    "pricePence": 90,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Bird Eye Chillies 25g",
+   "url": "https://www.trolley.co.uk/product/tesco-bird-eye-chillies-price-marked/RUJ182",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 4.3,
+    "fat": 4.7,
+    "fibre": 1,
+    "kcal": 65,
+    "protein": 1,
+    "salt": 0,
+    "saturates": 0.1,
+    "sugars": 4.2
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 1.5
+    }
+   ],
+   "note": "Nutrition from the label (protein estimated). One chilli is about 1.5 g.",
+   "aliases": [
+    "chilli",
+    "chillies",
+    "red chilli",
+    "green chilli"
+   ]
+  },
+  {
+   "key": "blueberries",
+   "name": "Blueberries",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "150 g punnet",
+    "size": 150.0,
+    "pricePence": 200,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Blueberries 150g",
+   "url": "https://www.tesco.com/shop/en-GB/products/287356888",
+   "per100": {
+    "kcal": 57,
+    "fat": 0.3,
+    "saturates": 0.0,
+    "carbs": 12.1,
+    "sugars": 10.0,
+    "fibre": 2.4,
+    "protein": 0.7,
+    "salt": 0.0,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "handful",
+     "amount": 40
+    }
+   ],
+   "note": "Typical values for raw blueberries. A handful is about 40 g.",
+   "aliases": [
+    "blueberry"
+   ]
+  },
+  {
+   "key": "broccoli",
+   "name": "Broccoli",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "1 head (about 375 g, £2.39/kg)",
+    "size": 375,
+    "pricePence": 90,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Broccoli Loose",
+   "url": "https://www.tesco.com/shop/en-GB/products/257231200",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 1.8,
+    "fat": 0.5,
+    "fibre": 2.6,
+    "kcal": 32,
+    "protein": 4,
+    "salt": 0.02,
+    "saturates": 0.1,
+    "sugars": 1.5
+   },
+   "nutritionSource": "LABEL",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "head",
+     "amount": 375
+    }
+   ],
+   "note": "Energy, fat, saturates, sugars and salt from the label; the rest typical.",
+   "aliases": [
+    "broccoli florets",
+    "tenderstem broccoli"
+   ]
+  },
+  {
+   "key": "onion",
+   "name": "Brown onions",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "1 kg bag",
+    "size": 1000,
+    "pricePence": 99,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Brown Onions 1kg",
+   "url": "https://www.tesco.com/groceries/en-GB/products/255736044",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 7.4,
+    "fat": 0.1,
+    "fibre": 1.8,
+    "kcal": 39,
+    "protein": 1.2,
+    "salt": 0.01,
+    "saturates": 0,
+    "sugars": 5
+   },
+   "nutritionSource": "LABEL",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 150
+    }
+   ],
+   "note": "Energy from the label; other values typical for raw onion. A medium onion is about 150 g.",
+   "aliases": [
+    "onion",
+    "brown onion",
+    "yellow onion",
+    "white onion"
+   ]
+  },
+  {
+   "key": "butternut_squash",
+   "name": "Butternut squash",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "1 squash (about 1 kg, 800 g peeled and deseeded)",
+    "size": 800.0,
+    "pricePence": 150,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Butternut Squash Each",
+   "url": "https://www.tesco.com/shop/en-GB/products/250828894",
+   "per100": {
+    "kcal": 36,
+    "fat": 0.1,
+    "saturates": 0.0,
+    "carbs": 8.3,
+    "sugars": 4.2,
+    "fibre": 1.6,
+    "protein": 1.1,
+    "salt": 0.01,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 800
+    }
+   ],
+   "note": "Typical values for raw squash, weighed peeled and deseeded. A squash of about 1 kg gives about 800 g.",
+   "aliases": [
+    "squash",
+    "butternut"
+   ]
+  },
+  {
+   "key": "carrot",
+   "name": "Carrots",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "1 kg bag",
+    "size": 1000,
+    "pricePence": 69,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Carrots 1kg",
+   "url": "https://www.tesco.com/shop/en-GB/products/305953125",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 8,
+    "fat": 0.3,
+    "fibre": 2.4,
+    "kcal": 42,
+    "protein": 0.6,
+    "salt": 0.01,
+    "saturates": 0.1,
+    "sugars": 7.4
+   },
+   "nutritionSource": "LABEL",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 80
+    }
+   ],
+   "note": "Energy, fat and sugars from Tesco's carrot label; the rest typical. A medium carrot is about 80 g.",
+   "aliases": [
+    "carrot"
+   ]
+  },
+  {
+   "key": "cauliflower",
+   "name": "Cauliflower",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "1 cauliflower (about 600 g)",
+    "size": 600.0,
+    "pricePence": 119,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Cauliflower Each",
+   "url": "https://www.tesco.com/groceries/en-GB/products/253558119",
+   "per100": {
+    "kcal": 34,
+    "fat": 0.9,
+    "saturates": 0.2,
+    "carbs": 3.0,
+    "sugars": 2.5,
+    "fibre": 2.0,
+    "protein": 3.6,
+    "salt": 0.02,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "head",
+     "amount": 600
+    }
+   ],
+   "note": "Typical values for raw cauliflower. A head gives about 600 g of florets.",
+   "aliases": [
+    "cauliflower florets"
+   ]
+  },
+  {
+   "key": "celery",
+   "name": "Celery",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "300 g pack",
+    "size": 300.0,
+    "pricePence": 75,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Celery 300g",
+   "url": null,
+   "per100": {
+    "kcal": 7,
+    "fat": 0.2,
+    "saturates": 0.0,
+    "carbs": 0.9,
+    "sugars": 0.9,
+    "fibre": 1.1,
+    "protein": 0.5,
+    "salt": 0.15,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "stick",
+     "amount": 40
+    }
+   ],
+   "note": "Typical values for raw celery. A stick is about 40 g.",
+   "aliases": [
+    "celery sticks",
+    "celery stalks"
+   ]
+  },
+  {
+   "key": "cherry_tomatoes",
+   "name": "Cherry tomatoes",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "300 g pack",
+    "size": 300.0,
+    "pricePence": 100,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Cherry Tomatoes 300g",
+   "url": null,
+   "per100": {
+    "kcal": 18,
+    "fat": 0.3,
+    "saturates": 0.1,
+    "carbs": 3.0,
+    "sugars": 3.0,
+    "fibre": 1.2,
+    "protein": 0.8,
+    "salt": 0.01,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 15
+    }
+   ],
+   "note": "Typical values for raw cherry tomatoes. One is about 15 g.",
+   "aliases": [
+    "cherry tomato"
+   ]
+  },
+  {
+   "key": "mushroom_chestnut",
+   "name": "Chestnut mushrooms",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "250 g pack",
+    "size": 250,
+    "pricePence": 110,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Chestnut Vitamin D Mushrooms 250g",
+   "url": "https://www.tesco.com/shop/en-GB/products/273796618",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 0.3,
+    "fat": 0.2,
+    "fibre": 0.7,
+    "kcal": 8,
+    "protein": 1,
+    "salt": 0.01,
+    "saturates": 0.1,
+    "sugars": 0.3
+   },
+   "nutritionSource": "LABEL",
+   "veg": "VEG",
+   "portions": [],
+   "note": "Energy, fat, saturates and sugars from the label; the rest as Tesco's closed cup label.",
+   "aliases": [
+    "chestnut mushrooms"
+   ]
+  },
+  {
+   "key": "courgette",
+   "name": "Courgette",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "1 loose courgette (about 220 g)",
+    "size": 220,
+    "pricePence": 56,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Courgettes Loose",
+   "url": "https://www.trolley.co.uk/product/courgettes-loose-class-1/DVA772",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 1.8,
+    "fat": 0.4,
+    "fibre": 0.9,
+    "kcal": 20,
+    "protein": 1.8,
+    "salt": 0,
+    "saturates": 0.1,
+    "sugars": 1.7
+   },
+   "nutritionSource": "LABEL",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 220
+    }
+   ],
+   "note": "Full nutrition from Tesco's loose courgette label. Weight per courgette is an estimate.",
+   "aliases": [
+    "courgettes"
+   ]
+  },
+  {
+   "key": "cucumber",
+   "name": "Cucumber",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "1 cucumber (about 350 g)",
+    "size": 350.0,
+    "pricePence": 115,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Whole Large Cucumber",
+   "url": "https://www.tesco.com/shop/en-GB/products/280379906",
+   "per100": {
+    "kcal": 10,
+    "fat": 0.1,
+    "saturates": 0.0,
+    "carbs": 1.5,
+    "sugars": 1.4,
+    "fibre": 0.6,
+    "protein": 0.7,
+    "salt": 0.01,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 350
+    }
+   ],
+   "note": "Typical values for raw cucumber. A whole one is about 350 g.",
+   "aliases": []
+  },
+  {
+   "key": "kale",
+   "name": "Curly kale",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "180 g bag",
+    "size": 180.0,
+    "pricePence": 80,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Curly Kale 180g",
+   "url": "https://www.tesco.com/groceries/en-GB/products/301219155",
+   "per100": {
+    "kcal": 33,
+    "fat": 1.6,
+    "saturates": 0.2,
+    "carbs": 1.4,
+    "sugars": 1.3,
+    "fibre": 3.1,
+    "protein": 3.4,
+    "salt": 0.1,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "handful",
+     "amount": 30
+    }
+   ],
+   "note": "Typical values for raw curly kale. A handful is about 30 g.",
+   "aliases": [
+    "kale",
+    "cavolo nero"
+   ]
+  },
+  {
+   "key": "easy_peelers",
+   "name": "Easy peelers (satsumas, clementines)",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "600 g bag (about 450 g peeled)",
+    "size": 450.0,
+    "pricePence": 135,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Sweet Easy Peelers 600g",
+   "url": "https://www.tesco.com/shop/en-GB/products/266499399",
+   "per100": {
+    "kcal": 39,
+    "fat": 0.1,
+    "saturates": 0.0,
+    "carbs": 8.6,
+    "sugars": 8.6,
+    "fibre": 1.7,
+    "protein": 0.8,
+    "salt": 0.0,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 55
+    }
+   ],
+   "note": "Typical values for satsumas and clementines, weighed peeled. One gives about 55 g.",
+   "aliases": [
+    "satsumas",
+    "clementines",
+    "mandarins",
+    "tangerines"
+   ]
+  },
+  {
+   "key": "green_beans",
+   "name": "Fine green beans",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "200 g pack",
+    "size": 200,
+    "pricePence": 140,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Fine Beans 200g",
+   "url": "https://www.trolley.co.uk/product/tesco-fine-beans/PEA102",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 3.5,
+    "fat": 0.4,
+    "fibre": 3,
+    "kcal": 31,
+    "protein": 1.9,
+    "salt": 0,
+    "saturates": 0.1,
+    "sugars": 2.3
+   },
+   "nutritionSource": "LABEL",
+   "veg": "VEG",
+   "portions": [],
+   "note": "Energy, fat and sugars from Tesco's fine beans label; the rest typical. Often on Clubcard deals.",
+   "aliases": [
+    "green beans",
+    "fine beans"
+   ]
+  },
+  {
+   "key": "ginger",
+   "name": "Fresh root ginger",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "loose at £5.60/kg (100 g piece)",
+    "size": 100,
+    "pricePence": 56,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Root Ginger Loose",
+   "url": "https://www.tesco.com/shop/en-GB/products/253559297",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 7.2,
+    "fat": 0.6,
+    "fibre": 2,
+    "kcal": 44,
+    "protein": 1.4,
+    "salt": 0.1,
+    "saturates": 0.2,
+    "sugars": 2.4
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tbsp",
+     "amount": 6
+    }
+   ],
+   "note": "Full nutrition from the label. 1 tbsp grated is about 6 g.",
+   "aliases": [
+    "ginger",
+    "root ginger"
+   ]
+  },
+  {
+   "key": "garlic",
+   "name": "Garlic",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "1 large bulb (about 12 cloves)",
+    "size": 60,
+    "pricePence": 50,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Large Garlic Each",
+   "url": "https://www.tesco.com/shop/en-GB/products/272682288",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 16.3,
+    "fat": 0.6,
+    "fibre": 4.1,
+    "kcal": 110,
+    "protein": 7.9,
+    "salt": 0.01,
+    "saturates": 0.1,
+    "sugars": 1.6
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "clove",
+     "amount": 5
+    },
+    {
+     "name": "bulb",
+     "amount": 60
+    }
+   ],
+   "note": "Nutrition from the label. Bulb weight is an estimate; a clove is about 5 g.",
+   "aliases": [
+    "garlic cloves"
+   ]
+  },
+  {
+   "key": "iceberg_lettuce",
+   "name": "Iceberg lettuce",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "1 lettuce (about 500 g)",
+    "size": 500.0,
+    "pricePence": 89,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Iceberg Lettuce Each",
+   "url": "https://www.tesco.com/groceries/en-GB/products/253557495",
+   "per100": {
+    "kcal": 13,
+    "fat": 0.3,
+    "saturates": 0.0,
+    "carbs": 1.9,
+    "sugars": 1.9,
+    "fibre": 0.9,
+    "protein": 0.7,
+    "salt": 0.01,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "head",
+     "amount": 500
+    }
+   ],
+   "note": "Typical values for raw iceberg lettuce.",
+   "aliases": [
+    "lettuce",
+    "iceberg"
+   ]
+  },
+  {
+   "key": "leeks",
+   "name": "Leeks",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "500 g pack",
+    "size": 500.0,
+    "pricePence": 137,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Leeks 500g",
+   "url": "https://www.tesco.com/shop/en-GB/products/267524806",
+   "per100": {
+    "kcal": 22,
+    "fat": 0.5,
+    "saturates": 0.1,
+    "carbs": 2.9,
+    "sugars": 2.2,
+    "fibre": 2.2,
+    "protein": 1.6,
+    "salt": 0.01,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 160
+    }
+   ],
+   "note": "Typical values for raw leek. A trimmed leek is about 160 g.",
+   "aliases": [
+    "leek"
+   ]
+  },
+  {
+   "key": "lemon",
+   "name": "Lemon (juice)",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "1 lemon (about 40 ml juice)",
+    "size": 40,
+    "pricePence": 37,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Lemons Each",
+   "url": "https://www.trolley.co.uk/product/lemons-each/NBJ510",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 3.2,
+    "fat": 0.3,
+    "fibre": 0,
+    "kcal": 20,
+    "protein": 1,
+    "salt": 0,
+    "saturates": 0.1,
+    "sugars": 3.2
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 40
+    }
+   ],
+   "note": "Counted as the juice only, using Tesco's lemon label values.",
+   "aliases": [
+    "lemon",
+    "lemons",
+    "lemon juice"
+   ]
+  },
+  {
+   "key": "limes",
+   "name": "Limes (juice)",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "5 limes (about 25 ml juice each)",
+    "size": 125.0,
+    "pricePence": 115,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Limes Minimum 5 Pack",
+   "url": null,
+   "per100": {
+    "kcal": 25,
+    "fat": 0.1,
+    "saturates": 0.0,
+    "carbs": 7.0,
+    "sugars": 1.7,
+    "fibre": 0.4,
+    "protein": 0.4,
+    "salt": 0.0,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 25
+    }
+   ],
+   "note": "Counted as the juice only, like the lemon: typical values for lime juice. A lime gives about 25 ml.",
+   "aliases": [
+    "lime",
+    "lime juice"
+   ]
+  },
+  {
+   "key": "salad_leaves",
+   "name": "Mixed salad leaves",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "120 g bag",
+    "size": 120.0,
+    "pricePence": 130,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Mixed Leaf Salad 120g",
+   "url": "https://www.tesco.com/shop/en-GB/products/292593115",
+   "per100": {
+    "kcal": 15,
+    "fat": 0.3,
+    "saturates": 0.0,
+    "carbs": 1.7,
+    "sugars": 1.5,
+    "fibre": 1.3,
+    "protein": 1.2,
+    "salt": 0.05,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "handful",
+     "amount": 30
+    }
+   ],
+   "note": "Typical values for mixed salad leaves. A handful is about 30 g.",
+   "aliases": [
+    "salad",
+    "mixed leaves",
+    "salad leaves",
+    "mixed salad"
+   ]
+  },
+  {
+   "key": "okra",
+   "name": "Okra",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "175 g pack",
+    "size": 175,
+    "pricePence": 175,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Okra 175g",
+   "url": "https://www.tesco.com/shop/en-GB/products/260918818",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 3.5,
+    "fat": 1,
+    "fibre": 3.2,
+    "kcal": 40,
+    "protein": 2.8,
+    "salt": 0.03,
+    "saturates": 0.1,
+    "sugars": 2.5
+   },
+   "nutritionSource": "LABEL",
+   "veg": "VEG",
+   "portions": [],
+   "note": "Energy, fat, sugars and salt from the label; the rest typical.",
+   "aliases": [
+    "ladies fingers"
+   ]
+  },
+  {
+   "key": "pak_choi",
+   "name": "Pak choi",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "250 g pack",
+    "size": 250.0,
+    "pricePence": 155,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Pak Choi 250g",
+   "url": null,
+   "per100": {
+    "kcal": 13,
+    "fat": 0.2,
+    "saturates": 0.0,
+    "carbs": 1.2,
+    "sugars": 1.2,
+    "fibre": 1.0,
+    "protein": 1.5,
+    "salt": 0.16,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "head",
+     "amount": 125
+    }
+   ],
+   "note": "Typical values for raw pak choi. A head is about 125 g.",
+   "aliases": [
+    "bok choy",
+    "bok choi",
+    "pak choy"
+   ]
+  },
+  {
+   "key": "parsnips",
+   "name": "Parsnips",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "500 g pack",
+    "size": 500.0,
+    "pricePence": 74,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Parsnips 500g",
+   "url": "https://www.tesco.com/shop/en-GB/products/307365386",
+   "per100": {
+    "kcal": 66,
+    "fat": 1.1,
+    "saturates": 0.2,
+    "carbs": 12.5,
+    "sugars": 5.7,
+    "fibre": 4.6,
+    "protein": 1.8,
+    "salt": 0.02,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 140
+    }
+   ],
+   "note": "Typical values for raw parsnip. A medium one is about 140 g.",
+   "aliases": [
+    "parsnip"
+   ]
+  },
+  {
+   "key": "pepper_bell",
+   "name": "Pepper (red, yellow or green)",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "1 pepper (about 150 g once deseeded)",
+    "size": 150,
+    "pricePence": 70,
+    "priceDate": "2026-10-17",
+    "store": "Tesco"
+   },
+   "product": "Tesco Red Pepper Each",
+   "url": null,
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 5.3,
+    "fat": 0.3,
+    "fibre": 1.7,
+    "kcal": 30,
+    "protein": 1,
+    "salt": 0.01,
+    "saturates": 0.1,
+    "sugars": 5.3
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 150
+    }
+   ],
+   "note": "Typical values for raw pepper. One pepper is about 150 g once the seeds and pith are out.",
+   "aliases": [
+    "red pepper",
+    "green pepper",
+    "yellow pepper",
+    "peppers",
+    "bell peppers"
+   ]
+  },
+  {
+   "key": "red_onions",
+   "name": "Red onions",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "1 kg bag",
+    "size": 1000.0,
+    "pricePence": 95,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Red Onions 1kg",
+   "url": null,
+   "per100": {
+    "kcal": 37,
+    "fat": 0.1,
+    "saturates": 0.0,
+    "carbs": 7.9,
+    "sugars": 5.9,
+    "fibre": 1.7,
+    "protein": 1.1,
+    "salt": 0.01,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 120
+    }
+   ],
+   "note": "Typical values for raw red onion. A medium one is about 120 g peeled.",
+   "aliases": [
+    "red onion"
+   ]
+  },
+  {
+   "key": "grapes",
+   "name": "Seedless grapes",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "500 g pack",
+    "size": 500.0,
+    "pricePence": 200,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Seedless Grape Selection Pack 500g",
+   "url": "https://www.tesco.com/shop/en-GB/products/260138514",
+   "per100": {
+    "kcal": 63,
+    "fat": 0.1,
+    "saturates": 0.0,
+    "carbs": 15.4,
+    "sugars": 15.4,
+    "fibre": 0.7,
+    "protein": 0.4,
+    "salt": 0.0,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "handful",
+     "amount": 80
+    }
+   ],
+   "note": "Typical values for grapes. A handful of about 80 g is one of your 5 a day.",
+   "aliases": [
+    "grapes",
+    "red grapes",
+    "green grapes"
+   ]
+  },
+  {
+   "key": "spring_onions",
+   "name": "Spring onions",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "100 g bunch",
+    "size": 100.0,
+    "pricePence": 69,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Bunched Spring Onions 100g",
+   "url": null,
+   "per100": {
+    "kcal": 32,
+    "fat": 0.2,
+    "saturates": 0.0,
+    "carbs": 4.7,
+    "sugars": 2.3,
+    "fibre": 2.6,
+    "protein": 1.8,
+    "salt": 0.04,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 15
+    }
+   ],
+   "note": "Typical values for raw spring onion. One is about 15 g trimmed.",
+   "aliases": [
+    "scallions",
+    "green onions"
+   ]
+  },
+  {
+   "key": "strawberries",
+   "name": "Strawberries",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "400 g punnet",
+    "size": 400.0,
+    "pricePence": 275,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Strawberries 400g",
+   "url": "https://www.tesco.com/shop/en-GB/products/292962071",
+   "per100": {
+    "kcal": 32,
+    "fat": 0.3,
+    "saturates": 0.0,
+    "carbs": 5.7,
+    "sugars": 4.9,
+    "fibre": 2.0,
+    "protein": 0.7,
+    "salt": 0.0,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 12
+    }
+   ],
+   "note": "Typical values for raw strawberries. One is about 12 g.",
+   "aliases": [
+    "strawberry"
+   ]
+  },
+  {
+   "key": "sweet_potatoes",
+   "name": "Sweet potatoes",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "1 kg bag",
+    "size": 1000.0,
+    "pricePence": 119,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Sweet Potatoes 1kg",
+   "url": "https://www.tesco.com/groceries/en-GB/products/310190037",
+   "per100": {
+    "kcal": 86,
+    "fat": 0.1,
+    "saturates": 0.0,
+    "carbs": 17.5,
+    "sugars": 4.5,
+    "fibre": 3.0,
+    "protein": 1.6,
+    "salt": 0.14,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 250
+    }
+   ],
+   "note": "Typical values for raw sweet potato. A medium one is about 250 g. Unlike potatoes, they count towards 5 a day.",
+   "aliases": [
+    "sweet potato"
+   ]
+  },
+  {
+   "key": "tomatoes",
+   "name": "Tomatoes (round)",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "6 tomatoes (about 400 g)",
+    "size": 400.0,
+    "pricePence": 99,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Classic Round Tomatoes 6 Pack",
+   "url": "https://www.tesco.com/shop/en-GB/products/314098829",
+   "per100": {
+    "kcal": 17,
+    "fat": 0.3,
+    "saturates": 0.1,
+    "carbs": 3.1,
+    "sugars": 3.1,
+    "fibre": 1.2,
+    "protein": 0.7,
+    "salt": 0.02,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 65
+    }
+   ],
+   "note": "Typical values for raw tomato. A round tomato is about 65 g.",
+   "aliases": [
+    "tomato",
+    "fresh tomatoes",
+    "salad tomatoes"
+   ]
+  },
+  {
+   "key": "mushroom_white",
+   "name": "White (closed cup) mushrooms",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "300 g pack",
+    "size": 300,
+    "pricePence": 97,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Closed Cup Mushrooms 300g",
+   "url": "https://www.tesco.com/shop/en-GB/products/280046682",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 0.3,
+    "fat": 0.2,
+    "fibre": 0.7,
+    "kcal": 8,
+    "protein": 1,
+    "salt": 0.01,
+    "saturates": 0.1,
+    "sugars": 0.3
+   },
+   "nutritionSource": "LABEL",
+   "veg": "VEG",
+   "portions": [],
+   "note": "Full nutrition from the label.",
+   "aliases": [
+    "mushrooms",
+    "button mushrooms",
+    "closed cup mushrooms"
+   ]
+  },
+  {
+   "key": "white_cabbage",
+   "name": "White cabbage",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "1 cabbage (about 900 g)",
+    "size": 900.0,
+    "pricePence": 89,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco White Cabbage Each",
+   "url": "https://www.tesco.com/groceries/en-GB/products/294070748",
+   "per100": {
+    "kcal": 27,
+    "fat": 0.2,
+    "saturates": 0.0,
+    "carbs": 5.0,
+    "sugars": 4.4,
+    "fibre": 2.1,
+    "protein": 1.4,
+    "salt": 0.02,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "head",
+     "amount": 900
+    }
+   ],
+   "note": "Typical values for raw white cabbage.",
+   "aliases": [
+    "cabbage"
+   ]
+  },
+  {
+   "key": "potatoes_white",
+   "name": "White potatoes (Maris Piper)",
+   "unit": "G",
+   "shelf": "FRUIT_VEG",
+   "pack": {
+    "label": "2.5 kg bag",
+    "size": 2500.0,
+    "pricePence": 170,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Maris Piper Potatoes 2.5kg",
+   "url": "https://www.tesco.com/shop/en-GB/products/258423755",
+   "per100": {
+    "kcal": 77,
+    "fat": 0.2,
+    "saturates": 0.0,
+    "carbs": 17.0,
+    "sugars": 0.7,
+    "fibre": 1.4,
+    "protein": 2.0,
+    "salt": 0.02,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 200
+    }
+   ],
+   "note": "Typical values for raw potato. A medium potato is about 200 g. Potatoes don't count towards 5 a day.",
+   "aliases": [
+    "potatoes",
+    "white potatoes",
+    "maris piper potatoes"
+   ]
+  },
+  {
+   "key": "bacon_back",
+   "name": "Back bacon (unsmoked)",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "10 rashers (300 g)",
+    "size": 300.0,
+    "pricePence": 189,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Unsmoked Back Bacon Rashers 10 Pack 300g",
+   "url": "https://www.tesco.com/groceries/en-GB/products/267991943",
+   "per100": {
+    "kcal": 186,
+    "fat": 13.0,
+    "saturates": 4.9,
+    "carbs": 0.5,
+    "sugars": 0.5,
+    "fibre": 0.0,
+    "protein": 17.0,
+    "salt": 2.7,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "rasher",
+     "amount": 30
+    }
+   ],
+   "note": "Typical values for raw unsmoked back bacon. A rasher is about 30 g.",
+   "aliases": [
+    "back bacon",
+    "bacon",
+    "bacon rashers"
+   ]
+  },
+  {
+   "key": "basa_fillets",
+   "name": "Basa fillets (white fish)",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "2 fillets (250 g)",
+    "size": 250.0,
+    "pricePence": 179,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco 2 Skinless & Boneless Basa Fillets 250g",
+   "url": "https://www.tesco.com/shop/en-GB/products/310150394",
+   "per100": {
+    "kcal": 85,
+    "fat": 3.0,
+    "saturates": 1.0,
+    "carbs": 0.0,
+    "sugars": 0.0,
+    "fibre": 0.0,
+    "protein": 14.5,
+    "salt": 0.2,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "fillet",
+     "amount": 125
+    }
+   ],
+   "note": "Typical values for raw basa. A fillet is about 125 g.",
+   "aliases": [
+    "basa",
+    "white fish",
+    "white fish fillets"
+   ]
+  },
+  {
+   "key": "beef_mince_20",
+   "name": "Beef mince (20% fat)",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "500 g pack",
+    "size": 500.0,
+    "pricePence": 325,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Beef Mince 20% Fat 500g",
+   "url": null,
+   "per100": {
+    "kcal": 254,
+    "fat": 20.0,
+    "saturates": 9.0,
+    "carbs": 0.0,
+    "sugars": 0.0,
+    "fibre": 0.0,
+    "protein": 18.5,
+    "salt": 0.2,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for raw beef mince with 20% fat.",
+   "aliases": [
+    "beef mince",
+    "minced beef",
+    "ground beef",
+    "mince"
+   ]
+  },
+  {
+   "key": "chicken_breast",
+   "name": "Chicken breast fillets",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "320 g pack (2 fillets)",
+    "size": 320,
+    "pricePence": 244,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Chicken Breast Fillets 320g",
+   "url": "https://www.tesco.com/shop/en-GB/products/320661079",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 0,
+    "fat": 2.1,
+    "fibre": 0,
+    "kcal": 115,
+    "protein": 24,
+    "salt": 0.16,
+    "saturates": 0.6,
+    "sugars": 0
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "fillet",
+     "amount": 160
+    }
+   ],
+   "note": "Energy from this pack's label; fat, saturates and salt from Tesco's diced breast label; protein worked out from the energy.",
+   "aliases": [
+    "chicken breast",
+    "chicken breasts",
+    "chicken"
+   ]
+  },
+  {
+   "key": "chicken_drumsticks",
+   "name": "Chicken drumsticks",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "1 kg pack",
+    "size": 1000.0,
+    "pricePence": 215,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco British Chicken Drumsticks 1kg",
+   "url": "https://www.tesco.com/groceries/en-GB/products/285210344",
+   "per100": {
+    "kcal": 113,
+    "fat": 6.4,
+    "saturates": 1.8,
+    "carbs": 0.0,
+    "sugars": 0.0,
+    "fibre": 0.0,
+    "protein": 12.7,
+    "salt": 0.16,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 110
+    }
+   ],
+   "note": "Typical values for raw drumsticks weighed with the bone (about 70% is meat and skin). One is about 110 g.",
+   "aliases": [
+    "drumsticks",
+    "chicken drumstick"
+   ]
+  },
+  {
+   "key": "chicken_thigh",
+   "name": "Chicken thigh fillets (boneless, skinless)",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "600 g pack (about 5 fillets)",
+    "size": 600,
+    "pricePence": 560,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco British Chicken Thigh Fillets 600g",
+   "url": "https://www.trolley.co.uk/product/tesco-british-chicken-thigh-fillets/KWC844",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 0,
+    "fat": 9.8,
+    "fibre": 0,
+    "kcal": 161,
+    "protein": 18.1,
+    "salt": 0.33,
+    "saturates": 2.6,
+    "sugars": 0
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "fillet",
+     "amount": 120
+    }
+   ],
+   "note": "Label: 194 kcal and 11.8 g fat per 120 g fillet. Clubcard price was £5. Bigger packs are often cheaper per kg, so check the price-per-kg on the shelf label.",
+   "aliases": [
+    "chicken thighs",
+    "chicken thigh",
+    "boneless chicken thighs"
+   ]
+  },
+  {
+   "key": "chorizo",
+   "name": "Chorizo (cooking ring)",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "225 g ring",
+    "size": 225.0,
+    "pricePence": 240,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Finest Spanish Chorizo Ring 225g",
+   "url": "https://www.tesco.com/groceries/en-GB/products/296814552",
+   "per100": {
+    "kcal": 321,
+    "fat": 26.0,
+    "saturates": 9.8,
+    "carbs": 2.5,
+    "sugars": 1.0,
+    "fibre": 0.5,
+    "protein": 19.0,
+    "salt": 3.4,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for cooking chorizo.",
+   "aliases": [
+    "cooking chorizo",
+    "chorizo sausage"
+   ]
+  },
+  {
+   "key": "cod_fillets",
+   "name": "Cod fillets",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "2 fillets (280 g)",
+    "size": 280.0,
+    "pricePence": 815,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco 2 Boneless Cod Fillets 280g",
+   "url": null,
+   "per100": {
+    "kcal": 80,
+    "fat": 0.7,
+    "saturates": 0.1,
+    "carbs": 0.0,
+    "sugars": 0.0,
+    "fibre": 0.0,
+    "protein": 18.0,
+    "salt": 0.2,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "fillet",
+     "amount": 140
+    }
+   ],
+   "note": "Typical values for raw cod. A fillet is about 140 g.",
+   "aliases": [
+    "cod",
+    "cod fillet"
+   ]
+  },
+  {
+   "key": "ham_slices",
+   "name": "Cooked ham slices",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "125 g pack",
+    "size": 125.0,
+    "pricePence": 130,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Wafer Thin Cooked Ham 125g",
+   "url": null,
+   "per100": {
+    "kcal": 108,
+    "fat": 3.2,
+    "saturates": 1.1,
+    "carbs": 1.0,
+    "sugars": 1.0,
+    "fibre": 0.0,
+    "protein": 19.0,
+    "salt": 2.0,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "slice",
+     "amount": 25
+    }
+   ],
+   "note": "Typical values for cooked ham. A slice is about 25 g.",
+   "aliases": [
+    "ham",
+    "sliced ham",
+    "cooked ham"
+   ]
+  },
+  {
+   "key": "beef_diced",
+   "name": "Diced beef (stewing)",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "400 g pack",
+    "size": 400.0,
+    "pricePence": 480,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Diced Beef 400g",
+   "url": "https://www.tesco.com/shop/en-GB/products/280710797",
+   "per100": {
+    "kcal": 151,
+    "fat": 6.6,
+    "saturates": 2.9,
+    "carbs": 0.0,
+    "sugars": 0.0,
+    "fibre": 0.0,
+    "protein": 22.8,
+    "salt": 0.15,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for raw diced braising beef.",
+   "aliases": [
+    "stewing steak",
+    "braising steak",
+    "beef chunks",
+    "casserole beef"
+   ]
+  },
+  {
+   "key": "prawns_cooked",
+   "name": "King prawns (cooked and peeled)",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "150 g pack",
+    "size": 150.0,
+    "pricePence": 350,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Cooked and Peeled King Prawns 150g",
+   "url": "https://www.tesco.com/shop/en-GB/products/294007606",
+   "per100": {
+    "kcal": 64,
+    "fat": 0.6,
+    "saturates": 0.1,
+    "carbs": 0.0,
+    "sugars": 0.0,
+    "fibre": 0.0,
+    "protein": 14.4,
+    "salt": 1.0,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for cooked and peeled king prawns.",
+   "aliases": [
+    "prawns",
+    "king prawns",
+    "cooked prawns",
+    "shrimp"
+   ]
+  },
+  {
+   "key": "lamb_mince",
+   "name": "Lamb mince (20% fat)",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "500 g pack",
+    "size": 500.0,
+    "pricePence": 650,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco British Lamb Mince 20% Fat 500g",
+   "url": null,
+   "per100": {
+    "kcal": 256,
+    "fat": 20.0,
+    "saturates": 9.5,
+    "carbs": 0.0,
+    "sugars": 0.0,
+    "fibre": 0.0,
+    "protein": 19.0,
+    "salt": 0.2,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for raw lamb mince with 20% fat.",
+   "aliases": [
+    "minced lamb",
+    "ground lamb"
+   ]
+  },
+  {
+   "key": "beef_mince_5",
+   "name": "Lean beef mince (5% fat)",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "500 g pack",
+    "size": 500,
+    "pricePence": 505,
+    "priceDate": "2026-10-17",
+    "store": "Tesco"
+   },
+   "product": "Tesco British Beef Lean Steak Mince 5% Fat 500g",
+   "url": null,
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 0,
+    "fat": 5,
+    "fibre": 0,
+    "kcal": 124,
+    "protein": 21.6,
+    "salt": 0.15,
+    "saturates": 2.2,
+    "sugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for 5% beef mince, raw. The 20% mince is £3.25 for 500 g.",
+   "aliases": [
+    "lean beef mince",
+    "lean mince"
+   ]
+  },
+  {
+   "key": "pork_loin_steaks",
+   "name": "Pork loin steaks",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "600 g pack",
+    "size": 600.0,
+    "pricePence": 550,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Pork Loin Steaks 600g",
+   "url": "https://www.tesco.com/groceries/en-GB/products/322345635",
+   "per100": {
+    "kcal": 196,
+    "fat": 11.5,
+    "saturates": 4.0,
+    "carbs": 0.0,
+    "sugars": 0.0,
+    "fibre": 0.0,
+    "protein": 22.8,
+    "salt": 0.13,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "steak",
+     "amount": 150
+    }
+   ],
+   "note": "Typical values for raw pork loin steak with its fat. A steak is about 150 g.",
+   "aliases": [
+    "pork steaks",
+    "pork loin",
+    "pork loin steak"
+   ]
+  },
+  {
+   "key": "pork_mince",
+   "name": "Pork mince (5% fat)",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "500 g pack",
+    "size": 500.0,
+    "pricePence": 249,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Lean Pork Mince 5% Fat 500g",
+   "url": "https://www.tesco.com/shop/en-GB/products/299259490",
+   "per100": {
+    "kcal": 129,
+    "fat": 5.0,
+    "saturates": 1.8,
+    "carbs": 0.0,
+    "sugars": 0.0,
+    "fibre": 0.0,
+    "protein": 21.0,
+    "salt": 0.15,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for raw pork mince with 5% fat.",
+   "aliases": [
+    "minced pork",
+    "ground pork"
+   ]
+  },
+  {
+   "key": "pork_sausages",
+   "name": "Pork sausages",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "8 sausages (454 g)",
+    "size": 454.0,
+    "pricePence": 179,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco British Pork Sausages 8 Pack 454g",
+   "url": "https://www.tesco.com/shop/en-GB/products/261879050",
+   "per100": {
+    "kcal": 247,
+    "fat": 19.0,
+    "saturates": 7.0,
+    "carbs": 6.5,
+    "sugars": 1.0,
+    "fibre": 0.5,
+    "protein": 12.5,
+    "salt": 1.4,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 57
+    }
+   ],
+   "note": "Typical values for raw pork sausages (about 70% pork). One is about 57 g.",
+   "aliases": [
+    "sausages",
+    "sausage",
+    "bangers"
+   ]
+  },
+  {
+   "key": "salmon_fillets",
+   "name": "Salmon fillets",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "2 fillets (260 g)",
+    "size": 260.0,
+    "pricePence": 515,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco 2 Boneless Salmon Fillets 260g",
+   "url": "https://www.tesco.com/shop/en-GB/products/296920881",
+   "per100": {
+    "kcal": 208,
+    "fat": 14.0,
+    "saturates": 2.5,
+    "carbs": 0.0,
+    "sugars": 0.0,
+    "fibre": 0.0,
+    "protein": 20.4,
+    "salt": 0.15,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "fillet",
+     "amount": 130
+    }
+   ],
+   "note": "Typical values for raw farmed salmon. A fillet is about 130 g.",
+   "aliases": [
+    "salmon",
+    "salmon fillet"
+   ]
+  },
+  {
+   "key": "mackerel_smoked",
+   "name": "Smoked mackerel fillets",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "210 g pack",
+    "size": 210.0,
+    "pricePence": 525,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Smoked Mackerel Fillets 210g",
+   "url": null,
+   "per100": {
+    "kcal": 340,
+    "fat": 29.0,
+    "saturates": 6.0,
+    "carbs": 0.0,
+    "sugars": 0.0,
+    "fibre": 0.0,
+    "protein": 19.0,
+    "salt": 2.5,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "fillet",
+     "amount": 70
+    }
+   ],
+   "note": "Typical values for smoked mackerel. A fillet is about 70 g.",
+   "aliases": [
+    "smoked mackerel",
+    "mackerel"
+   ]
+  },
+  {
+   "key": "bacon_streaky",
+   "name": "Smoked streaky bacon",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "300 g pack (14 rashers)",
+    "size": 300,
+    "pricePence": 229,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Smoked Streaky Bacon Rashers 14 Pack 300g",
+   "url": "https://www.tesco.com/shop/en-GB/products/281037392",
+   "per100": {
+    "addedSugars": 0.2,
+    "carbs": 0.2,
+    "fat": 17.8,
+    "fibre": 0,
+    "kcal": 222,
+    "protein": 15.3,
+    "salt": 3.22,
+    "saturates": 6.8,
+    "sugars": 0.2
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "rasher",
+     "amount": 21.5
+    }
+   ],
+   "note": "Nutrition from Tesco's smoked streaky label (2 rashers is about 43 g).",
+   "aliases": [
+    "streaky bacon",
+    "smoked bacon"
+   ]
+  },
+  {
+   "key": "turkey_mince",
+   "name": "Turkey breast mince (2% fat)",
+   "unit": "G",
+   "shelf": "MEAT",
+   "pack": {
+    "label": "500 g pack",
+    "size": 500.0,
+    "pricePence": 490,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco British Turkey Breast Mince 2% Fat 500g",
+   "url": null,
+   "per100": {
+    "kcal": 110,
+    "fat": 2.0,
+    "saturates": 0.6,
+    "carbs": 0.0,
+    "sugars": 0.0,
+    "fibre": 0.0,
+    "protein": 23.0,
+    "salt": 0.15,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for raw turkey breast mince with 2% fat.",
+   "aliases": [
+    "minced turkey",
+    "ground turkey"
+   ]
+  },
+  {
+   "key": "butter",
+   "name": "Butter (salted)",
+   "unit": "G",
+   "shelf": "DAIRY",
+   "pack": {
+    "label": "250 g block",
+    "size": 250.0,
+    "pricePence": 199,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco British Salted Block Butter 250g",
+   "url": "https://www.tesco.com/groceries/en-GB/products/290920510",
+   "per100": {
+    "kcal": 744,
+    "fat": 82.2,
+    "saturates": 54.0,
+    "carbs": 0.6,
+    "sugars": 0.6,
+    "fibre": 0.0,
+    "protein": 0.6,
+    "salt": 1.5,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "knob",
+     "amount": 10
+    },
+    {
+     "name": "tbsp",
+     "amount": 15
+    }
+   ],
+   "note": "Typical values for salted butter. A knob is about 10 g. Unsalted butter is the same without the salt.",
+   "aliases": [
+    "butter",
+    "salted butter",
+    "unsalted butter"
+   ]
+  },
+  {
+   "key": "creme_fraiche",
+   "name": "Crème fraîche",
+   "unit": "ML",
+   "shelf": "DAIRY",
+   "pack": {
+    "label": "300 ml pot",
+    "size": 300.0,
+    "pricePence": 75,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco British Creme Fraiche 300ml",
+   "url": null,
+   "per100": {
+    "kcal": 378,
+    "fat": 40.0,
+    "saturates": 27.0,
+    "carbs": 2.4,
+    "sugars": 2.4,
+    "fibre": 0.0,
+    "protein": 2.2,
+    "salt": 0.1,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tbsp",
+     "amount": 15
+    }
+   ],
+   "note": "Typical values for full-fat crème fraîche, per 100 ml. Half-fat has about half the energy.",
+   "aliases": [
+    "creme fraiche",
+    "crème fraîche"
+   ]
+  },
+  {
+   "key": "double_cream",
+   "name": "Double cream",
+   "unit": "ML",
+   "shelf": "DAIRY",
+   "pack": {
+    "label": "300 ml pot",
+    "size": 300.0,
+    "pricePence": 170,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco British Double Cream 300ml",
+   "url": null,
+   "per100": {
+    "kcal": 467,
+    "fat": 50.0,
+    "saturates": 31.5,
+    "carbs": 2.0,
+    "sugars": 2.0,
+    "fibre": 0.0,
+    "protein": 1.7,
+    "salt": 0.05,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for double cream, per 100 ml.",
+   "aliases": [
+    "double cream",
+    "heavy cream",
+    "cream"
+   ]
+  },
+  {
+   "key": "eggs",
+   "name": "Eggs (medium, free range)",
+   "unit": "G",
+   "shelf": "DAIRY",
+   "pack": {
+    "label": "12 eggs (about 600 g out of the shell)",
+    "size": 600.0,
+    "pricePence": 285,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Medium Free Range Eggs 12 Pack",
+   "url": "https://www.tesco.com/shop/en-GB/products/260298462",
+   "per100": {
+    "kcal": 131,
+    "fat": 9.0,
+    "saturates": 2.5,
+    "carbs": 0.0,
+    "sugars": 0.0,
+    "fibre": 0.0,
+    "protein": 12.6,
+    "salt": 0.4,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 50
+    }
+   ],
+   "note": "Typical values for raw egg out of the shell. A medium egg is about 50 g.",
+   "aliases": [
+    "egg",
+    "free range eggs",
+    "medium eggs",
+    "large eggs"
+   ]
+  },
+  {
+   "key": "feta",
+   "name": "Feta",
+   "unit": "G",
+   "shelf": "DAIRY",
+   "pack": {
+    "label": "200 g pack",
+    "size": 200.0,
+    "pricePence": 215,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Greek Feta Cheese 200g",
+   "url": "https://www.tesco.com/shop/en-GB/products/260671607",
+   "per100": {
+    "kcal": 265,
+    "fat": 21.5,
+    "saturates": 14.5,
+    "carbs": 1.0,
+    "sugars": 1.0,
+    "fibre": 0.0,
+    "protein": 16.5,
+    "salt": 2.5,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for feta.",
+   "aliases": [
+    "feta cheese",
+    "greek salad cheese"
+   ]
+  },
+  {
+   "key": "yogurt_greek_0",
+   "name": "Greek-style yogurt (0% fat)",
+   "unit": "G",
+   "shelf": "DAIRY",
+   "pack": {
+    "label": "500 g pot",
+    "size": 500.0,
+    "pricePence": 115,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco 0% Fat Greek Style Yogurt 500g",
+   "url": "https://www.tesco.com/groceries/en-GB/products/274510599",
+   "per100": {
+    "kcal": 57,
+    "fat": 0.2,
+    "saturates": 0.1,
+    "carbs": 4.0,
+    "sugars": 4.0,
+    "fibre": 0.0,
+    "protein": 10.0,
+    "salt": 0.1,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tbsp",
+     "amount": 15
+    }
+   ],
+   "note": "Typical values for fat-free Greek-style yogurt. Full-fat Greek yogurt has about 130 kcal per 100 g.",
+   "aliases": [
+    "greek yogurt",
+    "greek yoghurt",
+    "fat free yogurt",
+    "fat free yoghurt",
+    "greek style yoghurt"
+   ]
+  },
+  {
+   "key": "halloumi",
+   "name": "Halloumi",
+   "unit": "G",
+   "shelf": "DAIRY",
+   "pack": {
+    "label": "225 g pack",
+    "size": 225.0,
+    "pricePence": 365,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Finest Halloumi Cheese 225g",
+   "url": "https://www.tesco.com/shop/en-GB/products/268228401",
+   "per100": {
+    "kcal": 316,
+    "fat": 24.5,
+    "saturates": 16.5,
+    "carbs": 1.6,
+    "sugars": 1.6,
+    "fibre": 0.0,
+    "protein": 22.5,
+    "salt": 2.7,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "block",
+     "amount": 225
+    }
+   ],
+   "note": "Typical values for halloumi.",
+   "aliases": [
+    "halloumi cheese"
+   ]
+  },
+  {
+   "key": "cheddar",
+   "name": "Mature cheddar",
+   "unit": "G",
+   "shelf": "DAIRY",
+   "pack": {
+    "label": "400 g block",
+    "size": 400.0,
+    "pricePence": 325,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Mature Cheddar 400g",
+   "url": "https://www.tesco.com/shop/en-GB/products/305977270",
+   "per100": {
+    "kcal": 416,
+    "fat": 34.9,
+    "saturates": 21.7,
+    "carbs": 0.1,
+    "sugars": 0.1,
+    "fibre": 0.0,
+    "protein": 25.4,
+    "salt": 1.8,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "handful",
+     "amount": 30
+    }
+   ],
+   "note": "Typical values for cheddar. A handful grated is about 30 g.",
+   "aliases": [
+    "cheddar cheese",
+    "cheese",
+    "grated cheese",
+    "mature cheddar"
+   ]
+  },
+  {
+   "key": "mozzarella",
+   "name": "Mozzarella (ball, drained)",
+   "unit": "G",
+   "shelf": "DAIRY",
+   "pack": {
+    "label": "1 ball (125 g drained)",
+    "size": 125.0,
+    "pricePence": 135,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Mozzarella 200g",
+   "url": "https://www.tesco.com/groceries/en-GB/products/314602620",
+   "per100": {
+    "kcal": 242,
+    "fat": 18.5,
+    "saturates": 12.9,
+    "carbs": 1.0,
+    "sugars": 1.0,
+    "fibre": 0.0,
+    "protein": 18.0,
+    "salt": 0.4,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "ball",
+     "amount": 125
+    }
+   ],
+   "note": "Typical values for drained mozzarella. A ball is about 125 g.",
+   "aliases": [
+    "mozzarella cheese",
+    "mozzarella ball"
+   ]
+  },
+  {
+   "key": "yogurt_natural",
+   "name": "Natural yogurt (whole milk)",
+   "unit": "G",
+   "shelf": "DAIRY",
+   "pack": {
+    "label": "500 g pot",
+    "size": 500.0,
+    "pricePence": 115,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Natural Yogurt 500g",
+   "url": "https://www.tesco.com/groceries/en-GB/products/299770281",
+   "per100": {
+    "kcal": 79,
+    "fat": 3.0,
+    "saturates": 1.7,
+    "carbs": 7.8,
+    "sugars": 7.8,
+    "fibre": 0.0,
+    "protein": 5.7,
+    "salt": 0.2,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tbsp",
+     "amount": 15
+    }
+   ],
+   "note": "Typical values for whole-milk natural yogurt.",
+   "aliases": [
+    "natural yoghurt",
+    "natural yogurt",
+    "plain yogurt",
+    "plain yoghurt",
+    "yogurt",
+    "yoghurt"
+   ]
+  },
+  {
+   "key": "oat_drink",
+   "name": "Oat drink (chilled)",
+   "unit": "ML",
+   "shelf": "DAIRY",
+   "pack": {
+    "label": "1 l carton",
+    "size": 1000.0,
+    "pricePence": 150,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Oat Drink 1L",
+   "url": "https://www.tesco.com/shop/en-GB/products/307760281",
+   "per100": {
+    "kcal": 46,
+    "fat": 1.5,
+    "saturates": 0.2,
+    "carbs": 6.8,
+    "sugars": 3.3,
+    "fibre": 0.8,
+    "protein": 1.0,
+    "salt": 0.1,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for a chilled oat drink, per 100 ml. Its sugars come from the oats, so none count as added.",
+   "aliases": [
+    "oat milk"
+   ],
+   "group": "NONE"
+  },
+  {
+   "key": "paneer",
+   "name": "Paneer",
+   "unit": "G",
+   "shelf": "DAIRY",
+   "pack": {
+    "label": "200 g block",
+    "size": 200.0,
+    "pricePence": 180,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Paneer Cheese 200g",
+   "url": null,
+   "per100": {
+    "kcal": 321,
+    "fat": 25.0,
+    "saturates": 16.0,
+    "carbs": 3.0,
+    "sugars": 3.0,
+    "fibre": 0.0,
+    "protein": 21.0,
+    "salt": 0.1,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for paneer.",
+   "aliases": [
+    "paneer cheese"
+   ]
+  },
+  {
+   "key": "parmesan",
+   "name": "Parmesan (Parmigiano Reggiano)",
+   "unit": "G",
+   "shelf": "DAIRY",
+   "pack": {
+    "label": "200 g wedge",
+    "size": 200.0,
+    "pricePence": 400,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Parmigiano Reggiano Cheese 200g",
+   "url": "https://www.tesco.com/shop/en-GB/products/260663698",
+   "per100": {
+    "kcal": 402,
+    "fat": 29.0,
+    "saturates": 19.0,
+    "carbs": 0.0,
+    "sugars": 0.0,
+    "fibre": 0.0,
+    "protein": 33.0,
+    "salt": 1.6,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tbsp",
+     "amount": 5
+    }
+   ],
+   "note": "Typical values for Parmesan. A tbsp grated is about 5 g. Parmesan is made with animal rennet, so it isn't vegetarian.",
+   "aliases": [
+    "parmesan cheese",
+    "parmigiano reggiano",
+    "grana padano",
+    "hard cheese"
+   ]
+  },
+  {
+   "key": "milk_semi",
+   "name": "Semi-skimmed milk",
+   "unit": "ML",
+   "shelf": "DAIRY",
+   "pack": {
+    "label": "2 pints (1.136 l)",
+    "size": 1136.0,
+    "pricePence": 120,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco British Semi Skimmed Milk 1.136L 2 Pints",
+   "url": null,
+   "per100": {
+    "kcal": 47,
+    "fat": 1.7,
+    "saturates": 1.1,
+    "carbs": 4.7,
+    "sugars": 4.7,
+    "fibre": 0.0,
+    "protein": 3.5,
+    "salt": 0.1,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for semi-skimmed milk.",
+   "aliases": [
+    "milk",
+    "semi skimmed milk",
+    "semi-skimmed milk"
+   ]
+  },
+  {
+   "key": "single_cream",
+   "name": "Single cream",
+   "unit": "ML",
+   "shelf": "DAIRY",
+   "pack": {
+    "label": "300 ml pot",
+    "size": 300.0,
+    "pricePence": 135,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco British Single Cream 300ml",
+   "url": "https://www.tesco.com/shop/en-GB/products/262479245",
+   "per100": {
+    "kcal": 193,
+    "fat": 19.1,
+    "saturates": 11.9,
+    "carbs": 2.2,
+    "sugars": 2.2,
+    "fibre": 0.0,
+    "protein": 2.6,
+    "salt": 0.1,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for single cream, per 100 ml.",
+   "aliases": [
+    "single cream",
+    "light cream"
+   ]
+  },
+  {
+   "key": "soft_cheese",
+   "name": "Soft cheese",
+   "unit": "G",
+   "shelf": "DAIRY",
+   "pack": {
+    "label": "200 g tub",
+    "size": 200.0,
+    "pricePence": 155,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Soft Cheese Plain Full Fat 200g",
+   "url": null,
+   "per100": {
+    "kcal": 252,
+    "fat": 24.0,
+    "saturates": 16.0,
+    "carbs": 3.5,
+    "sugars": 3.5,
+    "fibre": 0.0,
+    "protein": 5.5,
+    "salt": 0.7,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tbsp",
+     "amount": 15
+    }
+   ],
+   "note": "Typical values for full-fat soft cheese.",
+   "aliases": [
+    "cream cheese",
+    "full fat soft cheese",
+    "philadelphia"
+   ]
+  },
+  {
+   "key": "milk_whole",
+   "name": "Whole milk",
+   "unit": "ML",
+   "shelf": "DAIRY",
+   "pack": {
+    "label": "4 pints (2.272 l)",
+    "size": 2272.0,
+    "pricePence": 175,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco British Whole Milk 2.272L 4 Pints",
+   "url": "https://www.tesco.com/groceries/en-GB/products/254656399",
+   "per100": {
+    "kcal": 64,
+    "fat": 3.6,
+    "saturates": 2.4,
+    "carbs": 4.7,
+    "sugars": 4.7,
+    "fibre": 0.0,
+    "protein": 3.4,
+    "salt": 0.1,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for whole milk.",
+   "aliases": [
+    "whole milk",
+    "full fat milk",
+    "full-fat milk"
+   ]
+  },
+  {
+   "key": "fish_fingers",
+   "name": "Fish fingers",
+   "unit": "G",
+   "shelf": "FROZEN",
+   "pack": {
+    "label": "10 fish fingers (300 g)",
+    "size": 300.0,
+    "pricePence": 115,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco 10 Omega 3 Fish Fingers 300g",
+   "url": null,
+   "per100": {
+    "kcal": 205,
+    "fat": 9.0,
+    "saturates": 0.8,
+    "carbs": 18.0,
+    "sugars": 1.0,
+    "fibre": 1.0,
+    "protein": 12.0,
+    "salt": 0.6,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 30
+    }
+   ],
+   "note": "Typical values for frozen cod fish fingers, uncooked. One is about 30 g.",
+   "aliases": [
+    "fish finger"
+   ]
+  },
+  {
+   "key": "peas_frozen",
+   "name": "Frozen garden peas",
+   "unit": "G",
+   "shelf": "FROZEN",
+   "pack": {
+    "label": "1 kg bag",
+    "size": 1000.0,
+    "pricePence": 170,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Garden Peas 1kg",
+   "url": "https://www.tesco.com/shop/en-GB/products/250172580",
+   "per100": {
+    "kcal": 70,
+    "fat": 0.9,
+    "saturates": 0.2,
+    "carbs": 9.3,
+    "sugars": 2.7,
+    "fibre": 5.1,
+    "protein": 5.7,
+    "salt": 0.01,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [],
+   "note": "Typical values for frozen peas.",
+   "aliases": [
+    "peas",
+    "frozen peas",
+    "garden peas",
+    "petits pois"
+   ]
+  },
+  {
+   "key": "spinach_frozen",
+   "name": "Frozen leaf spinach",
+   "unit": "G",
+   "shelf": "FROZEN",
+   "pack": {
+    "label": "900 g bag",
+    "size": 900.0,
+    "pricePence": 160,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Leaf Spinach 900g",
+   "url": "https://www.tesco.com/shop/en-GB/products/282489773",
+   "per100": {
+    "kcal": 24,
+    "fat": 0.5,
+    "saturates": 0.1,
+    "carbs": 1.0,
+    "sugars": 0.5,
+    "fibre": 2.6,
+    "protein": 2.8,
+    "salt": 0.2,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [],
+   "note": "Typical values for frozen leaf spinach.",
+   "aliases": [
+    "frozen spinach"
+   ]
+  },
+  {
+   "key": "berries_frozen",
+   "name": "Frozen mixed berries",
+   "unit": "G",
+   "shelf": "FROZEN",
+   "pack": {
+    "label": "1 kg bag",
+    "size": 1000.0,
+    "pricePence": 299,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Perfectly Imperfect Frozen Mixed Berries 1kg",
+   "url": "https://www.tesco.com/groceries/en-GB/products/295653714",
+   "per100": {
+    "kcal": 41,
+    "fat": 0.2,
+    "saturates": 0.0,
+    "carbs": 7.0,
+    "sugars": 6.0,
+    "fibre": 3.5,
+    "protein": 1.0,
+    "salt": 0.0,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [],
+   "note": "Typical values for frozen mixed berries.",
+   "aliases": [
+    "frozen berries",
+    "mixed berries",
+    "frozen fruit",
+    "summer fruits"
+   ]
+  },
+  {
+   "key": "mixed_veg_frozen",
+   "name": "Frozen mixed vegetables",
+   "unit": "G",
+   "shelf": "FROZEN",
+   "pack": {
+    "label": "1 kg bag",
+    "size": 1000.0,
+    "pricePence": 99,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Growers Harvest Mixed Vegetables 1kg",
+   "url": "https://www.tesco.com/shop/en-GB/products/302282376",
+   "per100": {
+    "kcal": 55,
+    "fat": 0.6,
+    "saturates": 0.1,
+    "carbs": 7.5,
+    "sugars": 3.5,
+    "fibre": 3.3,
+    "protein": 2.8,
+    "salt": 0.03,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [],
+   "note": "Typical values for a frozen mix of carrots, peas, sweetcorn and green beans.",
+   "aliases": [
+    "mixed veg",
+    "frozen mixed veg",
+    "frozen veg",
+    "frozen vegetables",
+    "mixed vegetables"
+   ]
+  },
+  {
+   "key": "sweetcorn_frozen",
+   "name": "Frozen sweetcorn",
+   "unit": "G",
+   "shelf": "FROZEN",
+   "pack": {
+    "label": "1 kg bag",
+    "size": 1000.0,
+    "pricePence": 190,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Supersweet Sweetcorn 1kg",
+   "url": null,
+   "per100": {
+    "kcal": 85,
+    "fat": 1.2,
+    "saturates": 0.2,
+    "carbs": 15.6,
+    "sugars": 4.5,
+    "fibre": 2.4,
+    "protein": 2.9,
+    "salt": 0.01,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [],
+   "note": "Typical values for frozen sweetcorn.",
+   "aliases": [
+    "frozen sweetcorn",
+    "frozen corn"
+   ]
+  },
+  {
+   "key": "oven_chips",
+   "name": "Oven chips",
+   "unit": "G",
+   "shelf": "FROZEN",
+   "pack": {
+    "label": "1.5 kg bag",
+    "size": 1500.0,
+    "pricePence": 165,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Hearty Food Co Straight Cut Chips 1.5kg",
+   "url": "https://www.tesco.com/groceries/en-GB/products/299538966",
+   "per100": {
+    "kcal": 137,
+    "fat": 3.6,
+    "saturates": 0.3,
+    "carbs": 22.5,
+    "sugars": 0.5,
+    "fibre": 2.2,
+    "protein": 2.4,
+    "salt": 0.05,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for frozen straight-cut oven chips, before cooking.",
+   "aliases": [
+    "chips",
+    "frozen chips",
+    "oven chips"
+   ]
+  },
+  {
+   "key": "quorn_mince",
+   "name": "Quorn mince",
+   "unit": "G",
+   "shelf": "FROZEN",
+   "pack": {
+    "label": "300 g bag",
+    "size": 300.0,
+    "pricePence": 275,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Quorn Mince 300g",
+   "url": "https://www.tesco.com/groceries/en-GB/products/251352757",
+   "per100": {
+    "kcal": 109,
+    "fat": 2.0,
+    "saturates": 0.5,
+    "carbs": 4.5,
+    "sugars": 0.6,
+    "fibre": 7.5,
+    "protein": 14.5,
+    "salt": 0.3,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for Quorn mince, from frozen.",
+   "aliases": [
+    "quorn",
+    "meat free mince",
+    "vegetarian mince",
+    "veggie mince"
+   ]
+  },
+  {
+   "key": "baked_beans",
+   "name": "Baked beans",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "420 g tin",
+    "size": 420.0,
+    "pricePence": 40,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Baked Beans In Tomato Sauce 420g",
+   "url": "https://www.tesco.com/shop/en-GB/products/258510116",
+   "per100": {
+    "kcal": 82,
+    "fat": 0.4,
+    "saturates": 0.1,
+    "carbs": 12.5,
+    "sugars": 4.5,
+    "fibre": 4.0,
+    "protein": 4.8,
+    "salt": 0.6,
+    "addedSugars": 3.0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "PULSE",
+   "portions": [
+    {
+     "name": "tin",
+     "amount": 420
+    }
+   ],
+   "note": "Typical values for baked beans in tomato sauce. About 3 g per 100 g is added sugar. They count as one veg portion at most.",
+   "aliases": [
+    "beans",
+    "baked beans in tomato sauce"
+   ]
+  },
+  {
+   "key": "balsamic",
+   "name": "Balsamic vinegar",
+   "unit": "ML",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "250 ml bottle",
+    "size": 250.0,
+    "pricePence": 165,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Balsamic Vinegar Of Modena 250ml",
+   "url": "https://www.tesco.com/shop/en-GB/products/254296718",
+   "per100": {
+    "kcal": 105,
+    "fat": 0.0,
+    "saturates": 0.0,
+    "carbs": 23.0,
+    "sugars": 19.0,
+    "fibre": 0.0,
+    "protein": 0.5,
+    "salt": 0.05,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values per 100 ml for balsamic vinegar of Modena; the sugars are from the grape must.",
+   "aliases": [
+    "balsamic",
+    "balsamic vinegar",
+    "balsamic vinegar of modena"
+   ]
+  },
+  {
+   "key": "rice_basmati",
+   "name": "Basmati rice",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "1 kg bag",
+    "size": 1000.0,
+    "pricePence": 179,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Basmati Rice 1kg",
+   "url": "https://www.tesco.com/shop/en-GB/products/254877477",
+   "per100": {
+    "kcal": 353,
+    "fat": 0.9,
+    "saturates": 0.2,
+    "carbs": 78.0,
+    "sugars": 0.2,
+    "fibre": 0.9,
+    "protein": 8.5,
+    "salt": 0.0,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values, weighed dry. 75 g dry is a portion.",
+   "aliases": [
+    "basmati",
+    "basmati rice"
+   ]
+  },
+  {
+   "key": "stock_cube_beef",
+   "name": "Beef stock cubes",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "10 cubes of 10 g",
+    "size": 100.0,
+    "pricePence": 110,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Beef Stock Cubes 10 Pack 100g",
+   "url": "https://www.tesco.com/shop/en-GB/products/264546036",
+   "per100": {
+    "kcal": 260,
+    "fat": 14.0,
+    "saturates": 7.0,
+    "carbs": 25.0,
+    "sugars": 5.0,
+    "fibre": 1.0,
+    "protein": 8.0,
+    "salt": 45.0,
+    "addedSugars": 3.0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "cube",
+     "amount": 10
+    }
+   ],
+   "note": "Estimate based on similar 10 g beef cubes: about 4.5 g salt per cube. Salt is the number that matters here.",
+   "aliases": [
+    "beef stock cube",
+    "beef stock",
+    "beef oxo cube"
+   ]
+  },
+  {
+   "key": "black_beans",
+   "name": "Black beans (tin, drained)",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "400 g tin (235 g drained)",
+    "size": 235.0,
+    "pricePence": 46,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Black Beans 400g",
+   "url": "https://www.tesco.com/groceries/en-GB/products/297021336",
+   "per100": {
+    "kcal": 110,
+    "fat": 0.5,
+    "saturates": 0.1,
+    "carbs": 14.5,
+    "sugars": 0.5,
+    "fibre": 7.0,
+    "protein": 7.5,
+    "salt": 0.02,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "PULSE",
+   "portions": [
+    {
+     "name": "tin",
+     "amount": 235
+    }
+   ],
+   "note": "Typical values per 100 g drained. A tin gives about 235 g once drained. Beans and lentils count as one veg portion at most.",
+   "aliases": [
+    "black turtle beans"
+   ]
+  },
+  {
+   "key": "rice_brown",
+   "name": "Brown rice",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "1 kg bag",
+    "size": 1000.0,
+    "pricePence": 139,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Easy Cook Brown Rice 1kg",
+   "url": "https://www.tesco.com/groceries/en-GB/products/254877454",
+   "per100": {
+    "kcal": 357,
+    "fat": 2.8,
+    "saturates": 0.6,
+    "carbs": 74.0,
+    "sugars": 0.8,
+    "fibre": 3.0,
+    "protein": 7.5,
+    "salt": 0.0,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values, weighed dry. 75 g dry is a portion.",
+   "aliases": [
+    "brown rice",
+    "wholegrain rice"
+   ]
+  },
+  {
+   "key": "butter_beans",
+   "name": "Butter beans (tin, drained)",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "400 g tin (235 g drained)",
+    "size": 235.0,
+    "pricePence": 45,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Butter Beans In Water 400g",
+   "url": null,
+   "per100": {
+    "kcal": 85,
+    "fat": 0.5,
+    "saturates": 0.1,
+    "carbs": 13.0,
+    "sugars": 1.0,
+    "fibre": 4.6,
+    "protein": 5.9,
+    "salt": 0.03,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "PULSE",
+   "portions": [
+    {
+     "name": "tin",
+     "amount": 235
+    }
+   ],
+   "note": "Typical values per 100 g drained. A tin gives about 235 g once drained. Beans and lentils count as one veg portion at most.",
+   "aliases": [
+    "lima beans"
+   ]
+  },
+  {
+   "key": "cannellini",
+   "name": "Cannellini beans (tin, drained)",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "400 g tin (246 g drained)",
+    "size": 246.0,
+    "pricePence": 49,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Cannellini Beans In Water 400g",
+   "url": "https://www.tesco.com/groceries/en-GB/products/262489348",
+   "per100": {
+    "kcal": 99,
+    "fat": 0.5,
+    "saturates": 0.1,
+    "carbs": 13.5,
+    "sugars": 0.6,
+    "fibre": 6.0,
+    "protein": 7.0,
+    "salt": 0.02,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "PULSE",
+   "portions": [
+    {
+     "name": "tin",
+     "amount": 246
+    }
+   ],
+   "note": "Typical values per 100 g drained. A tin gives about 246 g once drained. Beans and lentils count as one veg portion at most.",
+   "aliases": [
+    "cannellini",
+    "white beans",
+    "haricot beans"
+   ]
+  },
+  {
+   "key": "stock_cube",
+   "name": "Chicken stock cubes",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "10 cubes of 10 g",
+    "size": 100,
+    "pricePence": 110,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Chicken Stock Cubes 10 x 10g",
+   "url": "https://www.trolley.co.uk/product/tesco-10-chicken-stock-cubes/PSD053",
+   "per100": {
+    "addedSugars": 3,
+    "carbs": 20,
+    "fat": 20,
+    "fibre": 0,
+    "kcal": 280,
+    "protein": 5,
+    "salt": 42,
+    "saturates": 10,
+    "sugars": 3
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "cube",
+     "amount": 10
+    }
+   ],
+   "note": "Estimate: Tesco's label wasn't available online, so these are based on similar 10 g chicken cubes (Knorr's label: 41.3 g salt per 100 g, so about 4 g per cube). Salt is the number that matters here.",
+   "aliases": [
+    "chicken stock cube",
+    "chicken stock",
+    "stock cube",
+    "stock"
+   ]
+  },
+  {
+   "key": "chickpeas",
+   "name": "Chickpeas (tin, drained)",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "400 g tin (240 g drained)",
+    "size": 240.0,
+    "pricePence": 41,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Chickpeas In Water 400g",
+   "url": "https://tesco.com/groceries/en-GB/products/262490576",
+   "per100": {
+    "kcal": 121,
+    "fat": 2.6,
+    "saturates": 0.3,
+    "carbs": 14.8,
+    "sugars": 0.4,
+    "fibre": 5.0,
+    "protein": 7.0,
+    "salt": 0.05,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "PULSE",
+   "portions": [
+    {
+     "name": "tin",
+     "amount": 240
+    }
+   ],
+   "note": "Typical values per 100 g drained. A tin gives about 240 g once drained. Beans and lentils count as one veg portion at most.",
+   "aliases": [
+    "chick peas",
+    "garbanzo beans",
+    "garbanzos",
+    "chickpeas"
+   ]
+  },
+  {
+   "key": "tomatoes_chopped",
+   "name": "Chopped tomatoes (tin)",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "400 g tin",
+    "size": 400,
+    "pricePence": 47,
+    "priceDate": "2026-10-17",
+    "store": "Tesco"
+   },
+   "product": "Tesco Chopped Tomatoes 400g",
+   "url": null,
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 3.5,
+    "fat": 0.1,
+    "fibre": 0.9,
+    "kcal": 21,
+    "protein": 1.1,
+    "salt": 0.03,
+    "saturates": 0,
+    "sugars": 3.4
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "tin",
+     "amount": 400
+    }
+   ],
+   "note": "Typical values for tinned chopped tomatoes in juice. They count towards 5 a day.",
+   "aliases": [
+    "tinned tomatoes",
+    "canned tomatoes",
+    "tinned chopped tomatoes"
+   ]
+  },
+  {
+   "key": "honey",
+   "name": "Clear honey",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "340 g jar",
+    "size": 340,
+    "pricePence": 74,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Stockwell & Co Honey 340g",
+   "url": "https://www.tesco.com/shop/en-GB/products/300257829",
+   "per100": {
+    "addedSugars": 82.4,
+    "carbs": 82.4,
+    "fat": 0,
+    "fibre": 0.2,
+    "kcal": 331,
+    "protein": 0.3,
+    "salt": 0.03,
+    "saturates": 0,
+    "sugars": 82.4
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 7
+    }
+   ],
+   "note": "Full nutrition from the label. 1 tsp is about 7 g.",
+   "aliases": [
+    "honey",
+    "runny honey"
+   ]
+  },
+  {
+   "key": "coconut_milk",
+   "name": "Coconut milk (tin)",
+   "unit": "ML",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "400 ml tin",
+    "size": 400.0,
+    "pricePence": 75,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Coconut Milk 400ml",
+   "url": "https://www.tesco.com/shop/en-GB/products/289660927",
+   "per100": {
+    "kcal": 170,
+    "fat": 17.0,
+    "saturates": 15.0,
+    "carbs": 2.5,
+    "sugars": 2.0,
+    "fibre": 0.5,
+    "protein": 1.4,
+    "salt": 0.05,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tin",
+     "amount": 400
+    }
+   ],
+   "note": "Typical values for full-fat tinned coconut milk, per 100 ml. Light coconut milk has about 70 kcal.",
+   "aliases": [
+    "coconut milk",
+    "tinned coconut milk"
+   ]
+  },
+  {
+   "key": "cornflakes",
+   "name": "Corn flakes",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "500 g box",
+    "size": 500.0,
+    "pricePence": 95,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Corn Flakes 500g",
+   "url": "https://www.tesco.com/shop/en-GB/products/254842766",
+   "per100": {
+    "kcal": 378,
+    "fat": 0.9,
+    "saturates": 0.2,
+    "carbs": 84.0,
+    "sugars": 8.0,
+    "fibre": 3.0,
+    "protein": 7.0,
+    "salt": 1.1,
+    "addedSugars": 7.0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for corn flakes. 30 g is a portion.",
+   "aliases": [
+    "cornflakes",
+    "corn flakes cereal"
+   ]
+  },
+  {
+   "key": "cornflour",
+   "name": "Cornflour",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "500 g",
+    "size": 500,
+    "pricePence": 255,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Cornflour 500g",
+   "url": "https://www.tesco.com/shop/en-GB/products/301392869",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 88,
+    "fat": 0.4,
+    "fibre": 0,
+    "kcal": 357,
+    "protein": 0.4,
+    "salt": 0.1,
+    "saturates": 0,
+    "sugars": 0
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tbsp",
+     "amount": 9
+    }
+   ],
+   "note": "Nutrition from Tesco's cornflour label. A level tbsp is about 9 g.",
+   "aliases": [
+    "corn starch"
+   ]
+  },
+  {
+   "key": "couscous",
+   "name": "Couscous",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "500 g bag",
+    "size": 500.0,
+    "pricePence": 130,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Cous Cous 500g",
+   "url": null,
+   "per100": {
+    "kcal": 360,
+    "fat": 1.6,
+    "saturates": 0.3,
+    "carbs": 72.0,
+    "sugars": 1.5,
+    "fibre": 4.0,
+    "protein": 12.5,
+    "salt": 0.02,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values, weighed dry. 60 to 75 g dry is a portion.",
+   "aliases": [
+    "cous cous",
+    "couscous"
+   ]
+  },
+  {
+   "key": "dijon",
+   "name": "Dijon mustard",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "185 g jar",
+    "size": 185.0,
+    "pricePence": 45,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Dijon Mustard 185g",
+   "url": "https://www.tesco.com/shop/en-GB/products/260691710",
+   "per100": {
+    "kcal": 155,
+    "fat": 11.5,
+    "saturates": 0.7,
+    "carbs": 4.5,
+    "sugars": 2.5,
+    "fibre": 2.5,
+    "protein": 7.0,
+    "salt": 6.0,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 5
+    },
+    {
+     "name": "tbsp",
+     "amount": 15
+    }
+   ],
+   "note": "Typical values for Dijon mustard. A tsp is about 5 g.",
+   "aliases": [
+    "dijon",
+    "mustard",
+    "dijon mustard",
+    "wholegrain mustard"
+   ]
+  },
+  {
+   "key": "egg_noodles",
+   "name": "Egg noodles (dried)",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "250 g pack",
+    "size": 250.0,
+    "pricePence": 95,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Medium Egg Noodles 250g",
+   "url": "https://www.tesco.com/shop/en-GB/products/272640603",
+   "per100": {
+    "kcal": 356,
+    "fat": 2.0,
+    "saturates": 0.5,
+    "carbs": 70.0,
+    "sugars": 2.5,
+    "fibre": 3.0,
+    "protein": 13.0,
+    "salt": 0.3,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "nest",
+     "amount": 62.5
+    }
+   ],
+   "note": "Typical values for dried egg noodles, weighed dry. A nest is about 62 g.",
+   "aliases": [
+    "egg noodles",
+    "noodles",
+    "medium egg noodles",
+    "noodle nests"
+   ]
+  },
+  {
+   "key": "fusilli",
+   "name": "Fusilli pasta (dried)",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "500 g bag",
+    "size": 500.0,
+    "pricePence": 75,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Fusilli Pasta 500g",
+   "url": "https://www.tesco.com/shop/en-GB/products/254878545",
+   "per100": {
+    "kcal": 358,
+    "fat": 2.0,
+    "saturates": 0.5,
+    "carbs": 71.0,
+    "sugars": 3.5,
+    "fibre": 3.0,
+    "protein": 12.5,
+    "salt": 0.01,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for dried durum wheat pasta, weighed dry. 75 to 100 g dry is a portion.",
+   "aliases": [
+    "fusilli",
+    "pasta twists",
+    "farfalle",
+    "pasta shapes"
+   ]
+  },
+  {
+   "key": "gnocchi",
+   "name": "Gnocchi",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "500 g pack",
+    "size": 500.0,
+    "pricePence": 200,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Gnocchi 500g",
+   "url": "https://www.tesco.com/groceries/en-GB/products/273961567",
+   "per100": {
+    "kcal": 152,
+    "fat": 0.3,
+    "saturates": 0.1,
+    "carbs": 33.0,
+    "sugars": 0.5,
+    "fibre": 1.5,
+    "protein": 3.6,
+    "salt": 1.2,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for fresh potato gnocchi, as sold.",
+   "aliases": [
+    "potato gnocchi"
+   ]
+  },
+  {
+   "key": "sugar_granulated",
+   "name": "Granulated sugar",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "1 kg bag",
+    "size": 1000.0,
+    "pricePence": 250,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Golden Granulated Sugar 1kg",
+   "url": "https://www.tesco.com/groceries/en-GB/products/254917114",
+   "per100": {
+    "kcal": 399,
+    "fat": 0.0,
+    "saturates": 0.0,
+    "carbs": 99.8,
+    "sugars": 99.8,
+    "fibre": 0.0,
+    "protein": 0.0,
+    "salt": 0.0,
+    "addedSugars": 99.8
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 4
+    },
+    {
+     "name": "tbsp",
+     "amount": 12
+    }
+   ],
+   "note": "Typical values for sugar; caster sugar is the same. A tsp is about 4 g.",
+   "aliases": [
+    "sugar",
+    "white sugar",
+    "caster sugar",
+    "golden caster sugar"
+   ]
+  },
+  {
+   "key": "green_lentils",
+   "name": "Green lentils (dried)",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "500 g bag",
+    "size": 500.0,
+    "pricePence": 150,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "East End Green Lentils 500g",
+   "url": null,
+   "per100": {
+    "kcal": 310,
+    "fat": 1.9,
+    "saturates": 0.2,
+    "carbs": 48.8,
+    "sugars": 1.2,
+    "fibre": 8.9,
+    "protein": 24.3,
+    "salt": 0.03,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "PULSE",
+   "portions": [],
+   "note": "Typical values, weighed dry. Beans and lentils count as one veg portion at most.",
+   "aliases": [
+    "green lentils",
+    "brown lentils",
+    "puy lentils"
+   ]
+  },
+  {
+   "key": "pesto",
+   "name": "Green pesto",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "190 g jar",
+    "size": 190.0,
+    "pricePence": 89,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Classic Green Pesto 190g",
+   "url": null,
+   "per100": {
+    "kcal": 440,
+    "fat": 44.0,
+    "saturates": 5.5,
+    "carbs": 6.0,
+    "sugars": 2.5,
+    "fibre": 1.5,
+    "protein": 5.0,
+    "salt": 2.4,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tbsp",
+     "amount": 15
+    }
+   ],
+   "note": "Typical values for green pesto. It usually contains Grana Padano, so it isn't vegetarian.",
+   "aliases": [
+    "pesto",
+    "basil pesto",
+    "pesto genovese"
+   ]
+  },
+  {
+   "key": "hoisin",
+   "name": "Hoisin sauce",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "120 g pouch",
+    "size": 120.0,
+    "pricePence": 70,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Hoi Sin Stir Fry Sauce 120g",
+   "url": null,
+   "per100": {
+    "kcal": 215,
+    "fat": 3.4,
+    "saturates": 0.6,
+    "carbs": 41.3,
+    "sugars": 27.3,
+    "fibre": 2.8,
+    "protein": 3.3,
+    "salt": 4.0,
+    "addedSugars": 25.0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tbsp",
+     "amount": 18
+    }
+   ],
+   "note": "Typical values for hoisin sauce. Most of its sugar is added.",
+   "aliases": [
+    "hoisin",
+    "hoi sin sauce",
+    "hoi sin"
+   ]
+  },
+  {
+   "key": "lasagne_sheets",
+   "name": "Lasagne sheets (dried)",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "500 g box",
+    "size": 500.0,
+    "pricePence": 75,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Lasagne Pasta 500g",
+   "url": null,
+   "per100": {
+    "kcal": 358,
+    "fat": 2.0,
+    "saturates": 0.5,
+    "carbs": 71.0,
+    "sugars": 3.5,
+    "fibre": 3.0,
+    "protein": 12.5,
+    "salt": 0.01,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "sheet",
+     "amount": 17
+    }
+   ],
+   "note": "Typical values for dried pasta, weighed dry. A sheet is about 17 g.",
+   "aliases": [
+    "lasagne sheets",
+    "lasagna sheets",
+    "lasagne"
+   ]
+  },
+  {
+   "key": "sugar_brown",
+   "name": "Light brown soft sugar",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "500 g bag",
+    "size": 500.0,
+    "pricePence": 200,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Light Brown Soft Sugar 500g",
+   "url": "https://www.tesco.com/groceries/en-GB/products/254917483",
+   "per100": {
+    "kcal": 392,
+    "fat": 0.0,
+    "saturates": 0.0,
+    "carbs": 98.0,
+    "sugars": 98.0,
+    "fibre": 0.0,
+    "protein": 0.0,
+    "salt": 0.05,
+    "addedSugars": 98.0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 4
+    },
+    {
+     "name": "tbsp",
+     "amount": 12
+    }
+   ],
+   "note": "Typical values for light brown soft sugar. A tsp is about 4 g.",
+   "aliases": [
+    "brown sugar",
+    "soft brown sugar",
+    "light brown sugar",
+    "dark brown sugar",
+    "demerara sugar"
+   ]
+  },
+  {
+   "key": "soy_light",
+   "name": "Light soy sauce",
+   "unit": "ML",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "150 ml",
+    "size": 150,
+    "pricePence": 55,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Light Soy Sauce 150ml",
+   "url": "https://www.trolley.co.uk/product/tesco-light-soy-sauce/QKJ372",
+   "per100": {
+    "addedSugars": 10,
+    "carbs": 12,
+    "fat": 0,
+    "fibre": 0.5,
+    "kcal": 65,
+    "protein": 3,
+    "salt": 16,
+    "saturates": 0,
+    "sugars": 10
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Estimate: Tesco's light soy label wasn't available online. Salt is set at 16 g per 100 ml, the same as Tesco's dark soy (2.4 g per tbsp); other own-brand light soys run from about 10 to 20 g. Tesco Reduced Salt Soy Sauce is the same price.",
+   "aliases": [
+    "soy sauce",
+    "soy",
+    "light soy"
+   ]
+  },
+  {
+   "key": "rice",
+   "name": "Long-grain white rice",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "1 kg bag",
+    "size": 1000,
+    "pricePence": 52,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Grower's Harvest Long Grain Rice 1kg",
+   "url": "https://www.tesco.com/shop/en-GB/products/300843799",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 79,
+    "fat": 1.3,
+    "fibre": 1,
+    "kcal": 360,
+    "protein": 7.1,
+    "salt": 0,
+    "saturates": 0.3,
+    "sugars": 0.3
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Weighed dry. Label: 75 g dry makes about 205 g cooked and has 270 kcal. Protein, carbs and fibre are typical values.",
+   "aliases": [
+    "rice",
+    "white rice",
+    "long grain rice"
+   ]
+  },
+  {
+   "key": "mayonnaise",
+   "name": "Mayonnaise",
+   "unit": "ML",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "500 ml jar",
+    "size": 500.0,
+    "pricePence": 89,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Mayonnaise 500ml",
+   "url": null,
+   "per100": {
+    "kcal": 655,
+    "fat": 71.0,
+    "saturates": 5.5,
+    "carbs": 1.3,
+    "sugars": 1.2,
+    "fibre": 0.0,
+    "protein": 1.0,
+    "salt": 1.4,
+    "addedSugars": 1.0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for full-fat mayonnaise, per 100 ml (about 95 g). Light mayonnaise has about 280 kcal.",
+   "aliases": [
+    "mayo",
+    "mayonnaise",
+    "real mayonnaise"
+   ]
+  },
+  {
+   "key": "naan",
+   "name": "Naan bread",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "2 naans (about 260 g)",
+    "size": 260.0,
+    "pricePence": 69,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Plain Naans 2 Pack 260g",
+   "url": "https://www.tesco.com/groceries/en-GB/products/266838195",
+   "per100": {
+    "kcal": 289,
+    "fat": 6.5,
+    "saturates": 0.8,
+    "carbs": 48.0,
+    "sugars": 3.5,
+    "fibre": 2.2,
+    "protein": 8.5,
+    "salt": 1.0,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 130
+    },
+    {
+     "name": "naan",
+     "amount": 130
+    }
+   ],
+   "note": "Typical values for plain naan. One is about 130 g.",
+   "aliases": [
+    "naan",
+    "naans",
+    "naan breads",
+    "nan bread"
+   ]
+  },
+  {
+   "key": "oyster_sauce",
+   "name": "Oyster sauce",
+   "unit": "ML",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "150 ml",
+    "size": 150,
+    "pricePence": 165,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Oyster Sauce 150ml",
+   "url": "https://www.tesco.com/shop/en-GB/products/260827344",
+   "per100": {
+    "addedSugars": 22,
+    "carbs": 32,
+    "fat": 0,
+    "fibre": 1.2,
+    "kcal": 140,
+    "protein": 1.2,
+    "salt": 9.6,
+    "saturates": 0,
+    "sugars": 22
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Label gives 117 kcal per 100 g; the rest is estimated from similar own-brand oyster sauces (about 7 to 11 g salt per 100 g), converted at about 1.2 g per ml.",
+   "aliases": [
+    "oyster sauce"
+   ]
+  },
+  {
+   "key": "passata",
+   "name": "Passata",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "500 g carton",
+    "size": 500.0,
+    "pricePence": 45,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Tomato Passata 500g",
+   "url": "https://www.tesco.com/shop/en-GB/products/254874296",
+   "per100": {
+    "kcal": 29,
+    "fat": 0.1,
+    "saturates": 0.0,
+    "carbs": 5.0,
+    "sugars": 4.4,
+    "fibre": 1.2,
+    "protein": 1.4,
+    "salt": 0.03,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "carton",
+     "amount": 500
+    }
+   ],
+   "note": "Typical values for passata. It counts towards 5 a day.",
+   "aliases": [
+    "tomato passata",
+    "sieved tomatoes"
+   ]
+  },
+  {
+   "key": "peanut_butter",
+   "name": "Peanut butter",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "340 g jar",
+    "size": 340.0,
+    "pricePence": 125,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Smooth Peanut Butter 340g",
+   "url": null,
+   "per100": {
+    "kcal": 610,
+    "fat": 50.0,
+    "saturates": 9.5,
+    "carbs": 13.0,
+    "sugars": 6.0,
+    "fibre": 6.0,
+    "protein": 24.0,
+    "salt": 1.0,
+    "addedSugars": 2.5
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tbsp",
+     "amount": 16
+    },
+    {
+     "name": "tsp",
+     "amount": 5
+    }
+   ],
+   "note": "Typical values for smooth peanut butter with a little sugar and salt. A tbsp is about 16 g.",
+   "aliases": [
+    "smooth peanut butter",
+    "crunchy peanut butter"
+   ]
+  },
+  {
+   "key": "peanuts",
+   "name": "Peanuts (salted, roasted)",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "200 g bag",
+    "size": 200.0,
+    "pricePence": 140,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Salted Roasted Peanuts 200g",
+   "url": "https://www.tesco.com/shop/en-GB/products/297511989",
+   "per100": {
+    "kcal": 611,
+    "fat": 50.0,
+    "saturates": 8.5,
+    "carbs": 11.0,
+    "sugars": 4.5,
+    "fibre": 7.5,
+    "protein": 25.5,
+    "salt": 1.0,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "handful",
+     "amount": 30
+    }
+   ],
+   "note": "Typical values for salted roasted peanuts. A handful is about 30 g.",
+   "aliases": [
+    "peanuts",
+    "salted peanuts",
+    "roasted peanuts"
+   ]
+  },
+  {
+   "key": "penne",
+   "name": "Penne pasta (dried)",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "500 g bag",
+    "size": 500.0,
+    "pricePence": 69,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Penne Pasta Quills 500g",
+   "url": "https://www.tesco.com/shop/en-GB/products/254878482",
+   "per100": {
+    "kcal": 358,
+    "fat": 2.0,
+    "saturates": 0.5,
+    "carbs": 71.0,
+    "sugars": 3.5,
+    "fibre": 3.0,
+    "protein": 12.5,
+    "salt": 0.01,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for dried durum wheat pasta, weighed dry. 75 to 100 g dry is a portion.",
+   "aliases": [
+    "pasta",
+    "dried pasta",
+    "penne",
+    "rigatoni",
+    "macaroni"
+   ]
+  },
+  {
+   "key": "pitta",
+   "name": "Pitta bread",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "6 pittas (about 330 g)",
+    "size": 330.0,
+    "pricePence": 50,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco White Plain Pitta Bread 6 Pack",
+   "url": "https://www.tesco.com/shop/en-GB/products/254945564",
+   "per100": {
+    "kcal": 255,
+    "fat": 1.2,
+    "saturates": 0.2,
+    "carbs": 51.0,
+    "sugars": 2.0,
+    "fibre": 2.5,
+    "protein": 8.8,
+    "salt": 0.9,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "each",
+     "amount": 55
+    },
+    {
+     "name": "pitta",
+     "amount": 55
+    }
+   ],
+   "note": "Typical values for white pitta. One is about 55 g.",
+   "aliases": [
+    "pitta",
+    "pittas",
+    "pita bread",
+    "pitta breads"
+   ]
+  },
+  {
+   "key": "flour_plain",
+   "name": "Plain flour",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "1.5 kg bag",
+    "size": 1500.0,
+    "pricePence": 80,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Plain Flour 1.5kg",
+   "url": "https://www.tesco.com/groceries/en-GB/products/254917828",
+   "per100": {
+    "kcal": 339,
+    "fat": 1.2,
+    "saturates": 0.2,
+    "carbs": 70.4,
+    "sugars": 1.5,
+    "fibre": 3.6,
+    "protein": 9.8,
+    "salt": 0.0,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tbsp",
+     "amount": 8
+    }
+   ],
+   "note": "Typical values for plain white flour. A level tbsp is about 8 g.",
+   "aliases": [
+    "flour",
+    "plain white flour",
+    "all purpose flour"
+   ]
+  },
+  {
+   "key": "oats",
+   "name": "Porridge oats",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "1 kg bag",
+    "size": 1000.0,
+    "pricePence": 135,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Scottish Porridge Oats 1kg",
+   "url": null,
+   "per100": {
+    "kcal": 374,
+    "fat": 8.0,
+    "saturates": 1.5,
+    "carbs": 60.0,
+    "sugars": 1.0,
+    "fibre": 9.0,
+    "protein": 11.0,
+    "salt": 0.01,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "cup",
+     "amount": 90
+    }
+   ],
+   "note": "Typical values for porridge oats, weighed dry. 40 g is a portion.",
+   "aliases": [
+    "oats",
+    "rolled oats",
+    "porridge",
+    "oatmeal"
+   ]
+  },
+  {
+   "key": "quinoa",
+   "name": "Quinoa",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "300 g bag",
+    "size": 300.0,
+    "pricePence": 310,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Quinoa 300g",
+   "url": null,
+   "per100": {
+    "kcal": 354,
+    "fat": 6.1,
+    "saturates": 0.7,
+    "carbs": 57.2,
+    "sugars": 1.5,
+    "fibre": 7.0,
+    "protein": 14.1,
+    "salt": 0.01,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values, weighed dry. 60 to 75 g dry is a portion.",
+   "aliases": [
+    "quinoa"
+   ]
+  },
+  {
+   "key": "kidney_beans",
+   "name": "Red kidney beans (tin, drained)",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "400 g tin (240 g drained)",
+    "size": 240,
+    "pricePence": 39,
+    "priceDate": "2026-10-17",
+    "store": "Tesco"
+   },
+   "product": "Tesco Red Kidney Beans In Water 400g",
+   "url": null,
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 15,
+    "fat": 0.6,
+    "fibre": 7.3,
+    "kcal": 107,
+    "protein": 6.9,
+    "salt": 0.03,
+    "saturates": 0.1,
+    "sugars": 1.5
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "PULSE",
+   "portions": [
+    {
+     "name": "tin",
+     "amount": 240
+    }
+   ],
+   "note": "Typical values per 100 g drained. A tin gives about 240 g once drained. Beans and lentils count as one veg portion at most.",
+   "aliases": [
+    "kidney beans",
+    "red kidney beans"
+   ]
+  },
+  {
+   "key": "red_lentils",
+   "name": "Red split lentils (dried)",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "1 kg bag",
+    "size": 1000,
+    "pricePence": 260,
+    "priceDate": "2026-10-17",
+    "store": "Tesco"
+   },
+   "product": "Tesco Red Split Lentils 1kg",
+   "url": null,
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 48.5,
+    "fat": 1.3,
+    "fibre": 11,
+    "kcal": 318,
+    "protein": 24,
+    "salt": 0.03,
+    "saturates": 0.2,
+    "sugars": 2
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "PULSE",
+   "portions": [],
+   "note": "Typical values, weighed dry. Beans and lentils count as one veg portion at most, however much there is.",
+   "aliases": [
+    "red lentils",
+    "lentils",
+    "split red lentils"
+   ]
+  },
+  {
+   "key": "rice_noodles",
+   "name": "Rice noodles (dried)",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "300 g pack",
+    "size": 300.0,
+    "pricePence": 115,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Rice Noodles 300g",
+   "url": null,
+   "per100": {
+    "kcal": 360,
+    "fat": 0.6,
+    "saturates": 0.2,
+    "carbs": 81.0,
+    "sugars": 0.1,
+    "fibre": 1.6,
+    "protein": 6.0,
+    "salt": 0.1,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for dried rice noodles, weighed dry.",
+   "aliases": [
+    "rice noodles",
+    "rice vermicelli",
+    "vermicelli noodles",
+    "flat rice noodles"
+   ]
+  },
+  {
+   "key": "flour_sr",
+   "name": "Self-raising flour",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "1.5 kg bag",
+    "size": 1500.0,
+    "pricePence": 80,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Self Raising Flour 1.5kg",
+   "url": "https://www.tesco.com/groceries/en-GB/products/254917759",
+   "per100": {
+    "kcal": 335,
+    "fat": 1.3,
+    "saturates": 0.2,
+    "carbs": 69.5,
+    "sugars": 1.5,
+    "fibre": 3.5,
+    "protein": 9.6,
+    "salt": 0.9,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tbsp",
+     "amount": 8
+    }
+   ],
+   "note": "Typical values for self-raising flour; the raising agents add the salt.",
+   "aliases": [
+    "self raising flour",
+    "self rising flour"
+   ]
+  },
+  {
+   "key": "spaghetti",
+   "name": "Spaghetti (dried)",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "500 g bag",
+    "size": 500.0,
+    "pricePence": 75,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Short Spaghetti Pasta 500g",
+   "url": "https://www.tesco.com/shop/en-GB/products/254878401",
+   "per100": {
+    "kcal": 358,
+    "fat": 2.0,
+    "saturates": 0.5,
+    "carbs": 71.0,
+    "sugars": 3.5,
+    "fibre": 3.0,
+    "protein": 12.5,
+    "salt": 0.01,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values for dried durum wheat pasta, weighed dry. 75 to 100 g dry is a portion.",
+   "aliases": [
+    "spaghetti",
+    "dried spaghetti",
+    "linguine"
+   ]
+  },
+  {
+   "key": "jam",
+   "name": "Strawberry jam",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "454 g jar",
+    "size": 454.0,
+    "pricePence": 89,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Strawberry Jam 454g",
+   "url": "https://www.tesco.com/shop/en-GB/products/254849603",
+   "per100": {
+    "kcal": 244,
+    "fat": 0.1,
+    "saturates": 0.0,
+    "carbs": 60.0,
+    "sugars": 60.0,
+    "fibre": 0.8,
+    "protein": 0.4,
+    "salt": 0.02,
+    "addedSugars": 55.0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 7
+    },
+    {
+     "name": "tbsp",
+     "amount": 20
+    }
+   ],
+   "note": "Typical values for strawberry jam. Most of its sugar is added.",
+   "aliases": [
+    "jam",
+    "strawberry jam",
+    "raspberry jam"
+   ]
+  },
+  {
+   "key": "sultanas",
+   "name": "Sultanas",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "500 g bag",
+    "size": 500.0,
+    "pricePence": 225,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Sultanas 500g",
+   "url": null,
+   "per100": {
+    "kcal": 291,
+    "fat": 0.4,
+    "saturates": 0.0,
+    "carbs": 69.4,
+    "sugars": 69.4,
+    "fibre": 2.0,
+    "protein": 2.7,
+    "salt": 0.05,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "handful",
+     "amount": 30
+    },
+    {
+     "name": "tbsp",
+     "amount": 10
+    }
+   ],
+   "note": "Typical values for sultanas; raisins are much the same.",
+   "aliases": [
+    "raisins",
+    "dried fruit",
+    "sultanas"
+   ]
+  },
+  {
+   "key": "sweet_chilli",
+   "name": "Sweet chilli sauce",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "290 g bottle",
+    "size": 290.0,
+    "pricePence": 235,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Sweet Chilli Dipping Sauce 290g",
+   "url": "https://www.tesco.com/shop/en-GB/products/289661172",
+   "per100": {
+    "kcal": 214,
+    "fat": 0.3,
+    "saturates": 0.0,
+    "carbs": 52.0,
+    "sugars": 48.0,
+    "fibre": 0.8,
+    "protein": 0.4,
+    "salt": 1.5,
+    "addedSugars": 46.0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tbsp",
+     "amount": 18
+    }
+   ],
+   "note": "Typical values for sweet chilli dipping sauce. Nearly all its sugar is added.",
+   "aliases": [
+    "sweet chilli",
+    "sweet chili sauce",
+    "thai sweet chilli sauce"
+   ]
+  },
+  {
+   "key": "sweetcorn_tin",
+   "name": "Sweetcorn (tin, drained)",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "325 g tin (260 g drained)",
+    "size": 260.0,
+    "pricePence": 53,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Naturally Sweet Sweetcorn 325g",
+   "url": "https://www.tesco.com/shop/en-GB/products/254875341",
+   "per100": {
+    "kcal": 86,
+    "fat": 1.2,
+    "saturates": 0.2,
+    "carbs": 15.0,
+    "sugars": 4.0,
+    "fibre": 2.5,
+    "protein": 2.6,
+    "salt": 0.01,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "VEG",
+   "portions": [
+    {
+     "name": "tin",
+     "amount": 260
+    }
+   ],
+   "note": "Typical values for sweetcorn in water, drained. A tin gives about 260 g once drained.",
+   "aliases": [
+    "sweetcorn",
+    "corn",
+    "tinned sweetcorn",
+    "canned corn"
+   ]
+  },
+  {
+   "key": "red_curry_paste",
+   "name": "Thai red curry paste",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "180 g jar",
+    "size": 180.0,
+    "pricePence": 225,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Red Thai Curry Paste 180g",
+   "url": "https://www.tesco.com/shop/en-GB/products/317207605",
+   "per100": {
+    "kcal": 122,
+    "fat": 8.0,
+    "saturates": 0.6,
+    "carbs": 9.5,
+    "sugars": 6.0,
+    "fibre": 3.0,
+    "protein": 1.6,
+    "salt": 4.5,
+    "addedSugars": 4.0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tbsp",
+     "amount": 15
+    }
+   ],
+   "note": "Typical values for Thai red curry paste. Some brands contain fish or shrimp paste.",
+   "aliases": [
+    "red curry paste",
+    "thai red curry paste",
+    "red thai curry paste"
+   ]
+  },
+  {
+   "key": "tikka_paste",
+   "name": "Tikka curry paste",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "180 g jar",
+    "size": 180.0,
+    "pricePence": 245,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Jamie Oliver Tikka Masala Curry Paste 180g",
+   "url": "https://www.tesco.com/groceries/en-GB/products/309494863",
+   "per100": {
+    "kcal": 309,
+    "fat": 26.0,
+    "saturates": 2.0,
+    "carbs": 13.0,
+    "sugars": 4.5,
+    "fibre": 4.5,
+    "protein": 3.5,
+    "salt": 4.6,
+    "addedSugars": 2.0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tbsp",
+     "amount": 15
+    }
+   ],
+   "note": "Typical values for tikka curry paste (most of it is oil and spices).",
+   "aliases": [
+    "tikka paste",
+    "tikka masala paste",
+    "curry paste",
+    "tikka masala curry paste"
+   ]
+  },
+  {
+   "key": "ketchup",
+   "name": "Tomato ketchup",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "560 g bottle",
+    "size": 560.0,
+    "pricePence": 115,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Tomato Ketchup 560g",
+   "url": "https://www.tesco.com/shop/en-GB/products/314947851",
+   "per100": {
+    "kcal": 103,
+    "fat": 0.1,
+    "saturates": 0.0,
+    "carbs": 24.0,
+    "sugars": 22.0,
+    "fibre": 0.8,
+    "protein": 1.2,
+    "salt": 1.8,
+    "addedSugars": 17.0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tbsp",
+     "amount": 15
+    }
+   ],
+   "note": "Typical values for tomato ketchup. About 17 g per 100 g is added sugar.",
+   "aliases": [
+    "ketchup",
+    "tomato ketchup"
+   ]
+  },
+  {
+   "key": "tomato_puree",
+   "name": "Tomato purée",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "200 g tube",
+    "size": 200,
+    "pricePence": 59,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Tomato Puree 200g",
+   "url": "https://www.trolley.co.uk/product/tesco-tomato-puree-tube/FJA033",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 14,
+    "fat": 0.3,
+    "fibre": 3.1,
+    "kcal": 84,
+    "protein": 4.7,
+    "salt": 0.4,
+    "saturates": 0.05,
+    "sugars": 14
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tbsp",
+     "amount": 15
+    }
+   ],
+   "note": "Nutrition from Tesco's Growers Harvest purée label (double concentrate, same price). 1 tbsp is about 15 g.",
+   "aliases": [
+    "tomato puree"
+   ]
+  },
+  {
+   "key": "tortilla_wraps",
+   "name": "Tortilla wraps",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "8 wraps (about 500 g)",
+    "size": 500.0,
+    "pricePence": 140,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Plain White Tortilla Wraps 8 Pack",
+   "url": "https://www.tesco.com/shop/en-GB/products/303350352",
+   "per100": {
+    "kcal": 293,
+    "fat": 6.5,
+    "saturates": 2.8,
+    "carbs": 49.0,
+    "sugars": 2.5,
+    "fibre": 2.5,
+    "protein": 8.4,
+    "salt": 1.1,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "wrap",
+     "amount": 62
+    },
+    {
+     "name": "each",
+     "amount": 62
+    }
+   ],
+   "note": "Typical values for plain flour tortillas. A wrap is about 62 g.",
+   "aliases": [
+    "wraps",
+    "tortillas",
+    "flour tortillas",
+    "tortilla wrap"
+   ]
+  },
+  {
+   "key": "tuna_tin",
+   "name": "Tuna chunks (tin, drained)",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "145 g tin (102 g drained)",
+    "size": 102.0,
+    "pricePence": 65,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Tuna Chunks in Spring Water 145g",
+   "url": null,
+   "per100": {
+    "kcal": 109,
+    "fat": 0.8,
+    "saturates": 0.3,
+    "carbs": 0.0,
+    "sugars": 0.0,
+    "fibre": 0.0,
+    "protein": 25.5,
+    "salt": 0.4,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tin",
+     "amount": 102
+    }
+   ],
+   "note": "Typical values for tuna in spring water, drained. A tin gives about 102 g once drained.",
+   "aliases": [
+    "tuna",
+    "tinned tuna",
+    "canned tuna",
+    "tuna chunks"
+   ]
+  },
+  {
+   "key": "stock_cube_veg",
+   "name": "Vegetable stock cubes",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "10 cubes of 10 g",
+    "size": 100.0,
+    "pricePence": 110,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco 10 Vegetable Stock Cubes 100g",
+   "url": null,
+   "per100": {
+    "kcal": 270,
+    "fat": 15.0,
+    "saturates": 7.5,
+    "carbs": 28.0,
+    "sugars": 8.0,
+    "fibre": 1.0,
+    "protein": 5.0,
+    "salt": 45.0,
+    "addedSugars": 5.0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "cube",
+     "amount": 10
+    }
+   ],
+   "note": "Estimate based on similar 10 g vegetable cubes: about 4.5 g salt per cube. Salt is the number that matters here.",
+   "aliases": [
+    "vegetable stock cube",
+    "veg stock cube",
+    "vegetable stock",
+    "veg stock",
+    "vegetable bouillon"
+   ]
+  },
+  {
+   "key": "wheat_biscuits",
+   "name": "Wheat biscuits (cereal)",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "24 biscuits (432 g)",
+    "size": 432.0,
+    "pricePence": 180,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Wheat Biscuits Cereal 24 pack",
+   "url": null,
+   "per100": {
+    "kcal": 362,
+    "fat": 2.0,
+    "saturates": 0.6,
+    "carbs": 69.0,
+    "sugars": 4.4,
+    "fibre": 10.0,
+    "protein": 12.0,
+    "salt": 0.28,
+    "addedSugars": 3.5
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "biscuit",
+     "amount": 18
+    },
+    {
+     "name": "each",
+     "amount": 18
+    }
+   ],
+   "note": "Typical values for wholewheat breakfast biscuits. One is about 18 g.",
+   "aliases": [
+    "weetabix",
+    "wheat biscuits",
+    "wheat biscuit"
+   ]
+  },
+  {
+   "key": "bread_white",
+   "name": "White bread",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "800 g loaf (about 20 slices)",
+    "size": 800.0,
+    "pricePence": 74,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Medium Sliced White Bread 800g",
+   "url": "https://www.tesco.com/shop/en-GB/products/299389116",
+   "per100": {
+    "kcal": 234,
+    "fat": 1.6,
+    "saturates": 0.4,
+    "carbs": 45.0,
+    "sugars": 3.0,
+    "fibre": 2.8,
+    "protein": 8.5,
+    "salt": 0.9,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "slice",
+     "amount": 40
+    }
+   ],
+   "note": "Typical values for sliced white bread. A medium slice is about 40 g.",
+   "aliases": [
+    "bread",
+    "white bread",
+    "sliced bread",
+    "toast"
+   ]
+  },
+  {
+   "key": "vinegar_white_wine",
+   "name": "White wine vinegar",
+   "unit": "ML",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "350 ml bottle",
+    "size": 350.0,
+    "pricePence": 155,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco White Wine Vinegar 350ml",
+   "url": null,
+   "per100": {
+    "kcal": 22,
+    "fat": 0.0,
+    "saturates": 0.0,
+    "carbs": 0.5,
+    "sugars": 0.5,
+    "fibre": 0.0,
+    "protein": 0.0,
+    "salt": 0.01,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values per 100 ml. Its energy is from the acetic acid, which labels count at 3.6 kcal per gram.",
+   "aliases": [
+    "white wine vinegar",
+    "red wine vinegar",
+    "vinegar",
+    "cider vinegar"
+   ]
+  },
+  {
+   "key": "bread_wholemeal",
+   "name": "Wholemeal bread",
+   "unit": "G",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "800 g loaf (about 20 slices)",
+    "size": 800.0,
+    "pricePence": 75,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Wholemeal Medium Sliced Bread 800g",
+   "url": "https://www.tesco.com/shop/en-GB/products/306278024",
+   "per100": {
+    "kcal": 229,
+    "fat": 2.4,
+    "saturates": 0.4,
+    "carbs": 38.4,
+    "sugars": 2.6,
+    "fibre": 6.8,
+    "protein": 10.1,
+    "salt": 0.9,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "slice",
+     "amount": 40
+    }
+   ],
+   "note": "Typical values for sliced wholemeal bread. A medium slice is about 40 g.",
+   "aliases": [
+    "wholemeal bread",
+    "brown bread",
+    "wholemeal toast"
+   ]
+  },
+  {
+   "key": "worcestershire",
+   "name": "Worcestershire sauce",
+   "unit": "ML",
+   "shelf": "CUPBOARD",
+   "pack": {
+    "label": "150 ml bottle",
+    "size": 150.0,
+    "pricePence": 130,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Worcester Sauce 150ml",
+   "url": "https://www.tesco.com/shop/en-GB/products/297372202",
+   "per100": {
+    "kcal": 112,
+    "fat": 0.1,
+    "saturates": 0.0,
+    "carbs": 26.5,
+    "sugars": 22.0,
+    "fibre": 0.0,
+    "protein": 1.1,
+    "salt": 3.1,
+    "addedSugars": 20.0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Typical values per 100 ml. It contains anchovies.",
+   "aliases": [
+    "worcester sauce",
+    "worcestershire"
+   ]
+  },
+  {
+   "key": "olive_oil",
+   "name": "Olive oil",
+   "unit": "ML",
+   "shelf": "OILS",
+   "pack": {
+    "label": "1 litre",
+    "size": 1000,
+    "pricePence": 675,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Olive Oil 1L",
+   "url": "https://www.tesco.com/shop/en-GB/products/254918424",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 0,
+    "fat": 91.2,
+    "fibre": 0,
+    "kcal": 820,
+    "protein": 0,
+    "salt": 0,
+    "saturates": 13,
+    "sugars": 0
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Label: 123 kcal per tablespoon (15 ml). Saturates typical for olive oil.",
+   "aliases": [
+    "extra virgin olive oil",
+    "light olive oil"
+   ]
+  },
+  {
+   "key": "sesame_oil",
+   "name": "Toasted sesame oil",
+   "unit": "ML",
+   "shelf": "OILS",
+   "pack": {
+    "label": "250 ml",
+    "size": 250,
+    "pricePence": 265,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Toasted Sesame Oil 250ml",
+   "url": "https://www.tesco.com/shop/en-GB/products/259028703",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 0,
+    "fat": 92,
+    "fibre": 0,
+    "kcal": 827,
+    "protein": 0,
+    "salt": 0,
+    "saturates": 13.3,
+    "sugars": 0
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Label: 124 kcal and 2.0 g saturates per tablespoon.",
+   "aliases": [
+    "sesame oil"
+   ]
+  },
+  {
+   "key": "veg_oil",
+   "name": "Vegetable oil (rapeseed)",
+   "unit": "ML",
+   "shelf": "OILS",
+   "pack": {
+    "label": "1 litre",
+    "size": 1000,
+    "pricePence": 145,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Pure Vegetable Oil 1L",
+   "url": "https://www.tesco.com/shop/en-GB/products/254918067",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 0,
+    "fat": 92,
+    "fibre": 0,
+    "kcal": 828,
+    "protein": 0,
+    "salt": 0,
+    "saturates": 7.4,
+    "sugars": 0
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [],
+   "note": "Converted from the label's per-100 g values (oil weighs about 0.92 g per ml).",
+   "aliases": [
+    "oil",
+    "rapeseed oil",
+    "sunflower oil"
+   ]
+  },
+  {
+   "key": "bay",
+   "name": "Bay leaves (dried)",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "3 g jar (about 15 leaves)",
+    "size": 3,
+    "pricePence": 110,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Bay Leaves 3g",
+   "url": "https://www.tesco.com/shop/en-GB/products/264104905",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 50.7,
+    "fat": 8.4,
+    "fibre": 26,
+    "kcal": 358,
+    "protein": 7,
+    "salt": 0.06,
+    "saturates": 2.6,
+    "sugars": 0
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "leaf",
+     "amount": 0.2
+    }
+   ],
+   "note": "Full nutrition from the label. One leaf is about 0.2 g.",
+   "aliases": [
+    "bay leaves",
+    "bay leaf"
+   ]
+  },
+  {
+   "key": "chilli_flakes",
+   "name": "Chilli flakes",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "32 g jar",
+    "size": 32.0,
+    "pricePence": 110,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Birds Eye Chilli Flakes 32g",
+   "url": "https://www.tesco.com/shop/en-GB/products/304395648",
+   "per100": {
+    "kcal": 340,
+    "fat": 17.3,
+    "saturates": 3.3,
+    "carbs": 29.4,
+    "sugars": 10.3,
+    "fibre": 27.2,
+    "protein": 12.0,
+    "salt": 0.08,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 1.5
+    }
+   ],
+   "note": "Typical values for dried chilli. A tsp is about 1.5 g.",
+   "aliases": [
+    "chilli flakes",
+    "chili flakes",
+    "crushed chillies",
+    "red pepper flakes",
+    "dried chilli flakes"
+   ]
+  },
+  {
+   "key": "five_spice",
+   "name": "Chinese five spice",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "34 g jar",
+    "size": 34.0,
+    "pricePence": 110,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Chinese 5 Spice 34g",
+   "url": "https://www.tesco.com/groceries/en-GB/products/251620642",
+   "per100": {
+    "kcal": 346,
+    "fat": 10.0,
+    "saturates": 2.0,
+    "carbs": 40.0,
+    "sugars": 5.0,
+    "fibre": 30.0,
+    "protein": 9.0,
+    "salt": 0.1,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 2
+    }
+   ],
+   "note": "Typical values for a five-spice blend. A tsp is about 2 g.",
+   "aliases": [
+    "five spice",
+    "chinese five spice",
+    "5 spice",
+    "chinese 5 spice"
+   ]
+  },
+  {
+   "key": "mixed_herbs",
+   "name": "Dried mixed herbs",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "13 g jar",
+    "size": 13,
+    "pricePence": 85,
+    "priceDate": "2026-10-17",
+    "store": "Tesco"
+   },
+   "product": "Tesco Mixed Herbs 13g",
+   "url": null,
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 27,
+    "fat": 6,
+    "fibre": 37,
+    "kcal": 260,
+    "protein": 11,
+    "salt": 0.1,
+    "saturates": 2,
+    "sugars": 4
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 1
+    }
+   ],
+   "note": "Typical values. 1 tsp is about 1 g.",
+   "aliases": [
+    "italian herbs",
+    "dried herbs",
+    "herbes de provence"
+   ]
+  },
+  {
+   "key": "oregano",
+   "name": "Dried oregano",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "14 g jar",
+    "size": 14.0,
+    "pricePence": 110,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Dried Oregano 14g",
+   "url": "https://www.tesco.com/shop/en-GB/products/256149795",
+   "per100": {
+    "kcal": 265,
+    "fat": 4.3,
+    "saturates": 1.6,
+    "carbs": 26.4,
+    "sugars": 4.1,
+    "fibre": 42.5,
+    "protein": 9.0,
+    "salt": 0.06,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 1
+    }
+   ],
+   "note": "Typical values for dried oregano. A tsp is about 1 g.",
+   "aliases": [
+    "oregano",
+    "dried oregano"
+   ]
+  },
+  {
+   "key": "thyme",
+   "name": "Dried thyme (or mixed herbs)",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "19 g jar",
+    "size": 19,
+    "pricePence": 110,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Thyme 19g",
+   "url": "https://www.trolley.co.uk/product/tesco-thyme/DGJ800",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 23.1,
+    "fat": 7.3,
+    "fibre": 37.5,
+    "kcal": 286,
+    "protein": 13.1,
+    "salt": 0.25,
+    "saturates": 2.8,
+    "sugars": 3.1
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 1
+    }
+   ],
+   "note": "Nutrition from Tesco's Mixed Herbs label (a thyme-led blend). 1 tsp is about 1 g.",
+   "aliases": [
+    "thyme",
+    "dried thyme"
+   ]
+  },
+  {
+   "key": "basil_fresh",
+   "name": "Fresh basil",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "30 g pack",
+    "size": 30.0,
+    "pricePence": 50,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Cut Basil 30g",
+   "url": "https://www.tesco.com/shop/en-GB/products/292695686",
+   "per100": {
+    "kcal": 23,
+    "fat": 0.6,
+    "saturates": 0.0,
+    "carbs": 1.1,
+    "sugars": 0.3,
+    "fibre": 1.6,
+    "protein": 3.2,
+    "salt": 0.01,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "handful",
+     "amount": 10
+    }
+   ],
+   "note": "Typical values for fresh basil. A handful is about 10 g.",
+   "aliases": [
+    "basil",
+    "fresh basil",
+    "basil leaves"
+   ]
+  },
+  {
+   "key": "coriander_fresh",
+   "name": "Fresh coriander",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "30 g pack",
+    "size": 30.0,
+    "pricePence": 50,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Fresh Cut Coriander 30g",
+   "url": null,
+   "per100": {
+    "kcal": 23,
+    "fat": 0.5,
+    "saturates": 0.0,
+    "carbs": 0.9,
+    "sugars": 0.9,
+    "fibre": 2.8,
+    "protein": 2.1,
+    "salt": 0.12,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "handful",
+     "amount": 10
+    }
+   ],
+   "note": "Typical values for fresh coriander. A handful is about 10 g. Herbs don't count towards 5 a day.",
+   "aliases": [
+    "coriander",
+    "fresh coriander",
+    "coriander leaves",
+    "cilantro"
+   ]
+  },
+  {
+   "key": "parsley_fresh",
+   "name": "Fresh flat-leaf parsley",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "30 g pack",
+    "size": 30.0,
+    "pricePence": 50,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Fresh Cut Flat Leaf Parsley 30g",
+   "url": null,
+   "per100": {
+    "kcal": 36,
+    "fat": 0.8,
+    "saturates": 0.1,
+    "carbs": 3.0,
+    "sugars": 0.9,
+    "fibre": 3.3,
+    "protein": 3.0,
+    "salt": 0.14,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "handful",
+     "amount": 10
+    }
+   ],
+   "note": "Typical values for fresh parsley. A handful is about 10 g.",
+   "aliases": [
+    "parsley",
+    "fresh parsley",
+    "flat leaf parsley"
+   ]
+  },
+  {
+   "key": "garam_masala",
+   "name": "Garam masala",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "38 g jar",
+    "size": 38.0,
+    "pricePence": 110,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Garam Masala Spice Blend 38g",
+   "url": null,
+   "per100": {
+    "kcal": 344,
+    "fat": 14.0,
+    "saturates": 2.5,
+    "carbs": 30.0,
+    "sugars": 3.0,
+    "fibre": 25.0,
+    "protein": 12.0,
+    "salt": 0.1,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 2
+    }
+   ],
+   "note": "Typical values for a garam masala blend. A tsp is about 2 g.",
+   "aliases": [
+    "garam masala"
+   ]
+  },
+  {
+   "key": "garlic_powder",
+   "name": "Garlic powder",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "45 g jar",
+    "size": 45,
+    "pricePence": 110,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Garlic Powder 45g",
+   "url": "https://www.tesco.com/shop/en-GB/products/300456382",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 63.7,
+    "fat": 0.7,
+    "fibre": 9,
+    "kcal": 346,
+    "protein": 16.6,
+    "salt": 0.15,
+    "saturates": 0.3,
+    "sugars": 2.4
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "pinch",
+     "amount": 0.3
+    }
+   ],
+   "note": "Full nutrition from the label. A pinch is about 0.3 g.",
+   "aliases": [
+    "garlic granules"
+   ]
+  },
+  {
+   "key": "black_pepper",
+   "name": "Ground black pepper",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "100 g",
+    "size": 100,
+    "pricePence": 255,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Ground Black Pepper 100g",
+   "url": "https://www.tesco.com/shop/en-GB/products/256150775",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 44.3,
+    "fat": 3.3,
+    "fibre": 28.5,
+    "kcal": 304,
+    "protein": 12,
+    "salt": 0.05,
+    "saturates": 1,
+    "sugars": 0.6
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 2.4
+    }
+   ],
+   "note": "Fibre and protein from Tesco's coarse black pepper label. ½ tsp is about 1.2 g.",
+   "aliases": [
+    "black pepper"
+   ]
+  },
+  {
+   "key": "cinnamon",
+   "name": "Ground cinnamon",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "36 g jar",
+    "size": 36.0,
+    "pricePence": 110,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Ground Cinnamon 36g",
+   "url": "https://www.tesco.com/shop/en-GB/products/316187030",
+   "per100": {
+    "kcal": 247,
+    "fat": 1.2,
+    "saturates": 0.3,
+    "carbs": 27.5,
+    "sugars": 2.2,
+    "fibre": 53.1,
+    "protein": 4.0,
+    "salt": 0.03,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 2.5
+    }
+   ],
+   "note": "Typical values for ground cinnamon. A tsp is about 2.5 g.",
+   "aliases": [
+    "cinnamon",
+    "ground cinnamon"
+   ]
+  },
+  {
+   "key": "coriander_ground",
+   "name": "Ground coriander",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "36 g jar",
+    "size": 36.0,
+    "pricePence": 110,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Ground Coriander 36g",
+   "url": "https://www.tesco.com/shop/en-GB/products/256150527",
+   "per100": {
+    "kcal": 320,
+    "fat": 17.8,
+    "saturates": 1.0,
+    "carbs": 13.1,
+    "sugars": 0.0,
+    "fibre": 41.9,
+    "protein": 12.4,
+    "salt": 0.09,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 2
+    }
+   ],
+   "note": "Typical values for ground coriander seed. A tsp is about 2 g.",
+   "aliases": [
+    "ground coriander",
+    "coriander powder"
+   ]
+  },
+  {
+   "key": "cumin",
+   "name": "Ground cumin",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "46 g jar",
+    "size": 46,
+    "pricePence": 110,
+    "priceDate": "2026-10-17",
+    "store": "Tesco"
+   },
+   "product": "Tesco Ground Cumin 46g",
+   "url": null,
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 33.7,
+    "fat": 22.3,
+    "fibre": 10.5,
+    "kcal": 375,
+    "protein": 17.8,
+    "salt": 0.42,
+    "saturates": 1.5,
+    "sugars": 2.3
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 2
+    }
+   ],
+   "note": "Typical values. 1 tsp is about 2 g.",
+   "aliases": [
+    "cumin",
+    "ground cumin",
+    "cumin powder"
+   ]
+  },
+  {
+   "key": "turmeric",
+   "name": "Ground turmeric",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "45 g jar",
+    "size": 45.0,
+    "pricePence": 110,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Ground Turmeric 45g",
+   "url": "https://www.tesco.com/shop/en-GB/products/257025479",
+   "per100": {
+    "kcal": 291,
+    "fat": 3.3,
+    "saturates": 1.8,
+    "carbs": 44.4,
+    "sugars": 3.2,
+    "fibre": 22.7,
+    "protein": 9.7,
+    "salt": 0.07,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 3
+    }
+   ],
+   "note": "Typical values for ground turmeric. A tsp is about 3 g.",
+   "aliases": [
+    "turmeric",
+    "ground turmeric"
+   ]
+  },
+  {
+   "key": "chilli_powder",
+   "name": "Mild chilli powder",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "46 g jar",
+    "size": 46,
+    "pricePence": 110,
+    "priceDate": "2026-10-17",
+    "store": "Tesco"
+   },
+   "product": "Tesco Mild Chilli Powder 46g",
+   "url": null,
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 25,
+    "fat": 14,
+    "fibre": 35,
+    "kcal": 315,
+    "protein": 13,
+    "salt": 1,
+    "saturates": 2.5,
+    "sugars": 7
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 2.7
+    }
+   ],
+   "note": "Estimate: typical values for a mild chilli blend; some blends have more salt. 1 tsp is about 2.7 g.",
+   "aliases": [
+    "chili powder"
+   ]
+  },
+  {
+   "key": "curry_powder",
+   "name": "Mild curry powder",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "80 g jar",
+    "size": 80.0,
+    "pricePence": 135,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "Tesco Mild Curry Powder 80g",
+   "url": null,
+   "per100": {
+    "kcal": 315,
+    "fat": 13.0,
+    "saturates": 2.0,
+    "carbs": 20.0,
+    "sugars": 2.8,
+    "fibre": 33.0,
+    "protein": 13.0,
+    "salt": 0.2,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 2
+    }
+   ],
+   "note": "Typical values for curry powder. A tsp is about 2 g.",
+   "aliases": [
+    "curry powder",
+    "medium curry powder",
+    "hot curry powder"
+   ]
+  },
+  {
+   "key": "salt",
+   "name": "Salt",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "1.5 kg cooking salt",
+    "size": 1500,
+    "pricePence": 190,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Cooking Salt 1.5kg",
+   "url": "https://www.trolley.co.uk/product/asda-table-salt/ZFM057",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 0,
+    "fat": 0,
+    "fibre": 0,
+    "kcal": 0,
+    "protein": 0,
+    "salt": 100,
+    "saturates": 0,
+    "sugars": 0
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 6
+    }
+   ],
+   "note": "1 tsp is about 6 g.",
+   "aliases": [
+    "sea salt",
+    "table salt"
+   ]
+  },
+  {
+   "key": "smoked_paprika",
+   "name": "Smoked paprika",
+   "unit": "G",
+   "shelf": "HERBS_SPICES",
+   "pack": {
+    "label": "48 g jar",
+    "size": 48,
+    "pricePence": 110,
+    "priceDate": "2026-10-15",
+    "store": "Tesco"
+   },
+   "product": "Tesco Smoked Paprika 48g",
+   "url": "https://www.tesco.com/shop/en-GB/products/255770365",
+   "per100": {
+    "addedSugars": 0,
+    "carbs": 18.3,
+    "fat": 13,
+    "fibre": 37.4,
+    "kcal": 324,
+    "protein": 14.8,
+    "salt": 0.09,
+    "saturates": 2.1,
+    "sugars": 10.3
+   },
+   "nutritionSource": "LABEL",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "tsp",
+     "amount": 2.4
+    }
+   ],
+   "note": "Full nutrition from the label. 1 tsp is about 2.4 g.",
+   "aliases": [
+    "paprika"
+   ]
+  },
+  {
+   "key": "tofu",
+   "name": "Firm tofu",
+   "unit": "G",
+   "shelf": "OTHER",
+   "pack": {
+    "label": "280 g block",
+    "size": 280.0,
+    "pricePence": 180,
+    "priceDate": "2026-10-22",
+    "store": "Tesco"
+   },
+   "product": "The Tofoo Co Naked Extra Firm Tofu 280g",
+   "url": null,
+   "per100": {
+    "kcal": 124,
+    "fat": 7.1,
+    "saturates": 1.2,
+    "carbs": 1.2,
+    "sugars": 0.4,
+    "fibre": 0.9,
+    "protein": 13.3,
+    "salt": 0.03,
+    "addedSugars": 0
+   },
+   "nutritionSource": "ESTIMATE",
+   "veg": "NONE",
+   "portions": [
+    {
+     "name": "block",
+     "amount": 280
+    }
+   ],
+   "note": "Typical values for firm tofu, drained.",
+   "aliases": [
+    "tofu",
+    "extra firm tofu",
+    "firm tofu"
+   ]
+  }
+ ],
+ "recipes": []
+}
