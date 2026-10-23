@@ -1,0 +1,420 @@
+=== 11:31:49
+               total        used        free      shared  buff/cache   available
+Mem:           15989        4379        2828          49        9177       11610
+Swap:           9215           0        9215
+    3347 MB qemu-system-x86
+     157 MB provjobd2507572
+     137 MB Runner.Worker
+      97 MB Runner.Listener
+      69 MB dockerd
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1584812 kB
+SwapFree:        1900748 kB
+/dev/block/dm-38 5.8G 223M  5.4G   4% /data/user/0
+/dev/fuse        5.8G 223M  5.4G   4% /storage/emulated
+=== 11:32:50
+               total        used        free      shared  buff/cache   available
+Mem:           15989        5378        1687          49        9319       10611
+Swap:           9215           0        9215
+    3506 MB qemu-system-x86
+     608 MB java
+     160 MB java
+     160 MB provjobd2507572
+     138 MB Runner.Worker
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1325988 kB
+SwapFree:        1820620 kB
+/dev/block/dm-38 5.8G 326M  5.3G   6% /data/user/0
+/dev/fuse        5.8G 326M  5.3G   6% /storage/emulated
+=== 11:33:50
+               total        used        free      shared  buff/cache   available
+Mem:           15989        5368        1691          49        9325       10620
+Swap:           9215           0        9215
+    3506 MB qemu-system-x86
+     608 MB java
+     161 MB java
+     146 MB provjobd2507572
+     138 MB Runner.Worker
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1240876 kB
+SwapFree:        1820620 kB
+/dev/block/dm-38 5.8G 326M  5.3G   6% /data/user/0
+/dev/fuse        5.8G 326M  5.3G   6% /storage/emulated
+=== 11:34:50
+               total        used        free      shared  buff/cache   available
+Mem:           15989        5359        1690          49        9335       10630
+Swap:           9215           0        9215
+    3506 MB qemu-system-x86
+     608 MB java
+     163 MB java
+     138 MB Runner.Worker
+     134 MB provjobd2507572
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1291560 kB
+SwapFree:        1820620 kB
+/dev/block/dm-38 5.8G 326M  5.3G   6% /data/user/0
+/dev/fuse        5.8G 326M  5.3G   6% /storage/emulated
+=== 11:35:50
+               total        used        free      shared  buff/cache   available
+Mem:           15989        5359        1684          49        9341       10630
+Swap:           9215           0        9215
+    3508 MB qemu-system-x86
+     608 MB java
+     164 MB java
+     138 MB Runner.Worker
+     134 MB provjobd2507572
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1143024 kB
+SwapFree:        1820620 kB
+/dev/block/dm-38 5.8G 328M  5.3G   6% /data/user/0
+/dev/fuse        5.8G 328M  5.3G   6% /storage/emulated
+=== 11:36:50
+               total        used        free      shared  buff/cache   available
+Mem:           15989        5365        1672          49        9347       10624
+Swap:           9215           0        9215
+    3509 MB qemu-system-x86
+     608 MB java
+     163 MB java
+     137 MB Runner.Worker
+     134 MB provjobd2507572
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1156668 kB
+SwapFree:        1820620 kB
+/dev/block/dm-38 5.8G 327M  5.3G   6% /data/user/0
+/dev/fuse        5.8G 327M  5.3G   6% /storage/emulated
+=== 11:37:50
+               total        used        free      shared  buff/cache   available
+Mem:           15989        5446        1586          49        9352       10542
+Swap:           9215           0        9215
+    3601 MB qemu-system-x86
+     608 MB java
+     164 MB java
+     138 MB Runner.Worker
+     135 MB provjobd2507572
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1099516 kB
+SwapFree:        1812940 kB
+/dev/block/dm-38 5.8G 328M  5.3G   6% /data/user/0
+/dev/fuse        5.8G 328M  5.3G   6% /storage/emulated
+=== 11:38:50
+               total        used        free      shared  buff/cache   available
+Mem:           15989        5894        1135          50        9355       10094
+Swap:           9215           0        9215
+    4055 MB qemu-system-x86
+     608 MB java
+     164 MB java
+     138 MB Runner.Worker
+     134 MB provjobd2507572
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1093800 kB
+SwapFree:        1814732 kB
+/dev/block/dm-38 5.8G 330M  5.3G   6% /data/user/0
+/dev/fuse        5.8G 330M  5.3G   6% /storage/emulated
+=== 11:39:50
+               total        used        free      shared  buff/cache   available
+Mem:           15989        6408         618          50        9358        9580
+Swap:           9215           0        9215
+    4554 MB qemu-system-x86
+     608 MB java
+     164 MB java
+     138 MB Runner.Worker
+     134 MB provjobd2507572
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1107708 kB
+SwapFree:        1816780 kB
+/dev/block/dm-38 5.8G 331M  5.3G   6% /data/user/0
+/dev/fuse        5.8G 331M  5.3G   6% /storage/emulated
+=== 11:40:50
+               total        used        free      shared  buff/cache   available
+Mem:           15989        6855         170          50        9360        9134
+Swap:           9215           0        9215
+    5001 MB qemu-system-x86
+     608 MB java
+     164 MB java
+     138 MB Runner.Worker
+     134 MB provjobd2507572
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1067648 kB
+SwapFree:        1816780 kB
+/dev/block/dm-38 5.8G 332M  5.3G   6% /data/user/0
+/dev/fuse        5.8G 332M  5.3G   6% /storage/emulated
+=== 11:41:50
+               total        used        free      shared  buff/cache   available
+Mem:           15989        7244         220          50        8921        8745
+Swap:           9215           0        9215
+    5428 MB qemu-system-x86
+     608 MB java
+     164 MB java
+     138 MB Runner.Worker
+     134 MB provjobd2507572
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1389628 kB
+SwapFree:        1847756 kB
+/dev/block/dm-38 5.8G 331M  5.3G   6% /data/user/0
+/dev/fuse        5.8G 331M  5.3G   6% /storage/emulated
+=== 11:42:50
+               total        used        free      shared  buff/cache   available
+Mem:           15989        7632         163          50        8591        8357
+Swap:           9215           0        9215
+    5811 MB qemu-system-x86
+     611 MB java
+     164 MB java
+     139 MB Runner.Worker
+     134 MB provjobd2507572
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1168660 kB
+SwapFree:        1847756 kB
+/dev/block/dm-38 5.8G 333M  5.3G   6% /data/user/0
+/dev/fuse        5.8G 333M  5.3G   6% /storage/emulated
+=== 11:43:51
+               total        used        free      shared  buff/cache   available
+Mem:           15989        8179         165          50        8041        7810
+Swap:           9215           0        9215
+    6372 MB qemu-system-x86
+     611 MB java
+     164 MB java
+     137 MB Runner.Worker
+     134 MB provjobd2507572
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1085600 kB
+SwapFree:        1847244 kB
+/dev/block/dm-38 5.8G 335M  5.3G   6% /data/user/0
+/dev/fuse        5.8G 335M  5.3G   6% /storage/emulated
+=== 11:44:51
+               total        used        free      shared  buff/cache   available
+Mem:           15989        8859         240          50        7287        7130
+Swap:           9215           0        9215
+    7028 MB qemu-system-x86
+     611 MB java
+     164 MB java
+     135 MB provjobd2507572
+     122 MB java
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1121160 kB
+SwapFree:        1845452 kB
+/dev/block/dm-38 5.8G 337M  5.3G   6% /data/user/0
+/dev/fuse        5.8G 337M  5.3G   6% /storage/emulated
+=== 11:45:51
+               total        used        free      shared  buff/cache   available
+Mem:           15989        9160         184          50        7041        6829
+Swap:           9215           0        9215
+    7322 MB qemu-system-x86
+     611 MB java
+     164 MB java
+     134 MB provjobd2507572
+     122 MB java
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1151816 kB
+SwapFree:        1843660 kB
+/dev/block/dm-38 5.8G 338M  5.3G   6% /data/user/0
+/dev/fuse        5.8G 338M  5.3G   6% /storage/emulated
+=== 11:46:51
+               total        used        free      shared  buff/cache   available
+Mem:           15989        9305         250          50        6830        6683
+Swap:           9215           0        9215
+    7474 MB qemu-system-x86
+     611 MB java
+     164 MB java
+     134 MB provjobd2507572
+     122 MB java
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1149892 kB
+SwapFree:        1844940 kB
+/dev/block/dm-38 5.8G 341M  5.3G   6% /data/user/0
+/dev/fuse        5.8G 341M  5.3G   6% /storage/emulated
+=== 11:47:51
+               total        used        free      shared  buff/cache   available
+Mem:           15989        9633         272          50        6480        6356
+Swap:           9215           0        9215
+    7794 MB qemu-system-x86
+     613 MB java
+     164 MB java
+     135 MB provjobd2507572
+     122 MB java
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1100872 kB
+SwapFree:        1846220 kB
+/dev/block/dm-38 5.8G 343M  5.3G   6% /data/user/0
+/dev/fuse        5.8G 343M  5.3G   6% /storage/emulated
+=== 11:48:51
+               total        used        free      shared  buff/cache   available
+Mem:           15989       10040         198          50        6147        5949
+Swap:           9215           0        9215
+    8202 MB qemu-system-x86
+     613 MB java
+     164 MB java
+     134 MB provjobd2507572
+     122 MB java
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1124792 kB
+SwapFree:        1846988 kB
+/dev/block/dm-38 5.8G 345M  5.3G   6% /data/user/0
+/dev/fuse        5.8G 345M  5.3G   6% /storage/emulated
+=== 11:49:51
+               total        used        free      shared  buff/cache   available
+Mem:           15989       10079         270          50        6036        5910
+Swap:           9215           0        9215
+    8247 MB qemu-system-x86
+     613 MB java
+     164 MB java
+     134 MB provjobd2507572
+     122 MB java
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1089836 kB
+SwapFree:        1841868 kB
+/dev/block/dm-38 5.8G 347M  5.3G   6% /data/user/0
+/dev/fuse        5.8G 347M  5.3G   6% /storage/emulated
+=== 11:50:51
+               total        used        free      shared  buff/cache   available
+Mem:           15989       10333         242          50        5811        5656
+Swap:           9215           0        9215
+    8503 MB qemu-system-x86
+     615 MB java
+     164 MB java
+     134 MB provjobd2507572
+     122 MB java
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1096348 kB
+SwapFree:        1846988 kB
+/dev/block/dm-38 5.8G 349M  5.3G   7% /data/user/0
+/dev/fuse        5.8G 349M  5.3G   7% /storage/emulated
+=== 11:51:51
+               total        used        free      shared  buff/cache   available
+Mem:           15989       10766         248          50        5372        5223
+Swap:           9215           0        9215
+    8938 MB qemu-system-x86
+     615 MB java
+     164 MB java
+     131 MB provjobd2507572
+     122 MB java
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1091412 kB
+SwapFree:        1842892 kB
+/dev/block/dm-38 5.8G 350M  5.3G   7% /data/user/0
+/dev/fuse        5.8G 350M  5.3G   7% /storage/emulated
+=== 11:52:51
+               total        used        free      shared  buff/cache   available
+Mem:           15989       11119         260          50        5006        4869
+Swap:           9215           0        9215
+    9287 MB qemu-system-x86
+     615 MB java
+     164 MB java
+     131 MB provjobd2507572
+     122 MB java
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1120236 kB
+SwapFree:        1842636 kB
+/dev/block/dm-38 5.8G 352M  5.3G   7% /data/user/0
+/dev/fuse        5.8G 352M  5.3G   7% /storage/emulated
+=== 11:53:52
+               total        used        free      shared  buff/cache   available
+Mem:           15989       11643         191          50        4552        4346
+Swap:           9215           0        9215
+    9783 MB qemu-system-x86
+     615 MB java
+     164 MB java
+     132 MB provjobd2507572
+     122 MB java
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1157096 kB
+SwapFree:        1847500 kB
+/dev/block/dm-38 5.8G 354M  5.3G   7% /data/user/0
+/dev/fuse        5.8G 354M  5.3G   7% /storage/emulated
+=== 11:54:52
+               total        used        free      shared  buff/cache   available
+Mem:           15989       12128         279          51        3979        3861
+Swap:           9215           0        9215
+   10291 MB qemu-system-x86
+     615 MB java
+     164 MB java
+     132 MB provjobd2507572
+     122 MB java
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1163036 kB
+SwapFree:        1847500 kB
+/dev/block/dm-38 5.8G 356M  5.3G   7% /data/user/0
+/dev/fuse        5.8G 356M  5.3G   7% /storage/emulated
+=== 11:55:52
+               total        used        free      shared  buff/cache   available
+Mem:           15989       13032         204          51        3150        2957
+Swap:           9215           0        9215
+   11151 MB qemu-system-x86
+     632 MB java
+     164 MB java
+     133 MB provjobd2507572
+     122 MB java
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1340176 kB
+SwapFree:        1847756 kB
+/dev/block/dm-38 5.8G 355M  5.3G   7% /data/user/0
+/dev/fuse        5.8G 355M  5.3G   7% /storage/emulated
+=== 11:56:52
+               total        used        free      shared  buff/cache   available
+Mem:           15989       13396         165          51        2826        2593
+Swap:           9215           0        9215
+   11528 MB qemu-system-x86
+     632 MB java
+     164 MB java
+     132 MB provjobd2507572
+     122 MB java
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1128404 kB
+SwapFree:        1847500 kB
+/dev/block/dm-38 5.8G 358M  5.3G   7% /data/user/0
+/dev/fuse        5.8G 358M  5.3G   7% /storage/emulated
+=== 11:57:52
+               total        used        free      shared  buff/cache   available
+Mem:           15989       13930         165          51        2290        2058
+Swap:           9215           0        9215
+   12079 MB qemu-system-x86
+     632 MB java
+     164 MB java
+     131 MB provjobd2507572
+     122 MB java
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1105396 kB
+SwapFree:        1849036 kB
+/dev/block/dm-38 5.8G 359M  5.3G   7% /data/user/0
+/dev/fuse        5.8G 359M  5.3G   7% /storage/emulated
+=== 11:58:52
+               total        used        free      shared  buff/cache   available
+Mem:           15989       14678         192          51        1516        1311
+Swap:           9215           0        9215
+   12837 MB qemu-system-x86
+     632 MB java
+     169 MB java
+     130 MB provjobd2507572
+     122 MB java
+/dev/root       145G   50G   95G  35% /
+MemTotal:        2534340 kB
+MemAvailable:    1112608 kB
+SwapFree:        1849292 kB
+/dev/block/dm-38 5.8G 360M  5.3G   7% /data/user/0
+/dev/fuse        5.8G 360M  5.3G   7% /storage/emulated

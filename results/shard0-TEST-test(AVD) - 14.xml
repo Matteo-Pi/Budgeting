@@ -1,0 +1,519 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuites tests="246" failures="0" errors="0" skipped="0" time="0.000" timestamp="2026-10-23T11:57:25" hostname="localhost">
+  <testsuite name="io.github.matteopi.budgeting.SmokeTest" tests="1" failures="0" errors="0" skipped="0" time="2.778" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="freshInstallOpensOnboarding" classname="io.github.matteopi.budgeting.SmokeTest" time="2.778" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.AccountRepositoryTest" tests="4" failures="0" errors="0" skipped="0" time="1.501" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="deletingTheDefaultMovesItToTheEarliestRemainingAccount" classname="io.github.matteopi.budgeting.data.AccountRepositoryTest" time="0.383" />
+    <testcase name="aDefaultChosenInSettingsSurvivesNewAccounts" classname="io.github.matteopi.budgeting.data.AccountRepositoryTest" time="0.427" />
+    <testcase name="overdraftLimitIsStoredAndCanBeChanged" classname="io.github.matteopi.budgeting.data.AccountRepositoryTest" time="0.360" />
+    <testcase name="futureDatedTransactionsAreNotInTheBalanceYet" classname="io.github.matteopi.budgeting.data.AccountRepositoryTest" time="0.331" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.BackupRoundTripTest" tests="5" failures="0" errors="0" skipped="0" time="8.770" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="exportAndRestoreThroughTheBackupScreenKeepsDataAndPrivacySettings" classname="io.github.matteopi.budgeting.data.BackupRoundTripTest" time="2.327" />
+    <testcase name="theExportedFileIsVersion10AndCarriesTheFoodPlannerAndDiaryLists" classname="io.github.matteopi.budgeting.data.BackupRoundTripTest" time="1.635" />
+    <testcase name="theRecipeBookAndShoppingListSurviveBackupAndRestoreIntoAnEmptyDatabase" classname="io.github.matteopi.budgeting.data.BackupRoundTripTest" time="1.834" />
+    <testcase name="restoringASmallBackupLeavesNothingOfTheOldData" classname="io.github.matteopi.budgeting.data.BackupRoundTripTest" time="1.608" />
+    <testcase name="thePlannerSurvivesBackupAndRestore" classname="io.github.matteopi.budgeting.data.BackupRoundTripTest" time="1.366" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.CalendarProviderTest" tests="4" failures="0" errors="0" skipped="0" time="1.925" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="writingBackAddsUpdatesAndRemovesOnlyTheAppsOwnEvents" classname="io.github.matteopi.budgeting.data.CalendarProviderTest" time="0.527" />
+    <testcase name="theTimetableIsWrittenOnlyWhenAskedAndRemoveTakesEverythingTheAppAdded" classname="io.github.matteopi.budgeting.data.CalendarProviderTest" time="0.579" />
+    <testcase name="theAppReadsTheChosenCalendarsEventsOffline" classname="io.github.matteopi.budgeting.data.CalendarProviderTest" time="0.455" />
+    <testcase name="aRepeatingEventIsReadWithItsMovedDayAndWithoutItsCancelledOne" classname="io.github.matteopi.budgeting.data.CalendarProviderTest" time="0.364" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.DailyWorkerTest" tests="7" failures="0" errors="0" skipped="0" time="3.723" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="withAccountsItStoresAccuracySnapshots" classname="io.github.matteopi.budgeting.data.DailyWorkerTest" time="0.739" />
+    <testcase name="noSnapshotsAreStoredWhenNoAccountIsInThePool" classname="io.github.matteopi.budgeting.data.DailyWorkerTest" time="0.374" />
+    <testcase name="succeedsWhenRunRepeatedlyOnAnEmptyApp" classname="io.github.matteopi.budgeting.data.DailyWorkerTest" time="0.421" />
+    <testcase name="aNewDayGetsANewSnapshot" classname="io.github.matteopi.budgeting.data.DailyWorkerTest" time="0.743" />
+    <testcase name="itPostsDueAutoItemsAndLeavesConfirmItemsAlone" classname="io.github.matteopi.budgeting.data.DailyWorkerTest" time="0.696" />
+    <testcase name="noSnapshotsAreStoredWhenTheOnlyPoolAccountIsArchived" classname="io.github.matteopi.budgeting.data.DailyWorkerTest" time="0.408" />
+    <testcase name="succeedsOnAnEmptyApp" classname="io.github.matteopi.budgeting.data.DailyWorkerTest" time="0.342" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.DayRepositoryTest" tests="1" failures="0" errors="0" skipped="0" time="0.344" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="theTimerPlacesItsChunkOverWhatItOverlapsAndAShortRunRecordsNothing" classname="io.github.matteopi.budgeting.data.DayRepositoryTest" time="0.344" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.DiaryRepositoryTest" tests="2" failures="0" errors="0" skipped="0" time="2.279" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="deletingARowPutsThePortionBackAndRestoringTakesItAgain" classname="io.github.matteopi.budgeting.data.DiaryRepositoryTest" time="1.191" />
+    <testcase name="eatingTakesAPortionWithItsSidesAndUndoPutsItBack" classname="io.github.matteopi.budgeting.data.DiaryRepositoryTest" time="1.088" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.FoodRepositoryTest" tests="10" failures="0" errors="0" skipped="0" time="11.520" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="deletingAnIngredientOutsideTheRepositoryKeepsTheLineWithoutIt" classname="io.github.matteopi.budgeting.data.FoodRepositoryTest" time="0.860" />
+    <testcase name="aBarcodeFindsItsIngredientAndCannotBeUsedTwice" classname="io.github.matteopi.budgeting.data.FoodRepositoryTest" time="0.267" />
+    <testcase name="anIngredientCanBeLinkedToAProductAndTheLinkIsClearedIfTheProductGoes" classname="io.github.matteopi.budgeting.data.FoodRepositoryTest" time="0.278" />
+    <testcase name="anArchivedIngredientIsNotMatchedByAnImport" classname="io.github.matteopi.budgeting.data.FoodRepositoryTest" time="0.855" />
+    <testcase name="anExistingIngredientIsMatchedByANameOrALearnedAliasAndTheBundleIsRemappedOnToIt" classname="io.github.matteopi.budgeting.data.FoodRepositoryTest" time="1.089" />
+    <testcase name="addingARecipeTwiceAddsTwoEntriesThatTheListSums" classname="io.github.matteopi.budgeting.data.FoodRepositoryTest" time="0.911" />
+    <testcase name="theStarterIngredientsKeepTheirNutritionPackPricePortionsAndUnknownValues" classname="io.github.matteopi.budgeting.data.FoodRepositoryTest" time="1.394" />
+    <testcase name="theStarterBookIsInsideTheApk" classname="io.github.matteopi.budgeting.data.FoodRepositoryTest" time="0.490" />
+    <testcase name="theStirFryAndTheChilliKeepTheirLinesStepsAndDetailsInOrder" classname="io.github.matteopi.budgeting.data.FoodRepositoryTest" time="0.846" />
+    <testcase name="importingTheBookAgainWithUseExistingAddsFourRecipesAndNoIngredients" classname="io.github.matteopi.budgeting.data.FoodRepositoryTest" time="4.530" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.ForecastServiceTest" tests="8" failures="0" errors="0" skipped="0" time="8.422" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="threeAccountsGiveExactlyTheirTotalAndNoShortfall" classname="io.github.matteopi.budgeting.data.ForecastServiceTest" time="0.867" />
+    <testcase name="aNonPoolAccountIsForecastButNotInTheTotal" classname="io.github.matteopi.budgeting.data.ForecastServiceTest" time="0.870" />
+    <testcase name="withNoAccountsTheStateIsReadyWithAnEmptyPool" classname="io.github.matteopi.budgeting.data.ForecastServiceTest" time="0.682" />
+    <testcase name="theSnapshotsInputAndResultAgree" classname="io.github.matteopi.budgeting.data.ForecastServiceTest" time="0.888" />
+    <testcase name="theZeroPointSettingReachesTheForecast" classname="io.github.matteopi.budgeting.data.ForecastServiceTest" time="1.276" />
+    <testcase name="aRecurringRentRuleReducesSafeToSpend" classname="io.github.matteopi.budgeting.data.ForecastServiceTest" time="1.266" />
+    <testcase name="addingATransactionProducesANewSnapshotThatReflectsIt" classname="io.github.matteopi.budgeting.data.ForecastServiceTest" time="1.289" />
+    <testcase name="archivingAnAccountTakesItOutOfThePool" classname="io.github.matteopi.budgeting.data.ForecastServiceTest" time="1.284" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.HabitRepositoryTest" tests="1" failures="0" errors="0" skipped="0" time="0.342" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="aRecordCountedHabitFillsItselfInFromExerciseChunks" classname="io.github.matteopi.budgeting.data.HabitRepositoryTest" time="0.342" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.ImportRepositoryTest" tests="14" failures="0" errors="0" skipped="0" time="5.402" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="importCreatesNormalTransactionsWithImportKeysAndABatch" classname="io.github.matteopi.budgeting.data.ImportRepositoryTest" time="0.382" />
+    <testcase name="undoingEveryImportInAnyOrderRestoresTheOriginalLedger" classname="io.github.matteopi.budgeting.data.ImportRepositoryTest" time="0.445" />
+    <testcase name="aSecondImportOfTheSameFileIsRejectedAndLeavesNoTrace" classname="io.github.matteopi.budgeting.data.ImportRepositoryTest" time="0.378" />
+    <testcase name="merchantRulesAreSavedAndUpsertedByMerchantKey" classname="io.github.matteopi.budgeting.data.ImportRepositoryTest" time="0.394" />
+    <testcase name="rowsAfterTheOpeningBalanceChangeTheBalanceNormally" classname="io.github.matteopi.budgeting.data.ImportRepositoryTest" time="0.339" />
+    <testcase name="undoingTwoImportsInReverseOrderRestoresEachStep" classname="io.github.matteopi.budgeting.data.ImportRepositoryTest" time="0.425" />
+    <testcase name="aFailedImportDoesNotSaveItsMerchantRules" classname="io.github.matteopi.budgeting.data.ImportRepositoryTest" time="0.361" />
+    <testcase name="aMatchingManualEntryIsAPossibleDuplicate" classname="io.github.matteopi.budgeting.data.ImportRepositoryTest" time="0.352" />
+    <testcase name="undoRestoresTheExactPreviousBalancesAndTransactions" classname="io.github.matteopi.budgeting.data.ImportRepositoryTest" time="0.438" />
+    <testcase name="anUndoneFileCanBeImportedAgain" classname="io.github.matteopi.budgeting.data.ImportRepositoryTest" time="0.409" />
+    <testcase name="aSecondImportOfEarlierRowsMovesTheOpeningBalanceAgainAndKeepsTheBalance" classname="io.github.matteopi.budgeting.data.ImportRepositoryTest" time="0.372" />
+    <testcase name="theSameRowsInAnotherAccountAreNew" classname="io.github.matteopi.budgeting.data.ImportRepositoryTest" time="0.369" />
+    <testcase name="importingTheSameFileAgainIsClassifiedAlreadyImported" classname="io.github.matteopi.budgeting.data.ImportRepositoryTest" time="0.350" />
+    <testcase name="undoingTheOlderImportFirstKeepsTheBalanceHistoryConsistent" classname="io.github.matteopi.budgeting.data.ImportRepositoryTest" time="0.388" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.MigrationTest" tests="15" failures="0" errors="0" skipped="0" time="12.329" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="migratingStraightFromVersion1To3RunsBothAutoMigrations" classname="io.github.matteopi.budgeting.data.MigrationTest" time="0.511" />
+    <testcase name="migratingStraightFromVersion1To8RunsAllSevenAutoMigrations" classname="io.github.matteopi.budgeting.data.MigrationTest" time="0.647" />
+    <testcase name="migratingFromVersion8To9KeepsTheHabitsAndAddsEmptyStudyTables" classname="io.github.matteopi.budgeting.data.MigrationTest" time="1.100" />
+    <testcase name="theVersion7FileOpensWithTheRealDatabaseClassAndTheDayRecordTablesWork" classname="io.github.matteopi.budgeting.data.MigrationTest" time="0.999" />
+    <testcase name="theVersion9FileOpensWithTheRealDatabaseClassAndTheStudyTablesWork" classname="io.github.matteopi.budgeting.data.MigrationTest" time="1.022" />
+    <testcase name="migratingFromVersion6To7KeepsTheTimetableAndAddsEmptyDayRecordTables" classname="io.github.matteopi.budgeting.data.MigrationTest" time="1.014" />
+    <testcase name="migratingFromVersion4To5KeepsEverythingAndAddsEmptyPlannerTables" classname="io.github.matteopi.budgeting.data.MigrationTest" time="0.882" />
+    <testcase name="migratingFromVersion9To10KeepsTheIngredientsAndAddsEmptyDiaryTables" classname="io.github.matteopi.budgeting.data.MigrationTest" time="1.163" />
+    <testcase name="migratingStraightFromVersion1To5RunsAllFourAutoMigrations" classname="io.github.matteopi.budgeting.data.MigrationTest" time="0.629" />
+    <testcase name="migratingToVersion2KeepsEveryExistingRowAndAddsTheReceiptTables" classname="io.github.matteopi.budgeting.data.MigrationTest" time="0.492" />
+    <testcase name="theVersion10FileOpensWithTheRealDatabaseClassAndTheDiaryTablesWork" classname="io.github.matteopi.budgeting.data.MigrationTest" time="0.882" />
+    <testcase name="migratingFromVersion3To4KeepsTheFoodRowsAndAddsWhatTheKitchenHas" classname="io.github.matteopi.budgeting.data.MigrationTest" time="0.704" />
+    <testcase name="migratingStraightFromVersion1To10RunsAllNineAutoMigrations" classname="io.github.matteopi.budgeting.data.MigrationTest" time="0.693" />
+    <testcase name="theVersion8FileOpensWithTheRealDatabaseClassAndTheHabitTablesWork" classname="io.github.matteopi.budgeting.data.MigrationTest" time="0.993" />
+    <testcase name="migratingStraightFromVersion1To7RunsAllSixAutoMigrations" classname="io.github.matteopi.budgeting.data.MigrationTest" time="0.598" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.PlannerAlarmsTest" tests="3" failures="0" errors="0" skipped="0" time="1.542" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="firingPostsWhatIsDueOnceAndSetsTheNextAlarm" classname="io.github.matteopi.budgeting.data.PlannerAlarmsTest" time="0.508" />
+    <testcase name="theEndOfDayReviewRemindsUntilTheDayIsFinished" classname="io.github.matteopi.budgeting.data.PlannerAlarmsTest" time="0.439" />
+    <testcase name="theAlarmIsSetForTheEarliestComingReminder" classname="io.github.matteopi.budgeting.data.PlannerAlarmsTest" time="0.595" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.PostingServiceTest" tests="11" failures="0" errors="0" skipped="0" time="4.215" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="skippingAScheduledItemMarksItSkippedWithoutPosting" classname="io.github.matteopi.budgeting.data.PostingServiceTest" time="0.389" />
+    <testcase name="anAutoScheduledItemDueTodayPostsOnce" classname="io.github.matteopi.budgeting.data.PostingServiceTest" time="0.351" />
+    <testcase name="aMonthlyRuleStartingInThePastPostsNothingRetroactively" classname="io.github.matteopi.budgeting.data.PostingServiceTest" time="0.388" />
+    <testcase name="aRuleStartingTodayIsTreatedAsAlreadyPaid" classname="io.github.matteopi.budgeting.data.PostingServiceTest" time="0.347" />
+    <testcase name="aRuleStartingTomorrowPostsExactlyOnceWhenItFallsDue" classname="io.github.matteopi.budgeting.data.PostingServiceTest" time="0.411" />
+    <testcase name="concurrentPostDueCallsNeverDuplicate" classname="io.github.matteopi.budgeting.data.PostingServiceTest" time="0.472" />
+    <testcase name="anInactiveRuleIsNeverPosted" classname="io.github.matteopi.budgeting.data.PostingServiceTest" time="0.306" />
+    <testcase name="confirmItemsAppearAsPendingAndAreNeverPostedAutomatically" classname="io.github.matteopi.budgeting.data.PostingServiceTest" time="0.403" />
+    <testcase name="confirmingAScheduledItemPostsTheEditedAmountAndDate" classname="io.github.matteopi.budgeting.data.PostingServiceTest" time="0.385" />
+    <testcase name="confirmingARecurringOccurrencePostsTheEditedAmountAndDate" classname="io.github.matteopi.budgeting.data.PostingServiceTest" time="0.419" />
+    <testcase name="aRuleThatIsDueTodayPostsExactlyOnce" classname="io.github.matteopi.budgeting.data.PostingServiceTest" time="0.344" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.ReceiptOcrTest" tests="2" failures="0" errors="0" skipped="0" time="10.517" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="pdfReceiptIsRenderedAndRead" classname="io.github.matteopi.budgeting.data.ReceiptOcrTest" time="5.298" />
+    <testcase name="imageFileIsReadThroughTheReceiptReader" classname="io.github.matteopi.budgeting.data.ReceiptOcrTest" time="5.219" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.ReceiptRepositoryTest" tests="5" failures="0" errors="0" skipped="0" time="1.767" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="savedIdsAreLinkedTogether" classname="io.github.matteopi.budgeting.data.ReceiptRepositoryTest" time="0.375" />
+    <testcase name="deletingOneReceiptLeavesAnotherUntouched" classname="io.github.matteopi.budgeting.data.ReceiptRepositoryTest" time="0.383" />
+    <testcase name="editingASplitTransactionKeepsItsReceiptId" classname="io.github.matteopi.budgeting.data.ReceiptRepositoryTest" time="0.368" />
+    <testcase name="aSingleCategoryReceiptKeepsOneTransactionWithItsReceiptId" classname="io.github.matteopi.budgeting.data.ReceiptRepositoryTest" time="0.370" />
+    <testcase name="learningTheSameNameAgainReusesTheProductIgnoringCase" classname="io.github.matteopi.budgeting.data.ReceiptRepositoryTest" time="0.271" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.ReceiptReviewViewModelTest" tests="3" failures="0" errors="0" skipped="0" time="1.246" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="anEmptyItemListCannotBeSaved" classname="io.github.matteopi.budgeting.data.ReceiptReviewViewModelTest" time="0.395" />
+    <testcase name="editsChangeTheCheckAndWhetherSavingIsAllowed" classname="io.github.matteopi.budgeting.data.ReceiptReviewViewModelTest" time="0.433" />
+    <testcase name="theDraftBecomesEditableItemsWithGuessedCategories" classname="io.github.matteopi.budgeting.data.ReceiptReviewViewModelTest" time="0.418" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.RecipeBundleImportTest" tests="1" failures="0" errors="0" skipped="0" time="1.057" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="aRecipeFileIsReadAndItsRecipesAdded" classname="io.github.matteopi.budgeting.data.RecipeBundleImportTest" time="1.057" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.ReconcileTest" tests="5" failures="0" errors="0" skipped="0" time="1.623" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="theBalanceEqualsTheRealBalanceAfterwards" classname="io.github.matteopi.budgeting.data.ReconcileTest" time="0.366" />
+    <testcase name="reconcilingTwiceTakesTheFirstReconciliationIntoAccount" classname="io.github.matteopi.budgeting.data.ReconcileTest" time="0.347" />
+    <testcase name="theSameBalanceStillLeavesARecordWithoutATransaction" classname="io.github.matteopi.budgeting.data.ReconcileTest" time="0.306" />
+    <testcase name="periodStartIsNeverAfterToday" classname="io.github.matteopi.budgeting.data.ReconcileTest" time="0.334" />
+    <testcase name="theUntrackedCategoryIsTheSystemCategoryForBothDirections" classname="io.github.matteopi.budgeting.data.ReconcileTest" time="0.270" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.SantanderPdfTest" tests="3" failures="0" errors="0" skipped="0" time="2.411" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="theWrappedRowAndTheDecoyTableAreReadRight" classname="io.github.matteopi.budgeting.data.SantanderPdfTest" time="1.083" />
+    <testcase name="theDrawnStatementIsReadRowForRowWithNoProblems" classname="io.github.matteopi.budgeting.data.SantanderPdfTest" time="1.105" />
+    <testcase name="aMissingFileIsATypedError" classname="io.github.matteopi.budgeting.data.SantanderPdfTest" time="0.223" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.SettingsStoreTest" tests="22" failures="0" errors="0" skipped="0" time="5.850" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="historyStartRoundTripsAndCanBeCleared" classname="io.github.matteopi.budgeting.data.SettingsStoreTest" time="0.262" />
+    <testcase name="aFreshInstallHasTheDefaultBudgetSettings" classname="io.github.matteopi.budgeting.data.SettingsStoreTest" time="0.217" />
+    <testcase name="validStoredViewsAreReadBack" classname="io.github.matteopi.budgeting.data.SettingsStoreTest" time="0.268" />
+    <testcase name="balanceViewRoundTripsAndNeverEndsUpAsEach" classname="io.github.matteopi.budgeting.data.SettingsStoreTest" time="0.265" />
+    <testcase name="storedAllAndPoolViewsAreReadBack" classname="io.github.matteopi.budgeting.data.SettingsStoreTest" time="0.266" />
+    <testcase name="countOptionalExtrasRoundTrips" classname="io.github.matteopi.budgeting.data.SettingsStoreTest" time="0.248" />
+    <testcase name="replaceBudgetSettingsOverwritesEveryBudgetSetting" classname="io.github.matteopi.budgeting.data.SettingsStoreTest" time="0.267" />
+    <testcase name="invalidStoredChartViewsFallBackToAllAccounts" classname="io.github.matteopi.budgeting.data.SettingsStoreTest" time="0.271" />
+    <testcase name="invalidStoredBalanceViewsFallBackToAllAccounts" classname="io.github.matteopi.budgeting.data.SettingsStoreTest" time="0.280" />
+    <testcase name="settersDoNotDisturbEachOther" classname="io.github.matteopi.budgeting.data.SettingsStoreTest" time="0.356" />
+    <testcase name="theRecipesSettingsAreNotPartOfAppSettingsOrBackups" classname="io.github.matteopi.budgeting.data.SettingsStoreTest" time="0.262" />
+    <testcase name="clearingAllCookingTicksLeavesOtherSettingsAlone" classname="io.github.matteopi.budgeting.data.SettingsStoreTest" time="0.267" />
+    <testcase name="everyThemeAndDarkModeRoundTrips" classname="io.github.matteopi.budgeting.data.SettingsStoreTest" time="0.293" />
+    <testcase name="unknownStoredEnumsFallBackToTheirDefaults" classname="io.github.matteopi.budgeting.data.SettingsStoreTest" time="0.272" />
+    <testcase name="aFreshInstallCountsOptionalExtrasAndDoesNotLookBarcodesUpOnline" classname="io.github.matteopi.budgeting.data.SettingsStoreTest" time="0.240" />
+    <testcase name="reminderSettingsRoundTrip" classname="io.github.matteopi.budgeting.data.SettingsStoreTest" time="0.296" />
+    <testcase name="aFreshInstallHasTheDefaultAppSettings" classname="io.github.matteopi.budgeting.data.SettingsStoreTest" time="0.230" />
+    <testcase name="bufferRoundTrips" classname="io.github.matteopi.budgeting.data.SettingsStoreTest" time="0.267" />
+    <testcase name="defaultAccountRoundTripsAndCanBeCleared" classname="io.github.matteopi.budgeting.data.SettingsStoreTest" time="0.245" />
+    <testcase name="chartAccountViewRoundTrips" classname="io.github.matteopi.budgeting.data.SettingsStoreTest" time="0.253" />
+    <testcase name="zeroPointRoundTrips" classname="io.github.matteopi.budgeting.data.SettingsStoreTest" time="0.260" />
+    <testcase name="privacyTogglesRoundTrip" classname="io.github.matteopi.budgeting.data.SettingsStoreTest" time="0.265" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.StatementImportChecksTest" tests="6" failures="0" errors="0" skipped="0" time="8.326" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="whenEveryRowIsMatchedToAnEntryNothingIsImportedAndNoBatchIsMade" classname="io.github.matteopi.budgeting.data.StatementImportChecksTest" time="0.496" />
+    <testcase name="theShortcutKeepsDuplicatesAsEnteredAndAnEntryCanBeMovedToAnotherAccount" classname="io.github.matteopi.budgeting.data.StatementImportChecksTest" time="1.794" />
+    <testcase name="aStatementThatWasAlreadyImportedHasNothingToAskAndNothingToImport" classname="io.github.matteopi.budgeting.data.StatementImportChecksTest" time="2.373" />
+    <testcase name="aCsvIsCheckedTooAndItsBalanceColumnGivesTheClosingBalance" classname="io.github.matteopi.budgeting.data.StatementImportChecksTest" time="0.579" />
+    <testcase name="aRowTheStatementReaderDoubtsCanBeLeftOutAndTheBalanceCardFollows" classname="io.github.matteopi.budgeting.data.StatementImportChecksTest" time="1.367" />
+    <testcase name="matchingFixingDeletingAndRecordingTheDifferenceLeaveTheLedgerAgreeingWithTheStatement" classname="io.github.matteopi.budgeting.data.StatementImportChecksTest" time="1.717" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.StatementImportViewModelTest" tests="6" failures="0" errors="0" skipped="0" time="7.952" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="rowsBeforeTheOpeningBalancesAreNotCountedTwiceOnEitherAccount" classname="io.github.matteopi.budgeting.data.StatementImportViewModelTest" time="1.383" />
+    <testcase name="theCategoriseStepOffersTheRightRowsAsMovesBetweenAccounts" classname="io.github.matteopi.budgeting.data.StatementImportViewModelTest" time="1.264" />
+    <testcase name="aTransferWithNoOtherAccountInTheAppIsASingleLegAndNothingElseChanges" classname="io.github.matteopi.budgeting.data.StatementImportViewModelTest" time="1.378" />
+    <testcase name="turningTheSwitchOffMakesGroupsOrdinarySpendingAgain" classname="io.github.matteopi.budgeting.data.StatementImportViewModelTest" time="1.348" />
+    <testcase name="aPdfThatIsNotASantanderStatementStaysOnThePickerWithAClearMessage" classname="io.github.matteopi.budgeting.data.StatementImportViewModelTest" time="0.659" />
+    <testcase name="importingTheSameStatementAgainFindsEveryRowAlreadyImported" classname="io.github.matteopi.budgeting.data.StatementImportViewModelTest" time="1.920" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.TaskRepositoryTest" tests="3" failures="0" errors="0" skipped="0" time="0.810" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="aTaskIsSavedWithItsChecklistAndEditedInPlace" classname="io.github.matteopi.budgeting.data.TaskRepositoryTest" time="0.267" />
+    <testcase name="movingATaskKeepsItsTime" classname="io.github.matteopi.budgeting.data.TaskRepositoryTest" time="0.272" />
+    <testcase name="moduleCodesAreUniqueAndDeletingAModuleKeepsItsTasks" classname="io.github.matteopi.budgeting.data.TaskRepositoryTest" time="0.271" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.TimetableRepositoryTest" tests="4" failures="0" errors="0" skipped="0" time="1.174" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="calendarLinksAreReplacedByItemAndTheirEventsHideFromTheTimeline" classname="io.github.matteopi.budgeting.data.TimetableRepositoryTest" time="0.285" />
+    <testcase name="aWeekCanBeCancelledOrChangedAndPutBack" classname="io.github.matteopi.budgeting.data.TimetableRepositoryTest" time="0.280" />
+    <testcase name="anEntryIsSavedEditedAndDeletedWithUndo" classname="io.github.matteopi.budgeting.data.TimetableRepositoryTest" time="0.290" />
+    <testcase name="copyingATermAddsItsOwnEntriesForTheNextTerm" classname="io.github.matteopi.budgeting.data.TimetableRepositoryTest" time="0.319" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.TransactionEditingTest" tests="10" failures="0" errors="0" skipped="0" time="3.646" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="notATransferLeavesOtherTransfersAlone" classname="io.github.matteopi.budgeting.data.TransactionEditingTest" time="0.409" />
+    <testcase name="notInTheAppRemovesTheOtherLegAndLeavesALoneOne" classname="io.github.matteopi.budgeting.data.TransactionEditingTest" time="0.374" />
+    <testcase name="aLoneLegGainsItsMissingSide" classname="io.github.matteopi.budgeting.data.TransactionEditingTest" time="0.360" />
+    <testcase name="theEditsMadeInTheSheetAreSavedWithTheConversion" classname="io.github.matteopi.budgeting.data.TransactionEditingTest" time="0.361" />
+    <testcase name="aNormalTransactionBecomesALoneTransferLegWhenTheOtherAccountIsNotInTheApp" classname="io.github.matteopi.budgeting.data.TransactionEditingTest" time="0.360" />
+    <testcase name="recategoriseChangesTheOtherTransactionsOfTheSameMerchant" classname="io.github.matteopi.budgeting.data.TransactionEditingTest" time="0.411" />
+    <testcase name="amountDateAndLabelAreChangedOnBothLegs" classname="io.github.matteopi.budgeting.data.TransactionEditingTest" time="0.333" />
+    <testcase name="anIncomeBecomesTheIncomingLegAndTheOtherAccountGetsTheOutgoingOne" classname="io.github.matteopi.budgeting.data.TransactionEditingTest" time="0.331" />
+    <testcase name="notATransferCanKeepTheReceivingSide" classname="io.github.matteopi.budgeting.data.TransactionEditingTest" time="0.362" />
+    <testcase name="theDirectionOfATransferCanBeSwapped" classname="io.github.matteopi.budgeting.data.TransactionEditingTest" time="0.345" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.data.TransactionRepositoryTest" tests="10" failures="0" errors="0" skipped="0" time="3.327" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="deletingTheSourceLegAlsoRemovesBothLegs" classname="io.github.matteopi.budgeting.data.TransactionRepositoryTest" time="0.336" />
+    <testcase name="incomeIsStoredPositiveAndRaisesTheBalance" classname="io.github.matteopi.budgeting.data.TransactionRepositoryTest" time="0.332" />
+    <testcase name="logPresetWithNoAccountAtAllFails" classname="io.github.matteopi.budgeting.data.TransactionRepositoryTest" time="0.274" />
+    <testcase name="logPresetFallsBackToTheDefaultAccount" classname="io.github.matteopi.budgeting.data.TransactionRepositoryTest" time="0.340" />
+    <testcase name="aTransferCreatesTwoOppositeLegsSharingAGroupId" classname="io.github.matteopi.budgeting.data.TransactionRepositoryTest" time="0.349" />
+    <testcase name="aTransferAmountIsTreatedAsAMagnitude" classname="io.github.matteopi.budgeting.data.TransactionRepositoryTest" time="0.333" />
+    <testcase name="aTransferDoesNotChangeTheTotalAcrossAccounts" classname="io.github.matteopi.budgeting.data.TransactionRepositoryTest" time="0.351" />
+    <testcase name="logPresetForAnIncomePresetIsPositive" classname="io.github.matteopi.budgeting.data.TransactionRepositoryTest" time="0.346" />
+    <testcase name="updatingANormalTransactionLeavesOthersAlone" classname="io.github.matteopi.budgeting.data.TransactionRepositoryTest" time="0.334" />
+    <testcase name="addReturnsDistinctIdsAndKeepsEveryTransaction" classname="io.github.matteopi.budgeting.data.TransactionRepositoryTest" time="0.332" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.AccountHistoryTest" tests="4" failures="0" errors="0" skipped="0" time="54.456" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="theAccountPageOpensItsHistoryFromTheButtonAndFromTheBalanceCard" classname="io.github.matteopi.budgeting.ui.AccountHistoryTest" time="9.106" />
+    <testcase name="theStartingBalanceCanBeEditedAndMovedEarlier" classname="io.github.matteopi.budgeting.ui.AccountHistoryTest" time="17.667" />
+    <testcase name="anEarlierDateMovesARowIntoAnEarlierMonth" classname="io.github.matteopi.budgeting.ui.AccountHistoryTest" time="18.011" />
+    <testcase name="theRangeChipsChangeTheSummaryOfBalancesAndMoney" classname="io.github.matteopi.budgeting.ui.AccountHistoryTest" time="9.672" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.AccountsTest" tests="5" failures="0" errors="0" skipped="0" time="68.998" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="addAccountsFromHome" classname="io.github.matteopi.budgeting.ui.AccountsTest" time="19.014" />
+    <testcase name="addAccountFormValidatesItsFields" classname="io.github.matteopi.budgeting.ui.AccountsTest" time="8.632" />
+    <testcase name="accountDetailShowsBalancesAndTransfersMoneyBetweenAccounts" classname="io.github.matteopi.budgeting.ui.AccountsTest" time="12.973" />
+    <testcase name="updateBalancePreviewsTheGapAndRecordsAnUntrackedEntry" classname="io.github.matteopi.budgeting.ui.AccountsTest" time="17.242" />
+    <testcase name="deleteAnAccountAfterConfirmation" classname="io.github.matteopi.budgeting.ui.AccountsTest" time="11.137" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.ActivityTest" tests="2" failures="0" errors="0" skipped="0" time="20.135" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="emptyStateAndTheAddButton" classname="io.github.matteopi.budgeting.ui.ActivityTest" time="8.073" />
+    <testcase name="deletingATransactionAsksForConfirmation" classname="io.github.matteopi.budgeting.ui.ActivityTest" time="12.062" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.AddRecipeTest" tests="1" failures="0" errors="0" skipped="0" time="19.601" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="aPastedRecipeIsMatchedToTheIngredientsReviewedAndSaved" classname="io.github.matteopi.budgeting.ui.AddRecipeTest" time="19.601" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.DayRecordTest" tests="1" failures="0" errors="0" skipped="0" time="15.712" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="theReviewFillsInConfirmsAndFinishesYesterday" classname="io.github.matteopi.budgeting.ui.DayRecordTest" time="15.712" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.DiaryTest" tests="3" failures="0" errors="0" skipped="0" time="58.264" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="waterAddsAGlassAtATime" classname="io.github.matteopi.budgeting.ui.DiaryTest" time="7.269" />
+    <testcase name="theChilliIsCookedIntoTheKitchenAndEatenWithRice" classname="io.github.matteopi.budgeting.ui.DiaryTest" time="23.967" />
+    <testcase name="toastAndAQuickEntryGoIntoTheDiaryAndCanBeDeletedAndUndone" classname="io.github.matteopi.budgeting.ui.DiaryTest" time="27.028" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.EditPastTransactionsTest" tests="3" failures="0" errors="0" skipped="0" time="55.496" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="aTransferCanBePointedAtAnotherAccountOrAtOneNotInTheApp" classname="io.github.matteopi.budgeting.ui.EditPastTransactionsTest" time="21.073" />
+    <testcase name="changingACategoryOffersToChangeTheSameMerchantEverywhere" classname="io.github.matteopi.budgeting.ui.EditPastTransactionsTest" time="21.005" />
+    <testcase name="theQuestionAlsoFollowsAnEditMadeFromAnAccountsHistory" classname="io.github.matteopi.budgeting.ui.EditPastTransactionsTest" time="13.418" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.FoodListTest" tests="2" failures="0" errors="0" skipped="0" time="28.769" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="aPastedRecipeTakesItsUnknownLinesFromTheFoodList" classname="io.github.matteopi.budgeting.ui.FoodListTest" time="15.671" />
+    <testcase name="aNewIngredientIsFilledInFromTheFoodList" classname="io.github.matteopi.budgeting.ui.FoodListTest" time="13.098" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.ForecastAndInsightsTest" tests="3" failures="0" errors="0" skipped="0" time="66.158" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="insightsSwitchesPeriodsCategoriesAndAccountViews" classname="io.github.matteopi.budgeting.ui.ForecastAndInsightsTest" time="22.009" />
+    <testcase name="whatIfScenarioIsComparedAppliedAndDeleted" classname="io.github.matteopi.budgeting.ui.ForecastAndInsightsTest" time="32.221" />
+    <testcase name="forecastChartCanBeShownForAllAccountsOneAccountOrEachAccount" classname="io.github.matteopi.budgeting.ui.ForecastAndInsightsTest" time="11.928" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.HabitsTest" tests="1" failures="0" errors="0" skipped="0" time="15.291" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="aLimitAddedInTheEditorGoesOver" classname="io.github.matteopi.budgeting.ui.HabitsTest" time="15.291" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.HomeAndSettingsTest" tests="7" failures="0" errors="0" skipped="0" time="93.564" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="presetsCanBeAddedReorderedAndDeleted" classname="io.github.matteopi.budgeting.ui.HomeAndSettingsTest" time="22.075" />
+    <testcase name="homeShowsTheHeroAccountsAndRecentActivity" classname="io.github.matteopi.budgeting.ui.HomeAndSettingsTest" time="9.058" />
+    <testcase name="overdraftZeroPointAndBufferChangeWhatHomeShows" classname="io.github.matteopi.budgeting.ui.HomeAndSettingsTest" time="13.469" />
+    <testcase name="privacyTogglesRemindersAndForecastOptionsDoNotCrash" classname="io.github.matteopi.budgeting.ui.HomeAndSettingsTest" time="16.987" />
+    <testcase name="aboutShowsWhenAndWhatTheForecastLastComputed" classname="io.github.matteopi.budgeting.ui.HomeAndSettingsTest" time="6.666" />
+    <testcase name="settingsDefaultAccountCanBeChangedAndQuickAddFollows" classname="io.github.matteopi.budgeting.ui.HomeAndSettingsTest" time="11.565" />
+    <testcase name="accountsOutsideSafeToSpendAreInAllAccountsButNotInTheSafeToSpendAccounts" classname="io.github.matteopi.budgeting.ui.HomeAndSettingsTest" time="13.744" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.IngredientsAndShoppingTest" tests="2" failures="0" errors="0" skipped="0" time="45.925" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="theShoppingListSumsTheRecipesAndTicksOff" classname="io.github.matteopi.budgeting.ui.IngredientsAndShoppingTest" time="18.194" />
+    <testcase name="aNewPackPriceChangesTheRecipesCostAndPortionsAndArchivingWork" classname="io.github.matteopi.budgeting.ui.IngredientsAndShoppingTest" time="27.731" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.KitchenTest" tests="1" failures="0" errors="0" skipped="0" time="12.338" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="aBatchIsCookedFrozenThrownAwayAndEaten" classname="io.github.matteopi.budgeting.ui.KitchenTest" time="12.338" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.NavigationSmokeTest" tests="1" failures="0" errors="0" skipped="0" time="18.923" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="bottomBarTabsAllOpen" classname="io.github.matteopi.budgeting.ui.NavigationSmokeTest" time="18.923" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.PickersTest" tests="4" failures="0" errors="0" skipped="0" time="59.472" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="accountAndCategoryDropDownsOpenAndTheSelectionSticks" classname="io.github.matteopi.budgeting.ui.PickersTest" time="16.835" />
+    <testcase name="pickersWorkInsideABottomSheet" classname="io.github.matteopi.budgeting.ui.PickersTest" time="12.763" />
+    <testcase name="datePickerDisablesFutureDaysWhenTheFieldHasAMaximum" classname="io.github.matteopi.budgeting.ui.PickersTest" time="10.910" />
+    <testcase name="dateFieldInADialogOpensThePickerAndChoosingADayUpdatesIt" classname="io.github.matteopi.budgeting.ui.PickersTest" time="18.964" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.PlanTest" tests="2" failures="0" errors="0" skipped="0" time="42.496" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="recurringRentWithAPastStartIsTreatedAsAlreadyPaidAndNothingIsPosted" classname="io.github.matteopi.budgeting.ui.PlanTest" time="21.909" />
+    <testcase name="oneOffScheduledItemCanBeAddedEditedAndDeleted" classname="io.github.matteopi.budgeting.ui.PlanTest" time="20.587" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.QuickAddTest" tests="3" failures="0" errors="0" skipped="0" time="28.765" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="outAndInToggleSwapTheCategories" classname="io.github.matteopi.budgeting.ui.QuickAddTest" time="12.347" />
+    <testcase name="withoutAccountsTheCardAsksToOpenTheApp" classname="io.github.matteopi.budgeting.ui.QuickAddTest" time="5.861" />
+    <testcase name="theAccountChipDefaultsToTheDefaultAccountAndCanBeChanged" classname="io.github.matteopi.budgeting.ui.QuickAddTest" time="10.557" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.ReceiptReviewTest" tests="3" failures="0" errors="0" skipped="0" time="51.933" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="aReceiptWithNoReadableItemsCanBeTypedIn" classname="io.github.matteopi.budgeting.ui.ReceiptReviewTest" time="10.538" />
+    <testcase name="sharedReceiptIsReviewedCorrectedCategorisedAndSavedAsSplitTransactions" classname="io.github.matteopi.budgeting.ui.ReceiptReviewTest" time="28.502" />
+    <testcase name="changingTheDateAndTheReplaceSwitchControlWhatSavingDoes" classname="io.github.matteopi.budgeting.ui.ReceiptReviewTest" time="12.893" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.ReceiptsTest" tests="4" failures="0" errors="0" skipped="0" time="36.774" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="receiptDetailShowsHeaderItemsAndTheTransactionsItWasSplitInto" classname="io.github.matteopi.budgeting.ui.ReceiptsTest" time="8.281" />
+    <testcase name="deletingCanKeepTheSplitTransactions" classname="io.github.matteopi.budgeting.ui.ReceiptsTest" time="10.517" />
+    <testcase name="deletingMergesTheSplitBackIntoOneTransactionByDefault" classname="io.github.matteopi.budgeting.ui.ReceiptsTest" time="10.661" />
+    <testcase name="allItemsListsEveryBoughtProduct" classname="io.github.matteopi.budgeting.ui.ReceiptsTest" time="7.315" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.RecipeAdditionsTest" tests="3" failures="0" errors="0" skipped="0" time="73.762" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="aRecipeCopiedFromAChatIsPastedInOneTap" classname="io.github.matteopi.budgeting.ui.RecipeAdditionsTest" time="15.621" />
+    <testcase name="copyRecipeCopiesThePasteFormatWhichPastesBackAsACopy" classname="io.github.matteopi.budgeting.ui.RecipeAdditionsTest" time="20.572" />
+    <testcase name="timersStartBeforeCookKeepRunningInTheCookingViewAndSayTimesUp" classname="io.github.matteopi.budgeting.ui.RecipeAdditionsTest" time="37.569" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.RecipesViewTest" tests="3" failures="0" errors="0" skipped="0" time="29.873" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="theRecipeScreenShowsTheNumbersCuesAndStorageAndScales" classname="io.github.matteopi.budgeting.ui.RecipesViewTest" time="9.201" />
+    <testcase name="optionalExtrasCanBeLeftOutAndTheRatingAndNotesAreKept" classname="io.github.matteopi.budgeting.ui.RecipesViewTest" time="14.801" />
+    <testcase name="theStarterRecipesAreAddedFromTheEmptyStateWithTheirNumbers" classname="io.github.matteopi.budgeting.ui.RecipesViewTest" time="5.871" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.SectionSwitchTest" tests="3" failures="0" errors="0" skipped="0" time="58.265" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="theLastSectionOpensNextTime" classname="io.github.matteopi.budgeting.ui.SectionSwitchTest" time="17.533" />
+    <testcase name="backOnTodayLeavesTheApp" classname="io.github.matteopi.budgeting.ui.SectionSwitchTest" time="10.366" />
+    <testcase name="theChooserMovesBetweenTheThreeSectionsAndEachHasItsOwnTabs" classname="io.github.matteopi.budgeting.ui.SectionSwitchTest" time="30.366" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.StatementImportPdfTest" tests="1" failures="0" errors="0" skipped="0" time="7.632" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="aSharedSantanderStatementIsReviewedAndImportedWithTheBalanceCheck" classname="io.github.matteopi.budgeting.ui.StatementImportPdfTest" time="7.632" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.ui.SuggestionsTest" tests="2" failures="0" errors="0" skipped="0" time="19.037" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="aDayOffClearsTheDay" classname="io.github.matteopi.budgeting.ui.SuggestionsTest" time="12.435" />
+    <testcase name="anotherTimeOffersTheTimeAfterAndUndoBringsItBack" classname="io.github.matteopi.budgeting.ui.SuggestionsTest" time="6.602" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.widget.LogPresetActionTest" tests="5" failures="0" errors="0" skipped="0" time="1.916" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="aPresetDeletedAfterTheWidgetWasDrawnLogsNothing" classname="io.github.matteopi.budgeting.widget.LogPresetActionTest" time="0.361" />
+    <testcase name="tappingAPresetLogsOneNormalTransactionOnTheDefaultAccount" classname="io.github.matteopi.budgeting.widget.LogPresetActionTest" time="0.456" />
+    <testcase name="aTapWithoutAPresetIdLogsNothing" classname="io.github.matteopi.budgeting.widget.LogPresetActionTest" time="0.330" />
+    <testcase name="aPresetWithItsOwnAccountIsLoggedOnThatAccountInsteadOfTheDefault" classname="io.github.matteopi.budgeting.widget.LogPresetActionTest" time="0.415" />
+    <testcase name="anUnknownPresetIdLogsNothing" classname="io.github.matteopi.budgeting.widget.LogPresetActionTest" time="0.354" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.widget.SafeToSpendWidgetContentTest" tests="9" failures="0" errors="0" skipped="0" time="4.197" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="tallWidgetShowsAtMostThreePresetButtons" classname="io.github.matteopi.budgeting.widget.SafeToSpendWidgetContentTest" time="0.481" />
+    <testcase name="wideWidgetShowsNoPresetButtonsEvenWhenPresetsAreGiven" classname="io.github.matteopi.budgeting.widget.SafeToSpendWidgetContentTest" time="0.465" />
+    <testcase name="hiddenAmountsStayHiddenOnTheTallLayoutToo" classname="io.github.matteopi.budgeting.widget.SafeToSpendWidgetContentTest" time="0.469" />
+    <testcase name="tallWidgetShowsTheAmountTheDaysLineAndAButtonForEachPreset" classname="io.github.matteopi.budgeting.widget.SafeToSpendWidgetContentTest" time="0.476" />
+    <testcase name="smallWidgetShowsNoPresetButtonsEvenWhenPresetsAreGiven" classname="io.github.matteopi.budgeting.widget.SafeToSpendWidgetContentTest" time="0.451" />
+    <testcase name="setUpMessageShowsItsTextAndNoAmount" classname="io.github.matteopi.budgeting.widget.SafeToSpendWidgetContentTest" time="0.460" />
+    <testcase name="openAppMessageShowsItsText" classname="io.github.matteopi.budgeting.widget.SafeToSpendWidgetContentTest" time="0.444" />
+    <testcase name="smallWidgetShowsTheWeeklyAmountAndThePlusButton" classname="io.github.matteopi.budgeting.widget.SafeToSpendWidgetContentTest" time="0.480" />
+    <testcase name="smallWidgetHasNoDaysLine" classname="io.github.matteopi.budgeting.widget.SafeToSpendWidgetContentTest" time="0.471" />
+  </testsuite>
+  <testsuite name="io.github.matteopi.budgeting.widget.planner.PlannerWidgetContentTest" tests="2" failures="0" errors="0" skipped="0" time="0.975" timestamp="2026-10-23T11:57:25" hostname="localhost">
+    <properties>
+      <property name="device" value="emulator-5554" />
+    </properties>
+    <testcase name="theWideWidgetAddsTodaysTasksAndTheTimer" classname="io.github.matteopi.budgeting.widget.planner.PlannerWidgetContentTest" time="0.472" />
+    <testcase name="theSmallWidgetShowsTheNextClassAndTheFreeTime" classname="io.github.matteopi.budgeting.widget.planner.PlannerWidgetContentTest" time="0.503" />
+  </testsuite>
+</testsuites>
