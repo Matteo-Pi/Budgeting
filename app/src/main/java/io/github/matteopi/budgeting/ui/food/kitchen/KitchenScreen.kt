@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.filterNotNull
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -209,7 +210,6 @@ fun KitchenScreen(
     viewModel: KitchenViewModel = viewModel(factory = KitchenViewModel.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val message by viewModel.message.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var choosingRecipe by remember { mutableStateOf(false) }
     var cooking by remember { mutableStateOf<Recipe?>(null) }
@@ -217,11 +217,13 @@ fun KitchenScreen(
     var throwing by remember { mutableStateOf<KitchenEntry?>(null) }
     var editing by remember { mutableStateOf<Batch?>(null) }
 
-    LaunchedEffect(message) {
-        val shown = message ?: return@LaunchedEffect
-        viewModel.messageShown()
-        val result = snackbarHostState.showSnackbar(shown.text, actionLabel = if (shown.undo != null) "Undo" else null, duration = SnackbarDuration.Short)
-        if (result == SnackbarResult.ActionPerformed) shown.undo?.invoke()
+    // Collected rather than keyed on the message, so clearing it doesn't cancel the snackbar it shows.
+    LaunchedEffect(Unit) {
+        viewModel.message.filterNotNull().collect { shown ->
+            viewModel.messageShown()
+            val result = snackbarHostState.showSnackbar(shown.text, actionLabel = if (shown.undo != null) "Undo" else null, duration = SnackbarDuration.Short)
+            if (result == SnackbarResult.ActionPerformed) shown.undo?.invoke()
+        }
     }
 
     Scaffold(

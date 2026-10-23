@@ -872,17 +872,18 @@ class BackupRoundTripTest {
     }
 
     @Test
-    fun theExportedFileIsVersion9AndCarriesTheFoodAndPlannerLists() = runBlocking<Unit> {
+    fun theExportedFileIsVersion10AndCarriesTheFoodPlannerAndDiaryLists() = runBlocking<Unit> {
         populateEverything()
 
         val json = BackupViewModel(container).buildExportJson()
 
-        assertTrue("\"version\": 9" in json, "the file says it is version 9")
+        assertTrue("\"version\": 10" in json, "the file says it is version 10")
         for (list in listOf(
             "ingredients", "ingredientPortions", "ingredientAliases", "recipes", "recipeLines", "recipeSteps", "shoppingEntries",
             "shoppingMarks", "ownedItems", "plannerModules", "plannerTasks", "plannerChecklist", "plannerCompletions",
             "plannerEntries", "plannerEntryExceptions", "plannerCalendarLinks", "plannerCategories", "plannerPlanBlocks", "plannerRecords",
             "plannerDayReviews", "plannerHabits", "plannerHabitEntries", "plannerRevisionTopics", "plannerDismissed",
+            "mealBatches", "foodLog", "foodDays",
         )) {
             assertTrue("\"$list\": [" in json, "the file has a \"$list\" list")
         }

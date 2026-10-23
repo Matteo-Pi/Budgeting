@@ -53,6 +53,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.filterNotNull
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.matteopi.budgeting.core.nutrition.Batch
 import io.github.matteopi.budgeting.core.nutrition.Batches
@@ -82,20 +83,21 @@ fun DiaryScreen(
     viewModel: DiaryViewModel = viewModel(factory = DiaryViewModel.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val message by viewModel.message.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var editing by remember { mutableStateOf<LogItem?>(null) }
     var picking by remember { mutableStateOf(false) }
 
-    LaunchedEffect(message) {
-        val shown = message ?: return@LaunchedEffect
-        viewModel.messageShown()
-        val result = snackbarHostState.showSnackbar(
-            message = shown.text,
-            actionLabel = if (shown.undo != null) "Undo" else null,
-            duration = SnackbarDuration.Short,
-        )
-        if (result == SnackbarResult.ActionPerformed) shown.undo?.invoke()
+    // Collected rather than keyed on the message, so clearing it doesn't cancel the snackbar it shows.
+    LaunchedEffect(Unit) {
+        viewModel.message.filterNotNull().collect { shown ->
+            viewModel.messageShown()
+            val result = snackbarHostState.showSnackbar(
+                message = shown.text,
+                actionLabel = if (shown.undo != null) "Undo" else null,
+                duration = SnackbarDuration.Short,
+            )
+            if (result == SnackbarResult.ActionPerformed) shown.undo?.invoke()
+        }
     }
 
     Scaffold(
