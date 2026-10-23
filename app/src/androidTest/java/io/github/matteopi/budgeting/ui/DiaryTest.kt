@@ -4,6 +4,11 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.pressKey
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.matteopi.budgeting.core.recipes.FoodDatabase
 import io.github.matteopi.budgeting.testing.HEAVY_TIMEOUT_MS
@@ -30,6 +35,7 @@ import org.junit.runner.RunWith
  * rice on the side, *Ate one* bringing the rice again, three slices of toast and a quick entry read into the diary,
  * the summary's numbers, all nutrients, and deleting with Undo.
  */
+@OptIn(ExperimentalTestApi::class)
 @RunWith(AndroidJUnit4::class)
 class DiaryTest : UiTest() {
 
@@ -153,6 +159,22 @@ class DiaryTest : UiTest() {
         waitFor("the toast to be deleted") { todayRows().size == 1 }
         tapText("Undo")
         waitFor("the toast to be back") { todayRows().any { it.id == toast.id } }
+    }
+
+    @Test
+    fun typingAndDeletingInTheSearchKeepsEveryKey() {
+        open()
+        goToTab("Diary")
+        tapIcon("Log food")
+        tapText("Foods")
+        val search = hasTestTag(DiaryTags.SEARCH)
+        waitForExists(search, "the search")
+        // One key at a time, as a keyboard sends them: each search runs while the next key arrives.
+        for (letter in "chicken breast") compose.onNode(search).performTextInput(letter.toString())
+        waitForExists(search and hasText("chicken breast"), "every letter typed")
+        repeat(7) { compose.onNode(search).performKeyInput { pressKey(Key.Backspace) } }
+        waitForExists(search and hasText("chicken"), "every backspace")
+        waitForExists(hasText("Chicken breast fillets"), "a result for it")
     }
 
     @Test

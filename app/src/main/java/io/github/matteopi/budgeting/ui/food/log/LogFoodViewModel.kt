@@ -32,7 +32,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -119,7 +121,7 @@ class LogFoodViewModel(
         container.ingredientRepository.observeAliasMap(),
     ) { f, book, batches, history, aliases ->
         state(f, book, Batches.ready(batches), history, aliases)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LogFoodUiState(form = form.value))
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LogFoodUiState(form = form.value))
 
     init {
         viewModelScope.launch {
@@ -157,7 +159,8 @@ class LogFoodViewModel(
             today = container.clock.today(),
             batches = ready,
             recipes = recipes,
-            foods = foods(f.query, live, history),
+            // Only what is on screen is searched: the food list search runs on every key.
+            foods = if (f.pick == null && f.tab == LogTab.FOODS) foods(f.query, live, history) else emptyList(),
             sideFoods = f.sideSearch?.let { foods(it, live, history).take(20) } ?: emptyList(),
             suggestions = suggestions,
             quick = quick,
@@ -219,11 +222,12 @@ class LogFoodViewModel(
 
     // ---- Choices --------------------------------------------------------------------------------
 
-    fun setTab(tab: LogTab) = form.update { it.copy(tab = tab, query = "") }
+    /** The search is kept when the tab changes: its field keeps the same text. */
+    fun setTab(tab: LogTab) = form.update { it.copy(tab = tab) }
     fun setQuery(query: String) = form.update { it.copy(query = query) }
     fun setMeal(meal: MealSlot) = form.update { it.copy(meal = meal) }
     fun setPortions(portions: Double) = form.update { it.copy(portions = portions.coerceIn(0.5, 20.0)) }
-    fun setAmount(amount: Double) = form.update { it.copy(amount = amount.coerceIn(1.0, 10_000.0)) }
+    fun setAmount(amount: Double) = form.update { it.copy(amount = amount.coerceIn(0.1, 10_000.0)) }
     fun setQuickText(text: String) = form.update { it.copy(quickText = text) }
     fun setQuickField(name: String? = null, kcal: String? = null, protein: String? = null, carbs: String? = null, fat: String? = null) =
         form.update {

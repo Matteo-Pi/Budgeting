@@ -44,6 +44,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -193,9 +194,12 @@ fun LogFoodScreen(
 
 @Composable
 private fun SearchField(value: String, onChange: (String) -> Unit, label: String) {
+    // The field keeps its own text: the results come a moment later, and showing the text they were worked out for
+    // reset the field under the keyboard while typing (letters and backspaces were lost).
+    var text by rememberSaveable { mutableStateOf(value) }
     OutlinedTextField(
-        value = value,
-        onValueChange = onChange,
+        value = text,
+        onValueChange = { text = it; onChange(it) },
         label = { Text(label) },
         singleLine = true,
         modifier = Modifier.fillMaxWidth().testTag(DiaryTags.SEARCH),
@@ -215,9 +219,10 @@ private fun PickRow(title: String, detail: String, tag: String, onClick: () -> U
 private fun QuickBox(state: LogFoodUiState, viewModel: LogFoodViewModel) {
     val f = state.form
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        var quickText by rememberSaveable { mutableStateOf(f.quickText) }
         OutlinedTextField(
-            value = f.quickText,
-            onValueChange = viewModel::setQuickText,
+            value = quickText,
+            onValueChange = { quickText = it; viewModel.setQuickText(it) },
             label = { Text("What did you eat? (\"3 slices of toast\")") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth().testTag(DiaryTags.QUICK_TEXT),
@@ -238,9 +243,10 @@ private fun QuickBox(state: LogFoodUiState, viewModel: LogFoodViewModel) {
             Text("No food matches that yet. Type its numbers below.", style = MaterialTheme.typography.bodySmall)
         }
         Text("Or type the numbers", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
+        var quickName by rememberSaveable { mutableStateOf(f.quickName) }
         OutlinedTextField(
-            value = f.quickName,
-            onValueChange = { viewModel.setQuickField(name = it) },
+            value = quickName,
+            onValueChange = { quickName = it; viewModel.setQuickField(name = it) },
             label = { Text("Name") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth().testTag(DiaryTags.QUICK_NAME),
@@ -256,9 +262,10 @@ private fun QuickBox(state: LogFoodUiState, viewModel: LogFoodViewModel) {
 
 @Composable
 private fun NumberField(value: String, onChange: (String) -> Unit, label: String, tag: String, modifier: Modifier = Modifier.fillMaxWidth()) {
+    var text by rememberSaveable { mutableStateOf(value) }
     OutlinedTextField(
-        value = value,
-        onValueChange = onChange,
+        value = text,
+        onValueChange = { text = it; onChange(it) },
         label = { Text(label) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
