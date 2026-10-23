@@ -2,6 +2,11 @@
 
 package io.github.matteopi.budgeting.ui.food.recipe
 
+import android.widget.Toast
+import androidx.compose.material3.AlertDialog
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import io.github.matteopi.budgeting.ui.food.diary.BatchSheet
 import android.view.WindowManager
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -120,6 +125,15 @@ class CookingViewModel(private val container: AppContainer, private val recipeId
         container.appScope.launch { container.settingsStore.setCookingTick(recipeId, tick, ticked) }
     }
 
+    /** Saves a batch of the recipe to the kitchen (docs/PLAN.md §14.5), then [onDone]. */
+    fun cook(servings: Double, portions: Double, freezer: Double, madeOn: java.time.LocalDate, onDone: () -> Unit) {
+        val recipe = uiState.value.recipe ?: return
+        viewModelScope.launch {
+            container.foodDiary.cook(recipe, servings, portions, freezer, madeOn)
+            onDone()
+        }
+    }
+
     /** *Done cooking*: forgets the ticks. */
     fun done(onDone: () -> Unit) {
         viewModelScope.launch {
@@ -147,6 +161,7 @@ class CookingViewModel(private val container: AppContainer, private val recipeId
 fun CookingScreen(
     recipeId: Long,
     onBack: () -> Unit,
+    onOpenKitchen: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: CookingViewModel = viewModel(key = "cooking-$recipeId", factory = CookingViewModel.factory(recipeId)),
 ) {
@@ -156,6 +171,8 @@ fun CookingScreen(
     val scope = rememberCoroutineScope()
     val say: (String) -> Unit = { message -> scope.launch { snackbarHostState.showSnackbar(message) } }
     val startTimer = rememberTimerStarter(recipeId, state.recipe?.let { it.shortTitle ?: it.title } ?: "Recipe", say)
+    var offerKitchen by remember { mutableStateOf(false) }
+    var batchSheet by remember { mutableStateOf(false) }
 
     // The screen stays on while the cooking view is open, and only then.
     DisposableEffect(Unit) {
@@ -179,7 +196,7 @@ fun CookingScreen(
                     IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
                 },
                 actions = {
-                    TextButton(onClick = { viewModel.done(onBack) }) { Text("Done cooking") }
+                    TextButton(onClick = { offerKitchen = true }) { Text("Done cooking") }
                 },
             )
         },
@@ -236,13 +253,43 @@ fun CookingScreen(
                 }
                 item(key = "done") {
                     Button(
-                        onClick = { viewModel.done(onBack) },
+                        onClick = { offerKitchen = true },
                         modifier = Modifier.fillMaxWidth().padding(top = 16.dp).testTag(CookingTags.DONE),
                     ) { Text("Done cooking") }
                 }
             }
         }
     }
+
+    if (offerKitchen) {
+        KitchenOffer(
+            onAdd = { offerKitchen = false; batchSheet = true },
+            onNotNow = { offerKitchen = false; viewModel.done(onBack) },
+            onDismiss = { offerKitchen = false },
+        )
+    }
+    val recipe = state.recipe
+    if (batchSheet && recipe != null) {
+        BatchSheet(recipe.copy(serves = state.servings), today = java.time.LocalDate.now(), onDismiss = { batchSheet = false }) { servings, portions, freezer, madeOn ->
+            batchSheet = false
+            viewModel.cook(servings, portions, freezer, madeOn) {
+                Toast.makeText(context, "${recipe.shortTitle ?: recipe.title} is in the kitchen", Toast.LENGTH_SHORT).show()
+                viewModel.done(onBack)
+            }
+        }
+    }
+}
+
+/** *Done cooking* asks whether the portions go in the kitchen (docs/PLAN.md §14.5). */
+@Composable
+private fun KitchenOffer(onAdd: () -> Unit, onNotNow: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Done cooking") },
+        text = { Text("Put the portions in the kitchen? Then Ate one logs each one in your diary as you eat it.") },
+        confirmButton = { TextButton(onClick = onAdd) { Text("Add to the kitchen") } },
+        dismissButton = { TextButton(onClick = onNotNow) { Text("Not now") } },
+    )
 }
 
 /** A row that ticks on a tap anywhere on it, with its checkbox at the start. */

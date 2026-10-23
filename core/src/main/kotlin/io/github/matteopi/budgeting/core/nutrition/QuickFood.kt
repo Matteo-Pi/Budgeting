@@ -84,7 +84,9 @@ object QuickFood {
         val match = IngredientMatching.match(lookup, live, aliases, unit)
         val mine = when {
             match.ingredientId != null -> live.firstOrNull { it.id == match.ingredientId }
-            match.kind == MatchKind.SUGGESTIONS && (match.best?.score ?: 0.0) >= MIN_SCORE -> live.firstOrNull { it.id == match.best?.ingredientId }
+            match.kind == MatchKind.SUGGESTIONS && (match.best?.score ?: 0.0) >= MIN_SCORE ->
+                // Only a close name that is the same kind of thing: "white bread" is not white mushrooms.
+                live.firstOrNull { it.id == match.best?.ingredientId }?.takeIf { IngredientMatching.head(it.name) in IngredientMatching.lineTokens(lookup) }
             else -> null
         }
         val (ingredient, foodKey) = when {

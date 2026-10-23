@@ -1,6 +1,7 @@
 package io.github.matteopi.budgeting.data.repo
 
 import io.github.matteopi.budgeting.core.model.Money
+import io.github.matteopi.budgeting.core.nutrition.Micros
 import io.github.matteopi.budgeting.core.recipes.BaseUnit
 import io.github.matteopi.budgeting.core.recipes.FoodGroup
 import io.github.matteopi.budgeting.core.recipes.Ingredient
@@ -77,6 +78,7 @@ fun IngredientEntity.toModel(portions: List<IngredientPortionEntity> = emptyList
     portions = portions.sortedBy { it.id }.map { Portion(it.name, it.amount) },
     // An unknown group name (from a newer version) reads as "guess it", like a missing one.
     foodGroup = foodGroup?.let { name -> FoodGroup.entries.firstOrNull { it.name == name } },
+    micros = Micros(vitA, vitC, vitD, vitE, vitB6, vitB12, folate, calcium, iron, potassium, magnesium, zinc),
 )
 
 fun IngredientWithPortions.toModel(): Ingredient = ingredient.toModel(portions)
@@ -110,6 +112,18 @@ fun Ingredient.toEntity(): IngredientEntity = IngredientEntity(
     createdAt = createdAtEpochMillis,
     addedSugars = per100.addedSugars,
     foodGroup = foodGroup?.name,
+    vitA = micros.vitaminA,
+    vitC = micros.vitaminC,
+    vitD = micros.vitaminD,
+    vitE = micros.vitaminE,
+    vitB6 = micros.vitaminB6,
+    vitB12 = micros.vitaminB12,
+    folate = micros.folate,
+    calcium = micros.calcium,
+    iron = micros.iron,
+    potassium = micros.potassium,
+    magnesium = micros.magnesium,
+    zinc = micros.zinc,
 )
 
 /** The portions as rows for ingredient [ingredientId] (0 for one that isn't saved yet; `saveIngredient` sets it). */

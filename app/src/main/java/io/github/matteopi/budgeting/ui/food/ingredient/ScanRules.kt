@@ -1,5 +1,6 @@
 package io.github.matteopi.budgeting.ui.food.ingredient
 
+import io.github.matteopi.budgeting.core.nutrition.Micro
 import io.github.matteopi.budgeting.core.recipes.Food
 import io.github.matteopi.budgeting.core.recipes.LabelReading
 import io.github.matteopi.budgeting.core.recipes.Nutrient
@@ -78,8 +79,13 @@ object ScanRules {
             .filter { Quantities.stem(it.name) !in portionNames }
             .map { PortionRow(nextKey++, it.name, Quantities.plain(it.amount, 3)) }
         val price = ingredient.price.takeIf { form.priceText.isBlank() && form.unit == ingredient.unit }
+        val micros = form.micros.toMutableMap()
+        for (micro in Micro.entries) {
+            if (micros[micro].isNullOrBlank()) ingredient.micros[micro]?.let { micros[micro] = text(it) }
+        }
         val filled = form.copy(
             nutrition = nutrition,
+            micros = micros,
             nutritionSource = if (hasNoNutrition(form)) ingredient.nutritionSource else form.nutritionSource,
             vegKind = if (form.vegKind == VegKind.NONE) ingredient.vegKind else form.vegKind,
             shelf = if (form.shelf == Shelf.OTHER) ingredient.shelf else form.shelf,

@@ -29,7 +29,13 @@ import io.github.matteopi.budgeting.ui.food.IngredientsScreen
 import io.github.matteopi.budgeting.ui.food.RecipeSettingsScreen
 import io.github.matteopi.budgeting.ui.food.RecipesScreen
 import io.github.matteopi.budgeting.ui.food.ShoppingScreen
+import io.github.matteopi.budgeting.ui.food.diary.DayNutrientsScreen
+import io.github.matteopi.budgeting.ui.food.diary.DiaryScreen
+import io.github.matteopi.budgeting.ui.food.diary.FoodTargetsScreen
+import io.github.matteopi.budgeting.ui.food.diary.FoodTrendsScreen
 import io.github.matteopi.budgeting.ui.food.foods.FoodListScreen
+import io.github.matteopi.budgeting.ui.food.kitchen.KitchenScreen
+import io.github.matteopi.budgeting.ui.food.log.LogFoodScreen
 import io.github.matteopi.budgeting.ui.food.ingredient.IngredientEditScreen
 import io.github.matteopi.budgeting.ui.food.recipe.CookingScreen
 import io.github.matteopi.budgeting.ui.food.recipe.RecipeDetailScreen
@@ -69,7 +75,7 @@ import kotlinx.coroutines.launch
 /**
  * The app's single NavHost, wrapped in a Scaffold with the bottom bar of the section the screen belongs to
  * (docs/PLAN.md §11.8, §13.8): [PlannerBottomBar] on the Planner's routes ([plannerRoutes]), [RecipesBottomBar]
- * on the Recipes section's ([foodRoutes]), no bar on the cooking view or onboarding, and [BudgetBottomBar]
+ * on the Food section's ([foodRoutes]), no bar on the cooking view or onboarding, and [BudgetBottomBar]
  * everywhere else.
  *
  * It also gives every screen the section switch through [LocalSectionSwitch]. Switching clears the back
@@ -324,10 +330,54 @@ fun BudgetNavHost(
                         onOpenSettings = { navController.navigate(Route.RecipeSettings) },
                         onOpenRecipe = { id -> navController.navigate(Route.RecipeDetail(id)) },
                         onAddRecipe = { navController.navigate(Route.AddRecipe()) },
+                        onCompare = { navController.navigate(Route.Compare) },
                     )
                 }
                 composable<Route.Compare> {
-                    CompareScreen(onOpenRecipe = { id -> navController.navigate(Route.RecipeDetail(id)) })
+                    CompareScreen(
+                        onOpenRecipe = { id -> navController.navigate(Route.RecipeDetail(id)) },
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+                composable<Route.Diary> {
+                    DiaryScreen(
+                        onLogFood = { date, meal, batchId ->
+                            navController.navigate(Route.LogFood(epochDay = date.toEpochDay(), meal = meal?.name, batchId = batchId))
+                        },
+                        onAllNutrients = { date -> navController.navigate(Route.DayNutrients(date.toEpochDay())) },
+                        onTrends = { navController.navigate(Route.FoodTrends) },
+                        onOpenSettings = { navController.navigate(Route.RecipeSettings) },
+                    )
+                }
+                composable<Route.Kitchen> {
+                    KitchenScreen(
+                        onOpenRecipe = { id -> navController.navigate(Route.RecipeDetail(id)) },
+                        onLogFood = { batchId -> navController.navigate(Route.LogFood(batchId = batchId)) },
+                    )
+                }
+                composable<Route.LogFood> { backStackEntry ->
+                    val args = backStackEntry.toRoute<Route.LogFood>()
+                    LogFoodScreen(
+                        epochDay = args.epochDay,
+                        meal = args.meal,
+                        batchId = args.batchId,
+                        recipeId = args.recipeId,
+                        onBack = { navController.popBackStack() },
+                        onDone = { message ->
+                            android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
+                            navController.popBackStack()
+                        },
+                    )
+                }
+                composable<Route.DayNutrients> { backStackEntry ->
+                    val args = backStackEntry.toRoute<Route.DayNutrients>()
+                    DayNutrientsScreen(epochDay = args.epochDay, onBack = { navController.popBackStack() })
+                }
+                composable<Route.FoodTargets> {
+                    FoodTargetsScreen(onBack = { navController.popBackStack() })
+                }
+                composable<Route.FoodTrends> {
+                    FoodTrendsScreen(onBack = { navController.popBackStack() })
                 }
                 composable<Route.Shopping> {
                     ShoppingScreen()
@@ -353,11 +403,17 @@ fun BudgetNavHost(
                         onBack = { navController.popBackStack() },
                         onCook = { id -> navController.navigate(Route.Cooking(id)) },
                         onEdit = { id -> navController.navigate(Route.EditRecipe(id)) },
+                        onLogPortion = { id -> navController.navigate(Route.LogFood(recipeId = id)) },
+                        onOpenKitchen = { navController.navigate(Route.Kitchen) { popUpTo<Route.Recipes>(); launchSingleTop = true } },
                     )
                 }
                 composable<Route.Cooking> { backStackEntry ->
                     val args = backStackEntry.toRoute<Route.Cooking>()
-                    CookingScreen(recipeId = args.recipeId, onBack = { navController.popBackStack() })
+                    CookingScreen(
+                        recipeId = args.recipeId,
+                        onBack = { navController.popBackStack() },
+                        onOpenKitchen = { navController.navigate(Route.Kitchen) { popUpTo<Route.Recipes>(); launchSingleTop = true } },
+                    )
                 }
                 composable<Route.AddRecipe> { backStackEntry ->
                     val args = backStackEntry.toRoute<Route.AddRecipe>()
@@ -390,7 +446,10 @@ fun BudgetNavHost(
                     )
                 }
                 composable<Route.RecipeSettings> {
-                    RecipeSettingsScreen(onBack = { navController.popBackStack() })
+                    RecipeSettingsScreen(
+                        onBack = { navController.popBackStack() },
+                        onOpenTargets = { navController.navigate(Route.FoodTargets) },
+                    )
                 }
 
                 // ----- The Planner section (docs/PLAN.md §13.8). -----

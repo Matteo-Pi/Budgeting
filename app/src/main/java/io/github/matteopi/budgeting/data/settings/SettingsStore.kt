@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import io.github.matteopi.budgeting.core.nutrition.FoodPrefs
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import io.github.matteopi.budgeting.core.model.BudgetSettings
@@ -36,6 +37,9 @@ const val PLANNER_DAY_BACKUP_KEY = "plannerDay"
 const val PLANNER_FREE_BACKUP_KEY = "plannerFree"
 const val PLANNER_STUDY_BACKUP_KEY = "plannerStudy"
 const val PLANNER_DAYS_OFF_BACKUP_KEY = "plannerDaysOff"
+
+/** The `appSettings` map entry a backup uses for the food diary's settings (docs/PLAN.md §14.3). */
+const val FOOD_PREFS_BACKUP_KEY = "foodPrefs"
 
 /** Preferences DataStore named "settings". See docs/PLAN.md §6.3 for the key list. */
 class SettingsStore(context: Context) {
@@ -209,6 +213,28 @@ class SettingsStore(context: Context) {
 
     suspend fun setLookUpBarcodesOnline(lookUp: Boolean) {
         dataStore.edit { it[FoodKeys.LOOK_UP_BARCODES_ONLINE] = lookUp }
+    }
+
+    /** The food diary's targets, meal times, kitchen and water settings (docs/PLAN.md §14.3). */
+    val foodPrefs: Flow<FoodPrefs> = dataStore.data.map { prefs -> FoodPrefs.decode(prefs[FoodKeys.PREFS]) }
+
+    suspend fun setFoodPrefs(prefs: FoodPrefs) {
+        dataStore.edit { it[FoodKeys.PREFS] = prefs.encode() }
+    }
+
+    /** Changes the food settings in one edit. */
+    suspend fun updateFoodPrefs(change: (FoodPrefs) -> FoodPrefs) {
+        dataStore.edit { it[FoodKeys.PREFS] = change(FoodPrefs.decode(it[FoodKeys.PREFS])).encode() }
+    }
+
+    /** The food diary's settings a backup carries, as an entry of its `appSettings` map. */
+    suspend fun foodBackupMap(): Map<String, String> =
+        dataStore.data.first()[FoodKeys.PREFS]?.let { mapOf(FOOD_PREFS_BACKUP_KEY to it) } ?: emptyMap()
+
+    /** Restores the food diary's settings from a backup's `appSettings` map, when it has them. */
+    suspend fun restoreFoodBackupMap(map: Map<String, String>) {
+        val value = map[FOOD_PREFS_BACKUP_KEY] ?: return
+        dataStore.edit { it[FoodKeys.PREFS] = value }
     }
 
     /** Whether starting a recipe timer also starts one on the phone's clock app (docs/PLAN.md §11.11). Default true. */
@@ -416,6 +442,7 @@ class SettingsStore(context: Context) {
         val COUNT_OPTIONAL_EXTRAS = booleanPreferencesKey("count_optional_extras")
         val LOOK_UP_BARCODES_ONLINE = booleanPreferencesKey("look_up_barcodes_online")
         val PHONE_TIMERS = booleanPreferencesKey("phone_timers")
+        val PREFS = stringPreferencesKey("food_prefs")
 
         fun cookingTicks(recipeId: Long) = stringSetPreferencesKey("$COOKING_TICKS_PREFIX$recipeId")
     }

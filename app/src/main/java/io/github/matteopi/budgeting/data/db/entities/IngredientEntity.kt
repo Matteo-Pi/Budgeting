@@ -11,7 +11,8 @@ import androidx.room.PrimaryKey
  * unit (`unit` is `G` or `ML`); nutrition is per 100 base units and null means unknown. `price` is
  * the typed pack price in pence and `price_date` an epoch day. The product link is cleared if the
  * product is deleted. Version 4 (§11.11) adds `added_sugars` (per 100, null = unknown) and
- * `food_group` (a `FoodGroup` name; null = guessed from the name, `NONE` = neither).
+ * `food_group` (a `FoodGroup` name; null = guessed from the name, `NONE` = neither). Version 10 (§14.3) adds the
+ * twelve vitamins and minerals per 100 base units (null = unknown), in `Micro`'s units.
  */
 @Entity(
     tableName = "ingredients",
@@ -57,4 +58,16 @@ data class IngredientEntity(
     @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "added_sugars") val addedSugars: Double? = null,
     @ColumnInfo(name = "food_group") val foodGroup: String? = null,
+    @ColumnInfo(name = "vit_a") val vitA: Double? = null,
+    @ColumnInfo(name = "vit_c") val vitC: Double? = null,
+    @ColumnInfo(name = "vit_d") val vitD: Double? = null,
+    @ColumnInfo(name = "vit_e") val vitE: Double? = null,
+    @ColumnInfo(name = "vit_b6") val vitB6: Double? = null,
+    @ColumnInfo(name = "vit_b12") val vitB12: Double? = null,
+    val folate: Double? = null,
+    val calcium: Double? = null,
+    val iron: Double? = null,
+    val potassium: Double? = null,
+    val magnesium: Double? = null,
+    val zinc: Double? = null,
 )

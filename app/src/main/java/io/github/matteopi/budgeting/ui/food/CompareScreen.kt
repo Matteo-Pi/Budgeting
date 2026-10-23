@@ -19,11 +19,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -58,7 +60,7 @@ private val CELL_WIDTH = 92.dp
 private val HEADER_HEIGHT = 56.dp
 
 /**
- * The Compare tab (docs/PLAN.md §11.8): a row per recipe at its own servings with cost, kcal, protein, fat, saturates,
+ * Compare (docs/PLAN.md §11.8; opened from the Recipes tab's top bar since §14.1): a row per recipe at its own servings with cost, kcal, protein, fat, saturates,
  * carbs, sugars, fibre, salt, veg, time and rating. The recipe title stays put while the other columns scroll sideways
  * together (one shared scroll state for the heading and every row). A tap on a heading sorts by it, and again reverses;
  * the best value in each judged column carries a star; fat, saturates, sugars and salt carry their traffic light.
@@ -68,6 +70,7 @@ private val HEADER_HEIGHT = 56.dp
 @Composable
 fun CompareScreen(
     onOpenRecipe: (Long) -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: CompareViewModel = viewModel(factory = CompareViewModel.Factory),
 ) {
@@ -78,7 +81,9 @@ fun CompareScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Compare") },
-                navigationIcon = { SectionSwitchButton(AppSection.RECIPES) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
+                },
             )
         },
     ) { innerPadding ->

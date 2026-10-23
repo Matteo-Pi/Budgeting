@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.matteopi.budgeting.data.settings.AppSection
+import io.github.matteopi.budgeting.ui.components.AppIcons
 import io.github.matteopi.budgeting.ui.food.components.BundleImportDialogs
 import io.github.matteopi.budgeting.ui.food.components.FoodFormat
 import io.github.matteopi.budgeting.ui.food.components.LightDot
@@ -99,6 +100,7 @@ fun RecipesScreen(
     onOpenSettings: () -> Unit,
     onOpenRecipe: (Long) -> Unit,
     onAddRecipe: () -> Unit,
+    onCompare: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: RecipesViewModel = viewModel(factory = RecipesViewModel.Factory),
 ) {
@@ -121,8 +123,11 @@ fun RecipesScreen(
                 title = { Text("Recipes") },
                 navigationIcon = { SectionSwitchButton(AppSection.RECIPES) },
                 actions = {
+                    IconButton(onClick = onCompare) {
+                        Icon(AppIcons.TableChart, contentDescription = "Compare recipes")
+                    }
                     IconButton(onClick = onOpenSettings) {
-                        Icon(Icons.Default.Settings, contentDescription = "Recipe settings")
+                        Icon(Icons.Default.Settings, contentDescription = "Food settings")
                     }
                 },
             )

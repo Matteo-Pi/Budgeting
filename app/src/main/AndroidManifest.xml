@@ -65,6 +65,16 @@
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.Budgeting.QuickAdd" />
 
+        <!-- The Food widget's quick log pop-up (docs/PLAN.md §14.6), translucent like quick add. -->
+        <activity
+            android:name=".ui.food.log.QuickLogActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.Budgeting.QuickAdd" />
+
         <!-- exported="true": the launcher (a separate app) sends the widget-update broadcast. -->
         <receiver
             android:name=".widget.SafeToSpendWidgetReceiver"
@@ -87,6 +97,18 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/planner_widget_info" />
+        </receiver>
+        <!-- The Food widget (docs/PLAN.md §14.6): today's kcal and the kitchen's batches with one-tap Ate one. -->
+        <receiver
+            android:name=".widget.food.FoodWidgetReceiver"
+            android:exported="true"
+            android:label="@string/food_widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/food_widget_info" />
         </receiver>
 
         <!-- The Planner's reminder alarm and the Done button on its notifications (docs/PLAN.md §13.7). -->

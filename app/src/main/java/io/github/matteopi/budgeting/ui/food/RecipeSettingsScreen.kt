@@ -19,6 +19,11 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import io.github.matteopi.budgeting.core.nutrition.FoodPrefs
+import io.github.matteopi.budgeting.ui.food.components.FoodIcons
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -72,6 +77,8 @@ object RecipeSettingsTags {
     const val PHONE_TIMERS = "recipe-settings-phone-timers"
     const val ADD_STARTER = "recipe-settings-add-starter"
     const val IMPORT_JSON = "recipe-settings-import-json"
+    const val TARGETS = "food-settings-targets"
+    const val FILL_MICROS = "food-settings-fill-micros"
 }
 
 data class RecipeSettingsUiState(
@@ -80,9 +87,10 @@ data class RecipeSettingsUiState(
     val phoneTimers: Boolean = true,
     /** How many recipes there are (not archived): adding the starter book asks first when there are some. */
     val recipeCount: Int = 0,
+    val foodPrefs: FoodPrefs = FoodPrefs(),
 )
 
-/** The recipe settings (docs/PLAN.md §11.8, §11.11): the switches, the starter book and importing a recipe file. */
+/** The Food settings (docs/PLAN.md §11.8, §11.11, §14.5): the diary's targets and times, the kitchen, water, the switches, the starter book and importing a recipe file. */
 class RecipeSettingsViewModel(private val container: AppContainer) : ViewModel() {
     val importer = BundleImporter(container.recipeRepository, container.appScope)
 
@@ -91,8 +99,9 @@ class RecipeSettingsViewModel(private val container: AppContainer) : ViewModel()
         container.settingsStore.lookUpBarcodesOnline,
         container.settingsStore.phoneTimers,
         container.recipeRepository.observeAll(),
-    ) { count, lookUp, phoneTimers, recipes ->
-        RecipeSettingsUiState(count, lookUp, phoneTimers, recipes.count { !it.archived })
+        container.settingsStore.foodPrefs,
+    ) { count, lookUp, phoneTimers, recipes, prefs ->
+        RecipeSettingsUiState(count, lookUp, phoneTimers, recipes.count { !it.archived }, prefs)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RecipeSettingsUiState())
 
     fun setCountOptionalExtras(count: Boolean) {
@@ -108,6 +117,43 @@ class RecipeSettingsViewModel(private val container: AppContainer) : ViewModel()
     }
 
     fun addStarterRecipes() = importer.offerStarter()
+
+    private val _filled = MutableStateFlow<String?>(null)
+
+    /** What *Fill in vitamins* did, for the snackbar. */
+    val filled: StateFlow<String?> = _filled
+
+    fun filledShown() {
+        _filled.value = null
+    }
+
+    fun updateFoodPrefs(change: (FoodPrefs) -> FoodPrefs) {
+        container.appScope.launch { container.settingsStore.updateFoodPrefs(change) }
+    }
+
+    /**
+     * *Fill in vitamins from the food list*: every ingredient with no vitamins or minerals whose name matches a food
+     * of the list gets the food's (docs/PLAN.md §14.5).
+     */
+    fun fillMicros() {
+        viewModelScope.launch {
+            val count = withContext(Dispatchers.Default) {
+                var n = 0
+                for (ingredient in container.ingredientRepository.observeAll().first()) {
+                    if (ingredient.archived || !ingredient.micros.isEmpty) continue
+                    val food = FoodDatabase.match(ingredient.name) ?: continue
+                    container.ingredientRepository.save(ingredient.copy(micros = food.ingredient.micros))
+                    n++
+                }
+                n
+            }
+            _filled.value = when (count) {
+                0 -> "Every ingredient the food list knows already has its vitamins."
+                1 -> "Filled in the vitamins of 1 ingredient."
+                else -> "Filled in the vitamins of $count ingredients."
+            }
+        }
+    }
 
     /** Reads the picked file and offers its recipes; what is wrong with it goes to the importer's problems. */
     fun importFile(context: Context, uri: Uri) {
@@ -140,6 +186,7 @@ private val RECIPE_FILE_TYPES = arrayOf("application/json", "text/plain", "appli
 @Composable
 fun RecipeSettingsScreen(
     onBack: () -> Unit,
+    onOpenTargets: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: RecipeSettingsViewModel = viewModel(factory = RecipeSettingsViewModel.Factory),
 ) {
@@ -159,12 +206,18 @@ fun RecipeSettingsScreen(
             viewModel.importer.messageShown()
         }
     }
+    val filled by viewModel.filled.collectAsStateWithLifecycle()
+    LaunchedEffect(filled) {
+        val message = filled ?: return@LaunchedEffect
+        viewModel.filledShown()
+        snackbarHostState.showSnackbar(message)
+    }
 
     Scaffold(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text("Recipe settings") },
+                title = { Text("Food settings") },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
                 },
@@ -177,6 +230,7 @@ fun RecipeSettingsScreen(
                 modifier = Modifier.verticalScroll(rememberScrollState()).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                FoodDiarySettings(state.foodPrefs, onOpenTargets, viewModel::updateFoodPrefs, viewModel::fillMicros)
                 SectionCard(title = "Numbers") {
                     SwitchRow(
                         label = "Count optional extras",
@@ -258,6 +312,77 @@ fun RecipeSettingsScreen(
         )
     }
     BundleImportDialogs(state = importState, importer = viewModel.importer)
+}
+
+/** "10:30" for a minute of the day. */
+private fun clock(minute: Int): String = "%d:%02d".format(minute / 60, minute % 60)
+
+/** The diary's settings (docs/PLAN.md §14.3): targets, meal times, the kitchen, water and the vitamins. */
+@Composable
+private fun FoodDiarySettings(
+    prefs: FoodPrefs,
+    onOpenTargets: () -> Unit,
+    update: ((FoodPrefs) -> FoodPrefs) -> Unit,
+    onFillMicros: () -> Unit,
+) {
+    SectionCard(title = "Diary") {
+        val t = prefs.targets
+        Text(
+            "${Math.round(t.kcal)} kcal · ${Math.round(t.protein)} g protein · ${Math.round(t.carbs)} g carbs · ${Math.round(t.fat)} g fat a day",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        OutlinedButton(onClick = onOpenTargets, modifier = Modifier.padding(top = 8.dp).testTag(RecipeSettingsTags.TARGETS)) { Text("Daily targets") }
+        Text("Meals end at", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp))
+        val step = 30
+        MinuteRow("Breakfast", prefs.breakfastUntil) { m -> update { it.copy(breakfastUntil = m.coerceIn(5 * 60, it.lunchUntil - step)) } }
+        MinuteRow("Lunch", prefs.lunchUntil) { m -> update { it.copy(lunchUntil = m.coerceIn(it.breakfastUntil + step, it.snacksUntil - step)) } }
+        MinuteRow("Afternoon snacks", prefs.snacksUntil) { m -> update { it.copy(snacksUntil = m.coerceIn(it.lunchUntil + step, it.dinnerUntil - step)) } }
+        MinuteRow("Dinner", prefs.dinnerUntil) { m -> update { it.copy(dinnerUntil = m.coerceIn(it.snacksUntil + step, 23 * 60 + 30)) } }
+        Text("Water", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp))
+        StepRow("A glass", "${prefs.glassMl} ml", onLess = { update { it.copy(glassMl = (it.glassMl - 50).coerceAtLeast(100)) } }) {
+            update { it.copy(glassMl = (it.glassMl + 50).coerceAtMost(750)) }
+        }
+        StepRow("Goal", "${prefs.waterGoalMl} ml", onLess = { update { it.copy(waterGoalMl = (it.waterGoalMl - 250).coerceAtLeast(500)) } }) {
+            update { it.copy(waterGoalMl = (it.waterGoalMl + 250).coerceAtMost(5000)) }
+        }
+    }
+    SectionCard(title = "Kitchen") {
+        Text(
+            "Cooked food keeps 2 days in the fridge (the Food Standards Agency's advice for leftovers) and is best eaten " +
+                "within 3 months of freezing. Defrosted food keeps a day.",
+            style = MaterialTheme.typography.bodySmall,
+        )
+        StepRow("Fridge", if (prefs.fridgeDays == 1) "1 day" else "${prefs.fridgeDays} days", onLess = {
+            update { it.copy(fridgeDays = (it.fridgeDays - 1).coerceAtLeast(1)) }
+        }) { update { it.copy(fridgeDays = (it.fridgeDays + 1).coerceAtMost(5)) } }
+        StepRow("Freezer", if (prefs.freezerMonths == 1) "1 month" else "${prefs.freezerMonths} months", onLess = {
+            update { it.copy(freezerMonths = (it.freezerMonths - 1).coerceAtLeast(1)) }
+        }) { update { it.copy(freezerMonths = (it.freezerMonths + 1).coerceAtMost(12)) } }
+    }
+    SectionCard(title = "Vitamins and minerals") {
+        Text(
+            "The food list has typical vitamins and minerals for each of its foods. Your own ingredients get them when " +
+                "their name matches a food of the list.",
+            style = MaterialTheme.typography.bodySmall,
+        )
+        OutlinedButton(onClick = onFillMicros, modifier = Modifier.padding(top = 8.dp).testTag(RecipeSettingsTags.FILL_MICROS)) {
+            Text("Fill in vitamins from the food list")
+        }
+    }
+}
+
+@Composable
+private fun MinuteRow(label: String, minute: Int, onChange: (Int) -> Unit) =
+    StepRow(label, clock(minute), onLess = { onChange(minute - 30) }) { onChange(minute + 30) }
+
+@Composable
+private fun StepRow(label: String, value: String, onLess: () -> Unit, onMore: () -> Unit) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        IconButton(onClick = onLess) { Icon(FoodIcons.Remove, contentDescription = "Less $label") }
+        Text(value, style = MaterialTheme.typography.bodyMedium)
+        IconButton(onClick = onMore) { Icon(Icons.Default.Add, contentDescription = "More $label") }
+    }
 }
 
 @Composable

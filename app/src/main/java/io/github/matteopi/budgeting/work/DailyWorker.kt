@@ -17,6 +17,7 @@ import io.github.matteopi.budgeting.MainActivity
 import io.github.matteopi.budgeting.R
 import io.github.matteopi.budgeting.core.analysis.Accuracy
 import io.github.matteopi.budgeting.widget.SafeToSpendWidget
+import io.github.matteopi.budgeting.widget.food.FoodWidget
 import io.github.matteopi.budgeting.widget.planner.PlannerWidget
 import kotlinx.coroutines.flow.first
 
@@ -70,6 +71,8 @@ class DailyWorker(
 
         // The Planner widget rolls over to the new day too.
         PlannerWidget.refresh(applicationContext)
+        // A new day starts the Food widget's kcal from nothing (docs/PLAN.md §14.6).
+        FoodWidget.refresh(applicationContext)
 
         container.suggestionRepository.prune()
 

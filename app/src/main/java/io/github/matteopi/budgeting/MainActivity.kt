@@ -31,6 +31,7 @@ import io.github.matteopi.budgeting.ui.lock.LockScreen
 import io.github.matteopi.budgeting.ui.navigation.BudgetNavHost
 import io.github.matteopi.budgeting.ui.navigation.Route
 import io.github.matteopi.budgeting.ui.navigation.firstTabOf
+import io.github.matteopi.budgeting.ui.navigation.isFoodDestination
 import io.github.matteopi.budgeting.ui.navigation.isPlannerDestination
 import io.github.matteopi.budgeting.ui.navigation.plannerRoutes
 import io.github.matteopi.budgeting.ui.receipts.ReceiptFiles
@@ -111,6 +112,11 @@ class MainActivity : FragmentActivity() {
                                         navController.navigate(Route.Today) { popUpTo(navController.graph.id) { inclusive = true } }
                                         container.appScope.launch { container.settingsStore.setAppSection(AppSection.PLANNER) }
                                     }
+                                    if (route == Route.Diary && !navController.currentBackStackEntry?.destination.isFoodDestination()) {
+                                        // The Food widget opens the Food section as a switch would, then the diary on top.
+                                        navController.navigate(Route.Recipes) { popUpTo(navController.graph.id) { inclusive = true } }
+                                        container.appScope.launch { container.settingsStore.setAppSection(AppSection.RECIPES) }
+                                    }
                                     when {
                                         route != Route.Today -> navController.navigate(route)
                                         !switching -> navController.navigate(Route.Today) {
@@ -166,6 +172,7 @@ class MainActivity : FragmentActivity() {
                 }
             }
             ReceiptFiles.ACTION_SCAN_RECEIPT -> receiptRequest.value = Route.ReceiptScan
+            ACTION_OPEN_DIARY -> receiptRequest.value = Route.Diary
             Intent.ACTION_SEND -> {
                 val shared = Intent(intent)
                 val app = application as BudgetApp
@@ -198,6 +205,11 @@ class MainActivity : FragmentActivity() {
             }
         }
     }
+
+    companion object {
+        /** Opens the Food section's diary (the Food widget, docs/PLAN.md §14.6). */
+        const val ACTION_OPEN_DIARY = "io.github.matteopi.budgeting.OPEN_DIARY"
+    }
 }
 
 @Composable
@@ -205,4 +217,5 @@ private fun LoadingScreen() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CircularProgressIndicator()
     }
+
 }

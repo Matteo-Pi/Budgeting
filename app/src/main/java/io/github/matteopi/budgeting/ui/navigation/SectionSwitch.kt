@@ -30,7 +30,7 @@ val LocalSectionSwitch = compositionLocalOf<((AppSection) -> Unit)?> { null }
 val AppSection.title: String
     get() = when (this) {
         AppSection.BUDGETING -> "Budgeting"
-        AppSection.RECIPES -> "Recipes"
+        AppSection.RECIPES -> "Food"
         AppSection.PLANNER -> "Planner"
     }
 
@@ -44,7 +44,7 @@ val AppSection.icon: ImageVector
 /**
  * The section chooser, for the `navigationIcon` slot of the `TopAppBar` of each tab screen (docs/PLAN.md §13.8).
  * It shows the icon of [section] (the section the screen belongs to) and is described as *Switch section*; it
- * opens a menu of the other two sections ("Switch to Recipes", …). Sub-screens keep their back arrow instead.
+ * opens a menu of the other two sections ("Switch to Food", …). Sub-screens keep their back arrow instead.
  */
 @Composable
 fun SectionSwitchButton(section: AppSection) {

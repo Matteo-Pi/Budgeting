@@ -927,6 +927,97 @@ class MigrationTest {
         }
     }
 
+    // ---- Version 10: the food diary and the kitchen (docs/PLAN.md §14.3) ------------------------
+
+    private val diaryTables = listOf("meal_batches", "food_log", "food_days")
+
+    @Test
+    fun migratingFromVersion9To10KeepsTheIngredientsAndAddsEmptyDiaryTables() {
+        createVersion3Database()
+        helper.runMigrationsAndValidate(DB_NAME, 9, true).close()
+
+        val db = helper.runMigrationsAndValidate(DB_NAME, 10, true)
+
+        assertVersion2RowsSurvived(db)
+        assertEquals(listOf("Clear honey"), db.strings("SELECT name FROM ingredients"))
+        assertEquals(listOf(0L), db.longs("SELECT COUNT(*) FROM ingredients WHERE vit_c IS NOT NULL OR iron IS NOT NULL OR zinc IS NOT NULL"))
+        val tables = db.strings("SELECT name FROM sqlite_master WHERE type = 'table'")
+        for (table in diaryTables) {
+            assertTrue(table in tables, "the $table table exists; have $tables")
+            assertEquals(listOf(0L), db.longs("SELECT COUNT(*) FROM $table"), "$table starts empty")
+        }
+        assertEquals(setOf(Triple("recipes", "recipe_id", "SET NULL")), db.foreignKeys("meal_batches").toSet())
+        assertEquals(
+            setOf(
+                Triple("recipes", "recipe_id", "SET NULL"),
+                Triple("meal_batches", "batch_id", "SET NULL"),
+                Triple("ingredients", "ingredient_id", "SET NULL"),
+                Triple("food_log", "side_of", "CASCADE"),
+            ),
+            db.foreignKeys("food_log").toSet(),
+        )
+        db.execSQL("UPDATE ingredients SET iron = 0.4 WHERE id = 1")
+        assertEquals(listOf(1L), db.longs("SELECT COUNT(*) FROM ingredients WHERE iron = 0.4"))
+        db.close()
+    }
+
+    @Test
+    fun migratingStraightFromVersion1To10RunsAllNineAutoMigrations() {
+        createVersion1Database()
+
+        val db = helper.runMigrationsAndValidate(DB_NAME, 10, true)
+
+        assertEquals(listOf(1L, 2L, 3L), db.longs("SELECT id FROM transactions ORDER BY id"))
+        val tables = db.strings("SELECT name FROM sqlite_master WHERE type = 'table'")
+        for (table in listOf("receipts", "products") + foodTables + "owned_items" + plannerTables + timetableTables + dayTables + habitTables +
+            studyTables + diaryTables) {
+            assertTrue(table in tables, "the $table table exists; have $tables")
+        }
+        db.close()
+    }
+
+    @Test
+    fun theVersion10FileOpensWithTheRealDatabaseClassAndTheDiaryTablesWork() = runBlocking<Unit> {
+        createVersion3Database()
+        helper.runMigrationsAndValidate(DB_NAME, 10, true).close()
+
+        val db = Room.databaseBuilder(context, BudgetDatabase::class.java, DB_NAME).build()
+        try {
+            val dao = db.diaryDao()
+            val today = java.time.LocalDate.ofEpochDay(day)
+            val intake = io.github.matteopi.budgeting.core.nutrition.Intakes.quick(550.0, protein = 40.0)
+            val batch = io.github.matteopi.budgeting.core.nutrition.Batch(
+                recipeId = 1, name = "Honey toast", madeOn = today, servings = 4.0, portions = 4.0, fridgeLeft = 3.0,
+                freezerLeft = 1.0, frozenOn = today, eatBy = today.plusDays(2), costPence = 42.5, intake = intake,
+            )
+            val batchId = dao.insertBatch(batch.toEntity())
+            assertEquals(batch.copy(id = batchId), dao.getBatch(batchId)!!.toModel())
+
+            val main = io.github.matteopi.budgeting.core.nutrition.LogItem(
+                date = today, meal = io.github.matteopi.budgeting.core.nutrition.MealSlot.DINNER, kind = io.github.matteopi.budgeting.core.nutrition.LogKind.BATCH,
+                name = "Honey toast", recipeId = 1, batchId = batchId, costPence = 42.5, intake = intake,
+            )
+            val side = main.copy(kind = io.github.matteopi.budgeting.core.nutrition.LogKind.FOOD, name = "Clear honey", ingredientId = 1, batchId = null, recipeId = null)
+            val mainId = dao.logWithSides(main.toEntity(), listOf(side.toEntity()), batch.copy(id = batchId, fridgeLeft = 2.0).toEntity())
+            val rows = dao.getAllLog().map { it.toModel() }
+            assertEquals(listOf(main.copy(id = mainId)), rows.filter { it.sideOf == null })
+            assertEquals(listOf(mainId), rows.mapNotNull { it.sideOf })
+            assertEquals(2.0, dao.getBatch(batchId)!!.fridgeLeft, 1e-9)
+
+            // Deleting the portion deletes its side; deleting the recipe keeps the batch.
+            dao.deleteLog(mainId)
+            assertTrue(dao.getAllLog().isEmpty())
+            db.foodDao().deleteRecipe(1)
+            assertEquals(null, dao.getBatch(batchId)!!.recipeId)
+
+            dao.upsertDay(io.github.matteopi.budgeting.core.nutrition.FoodDay(today, 750, "").toEntity())
+            dao.upsertDay(io.github.matteopi.budgeting.core.nutrition.FoodDay(today, 1000, "").toEntity())
+            assertEquals(listOf(1000), dao.getDays().map { it.waterMl })
+        } finally {
+            db.close()
+        }
+    }
+
     private companion object {
         const val DB_NAME = "migration-test.db"
     }

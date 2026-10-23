@@ -3720,3 +3720,18 @@ cooking view buttons, the ingredient editor's micros, Food settings with targets
   freezer portions, *Ate one* with rice, 3 slices of toast, a quick entry, the summary numbers, all nutrients);
   `ui/KitchenTest` (`kitchen-*`); `SectionSwitchTest` for the renamed section and its tabs; (N2)
   `widget/FoodWidgetTest` (sizes and one-tap *Ate one*).
+
+### 14.8 As built (2026-10-23, N1 and N2 in one build)
+- Both stages went into one build. The Food section's bar is Recipes · Diary · Kitchen · Shopping · Ingredients;
+  Compare is the table icon on the Recipes tab's top bar (with a back arrow), and the gear on Recipes and Diary is
+  *Food settings*. The chooser names the section *Food*.
+- *Done cooking* in the cooking view asks *Add to the kitchen* (the batch sheet, at the servings on the stepper) or
+  *Not now*.
+- `Sides.suggestions` skips a *Served with* that says the carb is already in the recipe ("included in the
+  numbers", "no rice needed"), so the starter recipes don't offer rice twice. `QuickFood` takes a close name of the
+  user's only when its last word is in the text ("white bread" is not white mushrooms).
+- *Ate one* (Diary, Kitchen, widget) uses `FoodDiaryActions` (`AppContainer.foodDiary`), which also cooks batches
+  and builds diary rows with today's prices. The widget opens the diary with `MainActivity.ACTION_OPEN_DIARY`.
+- Tests: core `MicrosAndIntakesTest`, `DiaryAndKitchenTest`, `DiaryBackupTest`; JVM `DiaryMappingTest` (rows,
+  meals, kitchen text, steps, the widget's state); device `MigrationTest` 9 → 10 and 1 → 10, `DiaryRepositoryTest`,
+  `ui/DiaryTest`, `ui/KitchenTest`, and `SectionSwitchTest`/`CookingAndCompareTest` updated for the new bar.

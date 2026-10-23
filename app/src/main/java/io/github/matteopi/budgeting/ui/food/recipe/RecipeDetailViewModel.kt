@@ -93,6 +93,15 @@ class RecipeDetailViewModel(private val container: AppContainer, private val rec
         }
     }
 
+    /** *I cooked this*: a batch of the recipe in the kitchen (docs/PLAN.md §14.5); [onDone] once it is saved. */
+    fun cook(servings: Double, portions: Double, freezer: Double, madeOn: java.time.LocalDate, onDone: () -> Unit) {
+        val recipe = uiState.value.recipe ?: return
+        viewModelScope.launch {
+            container.foodDiary.cook(recipe, servings, portions, freezer, madeOn)
+            onDone()
+        }
+    }
+
     /** The recipe in the paste format, for *Share as text*. */
     fun shareText(): String? = uiState.value.recipe?.let { RecipeText.format(it) }
 

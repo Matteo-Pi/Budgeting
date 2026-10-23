@@ -6,6 +6,7 @@ import androidx.room.RoomDatabase
 import io.github.matteopi.budgeting.data.db.dao.AccountDao
 import io.github.matteopi.budgeting.data.db.dao.CategoryDao
 import io.github.matteopi.budgeting.data.db.dao.DayDao
+import io.github.matteopi.budgeting.data.db.dao.DiaryDao
 import io.github.matteopi.budgeting.data.db.dao.FoodDao
 import io.github.matteopi.budgeting.data.db.dao.HabitDao
 import io.github.matteopi.budgeting.data.db.dao.ImportDao
@@ -23,10 +24,13 @@ import io.github.matteopi.budgeting.data.db.entities.AccountEntity
 import io.github.matteopi.budgeting.data.db.entities.BalanceSnapshotEntity
 import io.github.matteopi.budgeting.data.db.entities.CategoryEntity
 import io.github.matteopi.budgeting.data.db.entities.CategoryWeekSnapshotEntity
+import io.github.matteopi.budgeting.data.db.entities.FoodDayEntity
+import io.github.matteopi.budgeting.data.db.entities.FoodLogEntity
 import io.github.matteopi.budgeting.data.db.entities.ImportBatchEntity
 import io.github.matteopi.budgeting.data.db.entities.IngredientAliasEntity
 import io.github.matteopi.budgeting.data.db.entities.IngredientEntity
 import io.github.matteopi.budgeting.data.db.entities.IngredientPortionEntity
+import io.github.matteopi.budgeting.data.db.entities.MealBatchEntity
 import io.github.matteopi.budgeting.data.db.entities.MerchantRuleEntity
 import io.github.matteopi.budgeting.data.db.entities.OwnedItemEntity
 import io.github.matteopi.budgeting.data.db.entities.PredictionEntity
@@ -110,15 +114,19 @@ import io.github.matteopi.budgeting.data.db.entities.planner.TimetableEntryEntit
         HabitEntryEntity::class,
         RevisionTopicEntity::class,
         DismissedEntity::class,
+        MealBatchEntity::class,
+        FoodLogEntity::class,
+        FoodDayEntity::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = true,
     // Version 2 only adds tables and one nullable column (`transactions.receipt_id`); version 3 (the
     // Recipes section, docs/PLAN.md §11.3) only adds the eight food tables; version 4 (§11.11) only
     // adds `owned_items` and two nullable columns on `ingredients`; version 5 (the Planner's to-do
     // list, §13.5) only adds four `planner_` tables; version 6 (the timetable and calendar links) only
     // adds three more, version 7 (the day record) four more, version 8 (habits) two more, and version 9
-    // (study suggestions) two more. Room can migrate all eight without a spec. Never replace these with a
+    // (study suggestions) two more; version 10 (the food diary, §14.3) adds three tables and twelve nullable
+    // columns on `ingredients`. Room can migrate all nine without a spec. Never replace these with a
     // destructive migration.
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -129,6 +137,7 @@ import io.github.matteopi.budgeting.data.db.entities.planner.TimetableEntryEntit
         AutoMigration(from = 6, to = 7),
         AutoMigration(from = 7, to = 8),
         AutoMigration(from = 8, to = 9),
+        AutoMigration(from = 9, to = 10),
     ],
 )
 abstract class BudgetDatabase : RoomDatabase() {
@@ -148,6 +157,7 @@ abstract class BudgetDatabase : RoomDatabase() {
     abstract fun dayDao(): DayDao
     abstract fun habitDao(): HabitDao
     abstract fun studyDao(): StudyDao
+    abstract fun diaryDao(): DiaryDao
 
     companion object {
         const val DATABASE_NAME = "budgeting.db"

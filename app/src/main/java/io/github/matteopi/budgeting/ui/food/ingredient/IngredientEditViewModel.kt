@@ -1,5 +1,6 @@
 package io.github.matteopi.budgeting.ui.food.ingredient
 
+import io.github.matteopi.budgeting.core.nutrition.Micro
 import android.database.sqlite.SQLiteConstraintException
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -168,6 +169,15 @@ class IngredientEditViewModel(
     fun setBarcode(text: String) = change { it.copy(barcode = IngredientFormRules.digitsOnly(text)) }
 
     fun setNutrition(nutrient: Nutrient, text: String) = change { it.copy(nutrition = it.nutrition + (nutrient to text)) }
+
+    fun setMicro(micro: Micro, text: String) = change { it.copy(micros = it.micros + (micro to text)) }
+
+    /** *Fill in vitamins from the food list*: only the vitamin and mineral boxes that are empty. */
+    fun fillMicrosFromFood(food: Food) = change { form ->
+        form.copy(micros = Micro.entries.associateWith { micro ->
+            form.micros[micro]?.takeIf { it.isNotBlank() } ?: food.ingredient.micros[micro]?.let { io.github.matteopi.budgeting.core.recipes.Quantities.plain(it, 3) }.orEmpty()
+        })
+    }
 
     fun setNutritionSource(source: NutritionSource) = change { it.copy(nutritionSource = source) }
 

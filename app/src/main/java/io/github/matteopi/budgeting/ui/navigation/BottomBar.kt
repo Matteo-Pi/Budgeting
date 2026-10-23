@@ -34,9 +34,10 @@ private val bottomBarItems = listOf(
 
 private val recipesBarItems = listOf(
     BottomBarItem(Route.Recipes, "Recipes", AppIcons.MenuBook),
-    BottomBarItem(Route.Compare, "Compare", AppIcons.TableChart),
+    BottomBarItem(Route.Diary, "Diary", AppIcons.EventNote),
+    BottomBarItem(Route.Kitchen, "Kitchen", AppIcons.Kitchen),
     BottomBarItem(Route.Shopping, "Shopping", Icons.Default.ShoppingCart),
-    BottomBarItem(Route.Ingredients, "Ingredients", AppIcons.Kitchen),
+    BottomBarItem(Route.Ingredients, "Ingredients", AppIcons.Category),
 )
 
 private val plannerBarItems = listOf(
@@ -62,7 +63,7 @@ fun BudgetBottomBar(navController: NavHostController) {
     ) { popUpTo<Route.Home>() }
 }
 
-/** The Recipes section's 4-item bottom bar: Recipes, Compare, Shopping, Ingredients (docs/PLAN.md §11.8). */
+/** The Food section's 5-item bottom bar: Recipes, Diary, Kitchen, Shopping, Ingredients (docs/PLAN.md §14.1). */
 @Composable
 fun RecipesBottomBar(navController: NavHostController) {
     // The same as Budgeting's, with the Recipes tab as the first screen.

@@ -175,5 +175,9 @@ object Batches {
     fun wastedPence(batches: List<Batch>, from: LocalDate, to: LocalDate): Double =
         batches.filter { !it.madeOn.isBefore(from) && !it.madeOn.isAfter(to) }.sumOf { (it.costPence ?: 0.0) * it.wasted }
 
+    /** "1 portion", "½ portion", "1½ portions". */
+    fun portionsText(portions: Double): String =
+        "${io.github.matteopi.budgeting.core.recipes.Quantities.formatCount(portions)} ${if (portions > 1 + EPSILON) "portions" else "portion"}"
+
     private fun clean(value: Double): Double = if (value < EPSILON) 0.0 else value
 }

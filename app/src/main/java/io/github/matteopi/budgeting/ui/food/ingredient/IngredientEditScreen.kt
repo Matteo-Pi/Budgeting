@@ -1,5 +1,7 @@
 package io.github.matteopi.budgeting.ui.food.ingredient
 
+import io.github.matteopi.budgeting.core.nutrition.Micro
+import io.github.matteopi.budgeting.core.recipes.FoodDatabase
 import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -41,6 +43,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,6 +84,7 @@ object IngredientEditTags {
     const val PRODUCT_SEARCH = "ingredient-product-search"
     const val FOOD_GROUP = "ingredient-food-group"
     const val FILL_FROM_FOODS = "ingredient-fill-from-foods"
+    const val MICROS = "ingredient-micros"
 
     fun portionName(position: Int) = "ingredient-portion-$position-name"
 
@@ -189,6 +193,7 @@ fun IngredientEditScreen(
                 BasicsCard(form, errors, submitted, viewModel)
                 PriceCard(form, errors, submitted, viewModel)
                 NutritionCard(form, errors, submitted, viewModel)
+                MicrosCard(form, errors, submitted, viewModel)
                 PortionsCard(form, errors, submitted, viewModel)
                 ProductLinkCard(
                     productId = form.productId,
@@ -445,6 +450,49 @@ private fun NutritionCard(
                 onSelect = viewModel::setNutritionSource,
                 modifier = Modifier.fillMaxWidth(),
             )
+        }
+    }
+}
+
+/** Vitamins and minerals per 100 (docs/PLAN.md §14.2), folded away until opened. */
+@Composable
+private fun MicrosCard(
+    form: IngredientForm,
+    errors: IngredientFormErrors,
+    submitted: Boolean,
+    viewModel: IngredientEditViewModel,
+) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    val known = Micro.entries.count { !form.micros[it].isNullOrBlank() }
+    val food = remember(form.name) { if (form.name.isBlank()) null else FoodDatabase.match(form.name) }
+    SectionCard(title = "Vitamins and minerals (per 100 ${FoodTexts.unitSymbol(form.unit)})") {
+        Text(
+            text = if (known == 0) "None filled in yet." else "$known of ${Micro.entries.size} filled in.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextButton(onClick = { open = !open }, modifier = Modifier.testTag(IngredientEditTags.MICROS)) { Text(if (open) "Hide" else "Show") }
+            if (food != null && known < Micro.entries.size) {
+                TextButton(onClick = { viewModel.fillMicrosFromFood(food) }) { Text("Fill in from the food list") }
+            }
+        }
+        if (open) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Micro.entries.chunked(2).forEach { pair ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        pair.forEach { micro ->
+                            FoodNumberField(
+                                label = "${micro.label} (${micro.unit})",
+                                value = form.micros[micro].orEmpty(),
+                                onValueChange = { viewModel.setMicro(micro, it) },
+                                isError = submitted && micro in errors.micros,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

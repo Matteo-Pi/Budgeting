@@ -19,7 +19,7 @@ import org.junit.runner.RunWith
 
 /**
  * The three sections (docs/PLAN.md §11.8, §13.8): the chooser at the top left of every tab moves between Budgeting,
- * Recipes and the Planner, each with its own bottom bar; the last section is remembered; Back on a section's first
+ * Food (recipes, the diary and the kitchen) and the Planner, each with its own bottom bar; the last section is remembered; Back on a section's first
  * tab leaves the app. These tests look at the bars, the chooser and the settings actions, not at what the tabs show.
  */
 @RunWith(AndroidJUnit4::class)
@@ -28,7 +28,7 @@ class SectionSwitchTest : UiTest() {
     // "Insights" is a tab of both Budgeting and the Planner, so only the other tabs tell the sections apart.
     private val budgetingTabs = listOf("Home", "Activity", "Forecast", "Plan", "Insights")
     private val budgetingOnly = listOf("Home", "Activity", "Forecast", "Plan")
-    private val recipesTabs = listOf("Recipes", "Compare", "Shopping", "Ingredients")
+    private val recipesTabs = listOf("Recipes", "Diary", "Kitchen", "Shopping", "Ingredients")
     private val plannerTabs = listOf("Today", "Timetable", "To-do", "Habits", "Insights")
     private val plannerOnly = listOf("Today", "Timetable", "To-do", "Habits")
 
@@ -73,13 +73,13 @@ class SectionSwitchTest : UiTest() {
 
         // The chooser offers the other two sections.
         tap(chooser, "the section chooser")
-        waitForExists(menuItem("Recipes"), "Recipes in the chooser")
+        waitForExists(menuItem("Food"), "Food in the chooser")
         waitForExists(menuItem("Planner"), "the Planner in the chooser")
         assertNeverShows(menuItem("Budgeting"), "Budgeting offered from inside Budgeting", forMs = 300)
         shot("sections-02-chooser")
-        tapMenuItem("Recipes")
+        tapMenuItem("Food")
 
-        // Recipes: four tabs, none of the others, and the Recipes tab is open.
+        // Food: five tabs, none of the others, and the Recipes tab is open.
         expectRecipesSection()
         expectSelectedTab("Recipes")
         shot("sections-03-recipes")
@@ -89,7 +89,7 @@ class SectionSwitchTest : UiTest() {
         }
 
         // A sub-screen keeps the bar but has a back arrow instead of the chooser.
-        tapIcon("Recipe settings")
+        tapIcon("Food settings")
         waitUntilGone(chooser, "the chooser on a sub-screen")
         recipesTabs.forEach { waitForExists(clickableText(it), "the '$it' tab on a sub-screen") }
         tapBack()
@@ -126,7 +126,7 @@ class SectionSwitchTest : UiTest() {
         waitForExists(chooser, "Home's section chooser", HEAVY_TIMEOUT_MS)
         assertEquals("Budgeting is the section until the user switches", AppSection.BUDGETING, savedSection())
 
-        switchTo("Recipes")
+        switchTo("Food")
         expectRecipesSection()
         waitFor("the Recipes section to be saved") { savedSection() == AppSection.RECIPES }
 
@@ -162,11 +162,11 @@ class SectionSwitchTest : UiTest() {
         seedSmallLedger()
         val scenario = launchMain()
         waitForExists(chooser, "Home's section chooser", HEAVY_TIMEOUT_MS)
-        switchTo("Recipes")
+        switchTo("Food")
         expectRecipesSection()
 
-        // Back from another Recipes tab goes to the Recipes tab (the back stack holds only those two) ...
-        goToTab("Compare")
+        // Back from another Food tab goes to the Recipes tab (the back stack holds only those two) ...
+        goToTab("Diary")
         pressSystemBack()
         expectSelectedTab("Recipes")
         waitForExists(chooser, "the Recipes tab after Back")

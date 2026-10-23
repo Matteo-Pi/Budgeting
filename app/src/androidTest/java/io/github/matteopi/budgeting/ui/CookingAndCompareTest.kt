@@ -24,7 +24,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/** The cooking view's ticks and kept-on screen, and the Compare tab's sorting (docs/PLAN.md §11.8). */
+/** The cooking view's ticks and kept-on screen, and Compare's sorting (docs/PLAN.md §11.8). */
 @RunWith(AndroidJUnit4::class)
 class CookingAndCompareTest : UiTest() {
 
@@ -70,8 +70,9 @@ class CookingAndCompareTest : UiTest() {
         waitForExists(hasTestTag(CookingTags.line(0)), "the first ingredient again")
         assertEquals(setOf("line-0", "line-1", "step-0"), ticks(stirFry))
 
-        // Done cooking forgets them and goes back to the recipe.
+        // Done cooking offers the kitchen (docs/PLAN.md §14.5); Not now forgets the ticks and goes back to the recipe.
         tapText("Done cooking", index = 0)
+        tapInDialog("Not now")
         waitForExists(hasTestTag(RecipeDetailTags.COOK), "the recipe screen after Done cooking")
         waitFor("the ticks to be cleared") { ticks(stirFry).isEmpty() }
         assertTrue(!keepsScreenOn(scenario))
@@ -84,7 +85,8 @@ class CookingAndCompareTest : UiTest() {
         val stirFry = starterRecipe("Stir-fry").id
         val braise = starterRecipe("Braise").id
         val traybake = starterRecipe("Traybake").id
-        goToTab("Compare")
+        // Compare is on the Recipes tab's top bar since the diary took its tab (docs/PLAN.md §14.1).
+        tapIcon("Compare recipes")
         waitForExists(hasTestTag(CompareTags.row(chilli)), "the chilli row", HEAVY_TIMEOUT_MS)
         shot("compare-01-table")
 

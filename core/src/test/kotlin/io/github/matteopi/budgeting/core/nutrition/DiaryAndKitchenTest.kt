@@ -174,6 +174,9 @@ class DiaryAndKitchenTest {
         assertEquals(listOf(4L), Batches.recentlyFinished(listOf(a, done), today.plusDays(3)).map { it.id })
         assertTrue(Batches.recentlyFinished(listOf(done), today.plusDays(15)).isEmpty())
         near(240.0, Batches.wastedPence(listOf(a, done), today, today))
+        assertEquals("1 portion", Batches.portionsText(1.0))
+        assertEquals("½ portion", Batches.portionsText(0.5))
+        assertEquals("1½ portions", Batches.portionsText(1.5))
     }
 
     // ---- Sides ----
@@ -255,6 +258,8 @@ class DiaryAndKitchenTest {
         assertEquals(114.0, toast.amount.amount)
         assertEquals("3 slices", toast.amount.text)
         assertTrue(toast.amountGiven)
+        val starterOnly = assertNotNull(QuickFood.read("3 slices of toast", StarterBook.ingredients))
+        assertEquals("bread_white", starterOnly.foodKey, "white mushrooms are not white bread")
         val listBread = assertNotNull(QuickFood.read("3 slices of toast", emptyList()))
         assertEquals("bread_white", listBread.foodKey)
         assertEquals(120.0, listBread.amount.amount)

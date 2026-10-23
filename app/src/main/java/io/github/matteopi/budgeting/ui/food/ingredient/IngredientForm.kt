@@ -1,5 +1,7 @@
 package io.github.matteopi.budgeting.ui.food.ingredient
 
+import io.github.matteopi.budgeting.core.nutrition.Micro
+import io.github.matteopi.budgeting.core.nutrition.Micros
 import io.github.matteopi.budgeting.core.model.Money
 import io.github.matteopi.budgeting.core.recipes.BaseUnit
 import io.github.matteopi.budgeting.core.recipes.FoodGroup
@@ -45,6 +47,8 @@ data class IngredientForm(
     val nextKey: Long = 1,
     /** What the recipe filters count it as; null guesses from the name (docs/PLAN.md §11.11). */
     val foodGroup: FoodGroup? = null,
+    /** The vitamins and minerals per 100 as typed (docs/PLAN.md §14.2); a missing or blank entry means unknown. */
+    val micros: Map<Micro, String> = emptyMap(),
 )
 
 /** What is wrong with an [IngredientForm], field by field. */
@@ -55,8 +59,9 @@ data class IngredientFormErrors(
     val nutrition: Set<Nutrient> = emptySet(),
     /** Keys of the portion rows with a missing name or an amount that is not above zero. */
     val portions: Set<Long> = emptySet(),
+    val micros: Set<Micro> = emptySet(),
 ) {
-    val any: Boolean get() = name || packSize || price || nutrition.isNotEmpty() || portions.isNotEmpty()
+    val any: Boolean get() = name || packSize || price || nutrition.isNotEmpty() || portions.isNotEmpty() || micros.isNotEmpty()
 
     /** The sentence that says what to fix, or null when nothing is wrong. */
     val message: String?
@@ -64,7 +69,7 @@ data class IngredientFormErrors(
             name -> "An ingredient needs a name."
             packSize -> "The pack size must be a number above zero."
             price -> "The price must be an amount of money such as 0.99."
-            nutrition.isNotEmpty() -> "Nutrition values must be numbers of zero or more."
+            nutrition.isNotEmpty() || micros.isNotEmpty() -> "Nutrition values must be numbers of zero or more."
             portions.isNotEmpty() -> "Each portion needs a name and an amount above zero."
             else -> null
         }
@@ -118,6 +123,7 @@ object IngredientFormRules {
                 }
                 .map { it.key }
                 .toSet(),
+            micros = form.micros.filter { (_, text) -> text.isNotBlank() && parseNumber(text) == null }.keys,
         )
     }
 
@@ -159,6 +165,7 @@ object IngredientFormRules {
             note = form.note.trim(),
             portions = portions,
             foodGroup = form.foodGroup,
+            micros = Micros.of(Micro.entries.map { micro -> form.micros[micro]?.takeIf { it.isNotBlank() }?.let { parseNumber(it) } }),
         )
     }
 
@@ -199,6 +206,7 @@ object IngredientFormRules {
             productId = ingredient.productId,
             nextKey = ingredient.portions.size + 1L,
             foodGroup = ingredient.foodGroup,
+            micros = Micro.entries.associateWith { text(ingredient.micros[it]) },
         )
     }
 

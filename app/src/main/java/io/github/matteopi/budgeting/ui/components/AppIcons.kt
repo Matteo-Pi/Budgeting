@@ -57,7 +57,7 @@ object AppIcons {
         )
     }
 
-    /** A fridge: the Ingredients tab. */
+    /** A fridge: the Kitchen tab (docs/PLAN.md §14.5). */
     val Kitchen: ImageVector by lazy {
         icon(
             "Kitchen",
@@ -137,6 +137,24 @@ object AppIcons {
     /** A flag: deadlines. */
     val Flag: ImageVector by lazy {
         icon("Flag", "M14.4,6L14,4H5v17h2v-7h5.6l0.4,2h7V6z")
+    }
+
+    /** A page with lines: the Diary tab (docs/PLAN.md §14.5). */
+    val EventNote: ImageVector by lazy {
+        icon(
+            "EventNote",
+            "M17,10H7v2h10v-2zM19,3h-1V1h-2v2H8V1H6v2H5c-1.11,0 -1.99,0.9 -1.99,2L3,19c0,1.1 0.89,2 2,2h14" +
+                "c1.1,0 2,-0.9 2,-2V5c0,-1.1 -0.9,-2 -2,-2zM19,19H5V8h14v11zM14,14H7v2h7v-2z",
+        )
+    }
+
+    /** A triangle, a circle and a square: the Ingredients tab, now that the fridge is the Kitchen's. */
+    val Category: ImageVector by lazy {
+        icon(
+            "Category",
+            "M12,2l-5.5,9h11zM17.5,13c-2.49,0 -4.5,2.01 -4.5,4.5s2.01,4.5 4.5,4.5 4.5,-2.01 4.5,-4.5 -2.01,-4.5 -4.5,-4.5z" +
+                "M3,21.5h8v-8H3z",
+        )
     }
 
     private fun icon(name: String, path: String): ImageVector =

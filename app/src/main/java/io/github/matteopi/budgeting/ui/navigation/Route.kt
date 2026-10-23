@@ -58,11 +58,32 @@ sealed interface Route {
     /** Review a read receipt before saving: [path] is a file in the app's cache, [kind] a `ReceiptInputKind` name. */
     @Serializable data class ReceiptReview(val path: String, val kind: String) : Route
 
-    // ----- The Recipes section (docs/PLAN.md §11.8) -----
+    // ----- The Food section (docs/PLAN.md §11.8, §14.5; the enum value is still RECIPES) -----
 
-    /** The Recipes section's first tab: its recipe list. */
+    /** The Food section's first tab: its recipe list. */
     @Serializable data object Recipes : Route
+    /** Reached from the Recipes tab's top bar (it was a tab before the diary). */
     @Serializable data object Compare : Route
+    /** The food diary (docs/PLAN.md §14.5). */
+    @Serializable data object Diary : Route
+    /** The kitchen: cooked batches in the fridge and the freezer. */
+    @Serializable data object Kitchen : Route
+
+    /**
+     * Log food for [epochDay] (today when null) into [meal] (a `MealSlot` name; the meal for now when null), starting
+     * on batch [batchId] or recipe [recipeId] when given.
+     */
+    @Serializable data class LogFood(
+        val epochDay: Long? = null,
+        val meal: String? = null,
+        val batchId: Long? = null,
+        val recipeId: Long? = null,
+    ) : Route
+
+    /** Every nutrient of one day against its target or reference. */
+    @Serializable data class DayNutrients(val epochDay: Long) : Route
+    @Serializable data object FoodTargets : Route
+    @Serializable data object FoodTrends : Route
     @Serializable data object Shopping : Route
     @Serializable data object Ingredients : Route
 
@@ -142,12 +163,18 @@ sealed interface Route {
 }
 
 /**
- * Every route of the Recipes section: its four tabs and its sub-screens. A destination in this list belongs
- * to the Recipes section (it shows the Recipes bottom bar); any other destination belongs to Budgeting.
+ * Every route of the Food section: its five tabs and its sub-screens. A destination in this list belongs
+ * to the Food section (it shows the Food bottom bar); any other destination belongs to Budgeting.
  */
 val foodRoutes: List<KClass<out Route>> = listOf(
     Route.Recipes::class,
+    Route.Diary::class,
+    Route.Kitchen::class,
     Route.Compare::class,
+    Route.LogFood::class,
+    Route.DayNutrients::class,
+    Route.FoodTargets::class,
+    Route.FoodTrends::class,
     Route.Shopping::class,
     Route.Ingredients::class,
     Route.RecipeDetail::class,

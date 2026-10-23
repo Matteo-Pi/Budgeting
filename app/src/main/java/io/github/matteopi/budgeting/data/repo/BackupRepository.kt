@@ -6,6 +6,7 @@ import io.github.matteopi.budgeting.data.db.BudgetDatabase
 import io.github.matteopi.budgeting.data.db.dao.AccountDao
 import io.github.matteopi.budgeting.data.db.dao.CategoryDao
 import io.github.matteopi.budgeting.data.db.dao.DayDao
+import io.github.matteopi.budgeting.data.db.dao.DiaryDao
 import io.github.matteopi.budgeting.data.db.dao.HabitDao
 import io.github.matteopi.budgeting.data.db.dao.FoodDao
 import io.github.matteopi.budgeting.data.db.dao.ImportDao
@@ -24,6 +25,7 @@ import io.github.matteopi.budgeting.data.repo.planner.toEntity
 import io.github.matteopi.budgeting.data.repo.planner.toModel
 import io.github.matteopi.budgeting.data.settings.SettingsStore
 import io.github.matteopi.budgeting.widget.WidgetUpdater
+import io.github.matteopi.budgeting.widget.food.FoodUpdater
 import io.github.matteopi.budgeting.work.planner.PlannerUpdater
 import kotlinx.coroutines.flow.first
 
@@ -50,9 +52,11 @@ class BackupRepository(
     private val dayDao: DayDao,
     private val habitDao: HabitDao,
     private val studyDao: StudyDao,
+    private val diaryDao: DiaryDao,
     private val settingsStore: SettingsStore,
     private val widgetUpdater: WidgetUpdater,
     private val plannerUpdater: PlannerUpdater,
+    private val foodUpdater: FoodUpdater,
 ) {
     suspend fun readAll(): BackupData {
         val scenarios = scenarioDao.observeScenarios().first()
@@ -98,6 +102,9 @@ class BackupRepository(
             plannerHabitEntries = habitDao.getAllEntries().map { it.toModel() },
             plannerRevisionTopics = studyDao.getTopics().map { it.toModel() },
             plannerDismissed = studyDao.getDismissed().map { it.toModel() },
+            mealBatches = diaryDao.getBatches().map { it.toModel() },
+            foodLog = diaryDao.getAllLog().map { it.toModel() },
+            foodDays = diaryDao.getDays().map { it.toModel() },
         )
     }
 
@@ -108,6 +115,10 @@ class BackupRepository(
             // record (records point at plan blocks, both at categories, tasks and modules); the timetable's changes, entries (which point at modules and term dates) and
             // calendar links; the Done log and checklists, steps before their deadlines, then the tasks and the
             // modules they point at.
+            // The food diary first: its rows point at batches, recipes and ingredients (sides go with their rows).
+            diaryDao.deleteAllLog()
+            diaryDao.deleteAllBatches()
+            diaryDao.deleteAllDays()
             studyDao.deleteAllDismissed()
             studyDao.deleteAllTopics()
             habitDao.deleteAllEntries()
@@ -193,6 +204,10 @@ class BackupRepository(
             foodDao.insertShoppingEntries(data.shoppingEntries.map { it.toEntity() })
             foodDao.insertShoppingMarks(data.shoppingMarks.map { it.toEntity() })
             foodDao.insertOwnedItems(data.ownedItems.map { it.toEntity() })
+            // The kitchen and the diary after the recipes and ingredients they point at; portions before their sides.
+            diaryDao.insertBatches(data.mealBatches.map { it.toEntity() })
+            diaryDao.insertLogs(data.foodLog.sortedBy { if (it.sideOf == null) 0 else 1 }.map { it.toEntity() })
+            diaryDao.insertDays(data.foodDays.map { it.toEntity() })
             snapshotDao.insertBalanceSnapshots(data.balanceSnapshots.map { it.toEntity() })
             snapshotDao.insertCategorySnapshots(data.categoryWeekSnapshots.map { it.toEntity() })
             // The Planner, parents before children: modules, deadlines and other tasks, their steps, then the
@@ -227,5 +242,6 @@ class BackupRepository(
         settingsStore.clearAllCookingTicks()
         widgetUpdater.requestUpdate()
         plannerUpdater.changed()
+        foodUpdater.changed()
     }
 }

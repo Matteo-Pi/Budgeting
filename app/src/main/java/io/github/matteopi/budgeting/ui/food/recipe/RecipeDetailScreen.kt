@@ -40,6 +40,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -92,6 +93,9 @@ import io.github.matteopi.budgeting.ui.food.timers.StepTimerChips
 import io.github.matteopi.budgeting.ui.food.timers.TimerStarter
 import io.github.matteopi.budgeting.ui.food.timers.TimersBar
 import io.github.matteopi.budgeting.ui.food.timers.rememberTimerStarter
+import io.github.matteopi.budgeting.core.nutrition.IntakeKey
+import io.github.matteopi.budgeting.core.nutrition.Micro
+import io.github.matteopi.budgeting.ui.food.diary.BatchSheet
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -109,6 +113,9 @@ object RecipeDetailTags {
     const val VEG_TOTAL = "recipe-veg-total"
     const val VEG_EFFECTIVE = "recipe-veg-effective"
     const val ADDED_SUGARS = "recipe-added-sugars"
+    const val COOKED = "recipe-cooked"
+    const val LOG_PORTION = "recipe-log-portion"
+    const val VITAMINS = "recipe-vitamins"
 
     fun line(index: Int) = "recipe-line-$index"
 
@@ -126,6 +133,8 @@ fun RecipeDetailScreen(
     onBack: () -> Unit,
     onCook: (Long) -> Unit,
     onEdit: (Long) -> Unit,
+    onLogPortion: (Long) -> Unit,
+    onOpenKitchen: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: RecipeDetailViewModel = viewModel(key = "recipe-$recipeId", factory = RecipeDetailViewModel.factory(recipeId)),
 ) {
@@ -136,6 +145,7 @@ fun RecipeDetailScreen(
     var menuOpen by remember { mutableStateOf(false) }
     var confirmArchive by remember { mutableStateOf(false) }
     var addingToList by remember { mutableStateOf(false) }
+    var cooking by remember { mutableStateOf(false) }
     val recipe = state.recipe
     val say: (String) -> Unit = { message -> scope.launch { snackbarHostState.showSnackbar(message) } }
     val startTimer = rememberTimerStarter(recipeId, recipe?.shortTitle ?: recipe?.title ?: "Recipe", say)
@@ -215,6 +225,8 @@ fun RecipeDetailScreen(
                 viewModel = viewModel,
                 onCook = { onCook(recipe.id) },
                 onAddToList = { addingToList = true },
+                onCooked = { cooking = true },
+                onLogPortion = { onLogPortion(recipe.id) },
                 onStartTimer = startTimer,
                 modifier = Modifier.padding(innerPadding).fillMaxSize(),
             )
@@ -232,6 +244,17 @@ fun RecipeDetailScreen(
             },
             onDismiss = { confirmArchive = false },
         )
+    }
+    if (cooking && recipe != null) {
+        BatchSheet(recipe, today = java.time.LocalDate.now(), onDismiss = { cooking = false }) { servings, portions, freezer, madeOn ->
+            cooking = false
+            viewModel.cook(servings, portions, freezer, madeOn) {
+                scope.launch {
+                    val result = snackbarHostState.showSnackbar("${recipe.shortTitle ?: recipe.title} is in the kitchen", actionLabel = "Kitchen")
+                    if (result == SnackbarResult.ActionPerformed) onOpenKitchen()
+                }
+            }
+        }
     }
     if (addingToList && recipe != null) {
         AddToListDialog(
@@ -255,6 +278,8 @@ private fun RecipeBody(
     viewModel: RecipeDetailViewModel,
     onCook: () -> Unit,
     onAddToList: () -> Unit,
+    onCooked: () -> Unit,
+    onLogPortion: () -> Unit,
     onStartTimer: TimerStarter,
     modifier: Modifier = Modifier,
 ) {
@@ -270,6 +295,10 @@ private fun RecipeBody(
                 Text("Add to shopping list")
             }
         }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = onCooked, modifier = Modifier.testTag(RecipeDetailTags.COOKED)) { Text("I cooked this") }
+            OutlinedButton(onClick = onLogPortion, modifier = Modifier.testTag(RecipeDetailTags.LOG_PORTION)) { Text("Log a portion") }
+        }
         OptionalSwitch(checked = state.countOptionalExtras, onChange = viewModel::setCountOptionalExtras)
         IngredientsCard(state = state, onServings = viewModel::setServings)
         MethodCard(recipe.method, onStartTimer)
@@ -278,10 +307,35 @@ private fun RecipeBody(
         TextListCard("Freezing and storing", recipe.storage)
         CostCard(numbers)
         NutritionCard(numbers)
+        VitaminsCard(numbers)
         VegCard(numbers.vegSummary, state.ingredients)
         BreakdownCard(numbers, state.ingredients)
         RatingAndNotes(recipe = recipe, onRate = viewModel::setRating, onNotes = viewModel::setNotes)
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+/** Vitamins and minerals per portion (docs/PLAN.md §14.2), as amounts and % of the daily reference. */
+@Composable
+private fun VitaminsCard(numbers: RecipeNumbers) {
+    val intake = numbers.intake
+    SectionCard(title = "Vitamins and minerals", modifier = Modifier.testTag(RecipeDetailTags.VITAMINS)) {
+        Text(
+            "Per portion, against the daily reference on UK labels. Typical values from the food list or your labels.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Micro.entries.forEach { micro ->
+            val amount = intake[micro]
+            val unknown = IntakeKey.of(micro) in intake.unknown
+            Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                Text(micro.label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                Text(
+                    (if (unknown) "at least " else "") + "${micro.format(amount)} · ${Math.round(micro.percent(amount))}%",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        }
     }
 }
 

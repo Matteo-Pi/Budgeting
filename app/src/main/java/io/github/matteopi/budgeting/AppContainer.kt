@@ -7,6 +7,7 @@ import io.github.matteopi.budgeting.data.db.BudgetDatabase
 import io.github.matteopi.budgeting.data.repo.AccountRepository
 import io.github.matteopi.budgeting.data.repo.BackupRepository
 import io.github.matteopi.budgeting.data.repo.CategoryRepository
+import io.github.matteopi.budgeting.data.repo.DiaryRepository
 import io.github.matteopi.budgeting.data.repo.ImportRepository
 import io.github.matteopi.budgeting.data.repo.IngredientRepository
 import io.github.matteopi.budgeting.data.repo.PlanRepository
@@ -34,8 +35,11 @@ import io.github.matteopi.budgeting.domain.planner.InsightsService
 import io.github.matteopi.budgeting.domain.planner.PlannerService
 import io.github.matteopi.budgeting.domain.planner.PlannerTimer
 import io.github.matteopi.budgeting.domain.planner.SuggestionService
+import io.github.matteopi.budgeting.ui.food.diary.FoodDiaryActions
 import io.github.matteopi.budgeting.ui.food.timers.CookingTimers
 import io.github.matteopi.budgeting.widget.WidgetUpdater
+import io.github.matteopi.budgeting.widget.food.FoodUpdater
+import io.github.matteopi.budgeting.widget.food.FoodWidget
 import io.github.matteopi.budgeting.widget.planner.PlannerWidget
 import io.github.matteopi.budgeting.work.planner.CalendarSyncWorker
 import io.github.matteopi.budgeting.work.planner.PlannerAlarms
@@ -74,6 +78,9 @@ class AppContainer(context: Context) {
         PlannerWidget.refresh(context.applicationContext)
         if (settingsStore.plannerCalendars.first().writeTo != null) CalendarSyncWorker.enqueue(context.applicationContext)
     }
+
+    /** After diary and kitchen writes (docs/PLAN.md §14.6): the Food widget follows. */
+    val foodUpdater: FoodUpdater = FoodUpdater(appScope) { FoodWidget.refresh(context.applicationContext) }
 
     val accountRepository = AccountRepository(
         database = database,
@@ -146,6 +153,17 @@ class AppContainer(context: Context) {
         foodDao = database.foodDao(),
         clock = clock,
     )
+
+    /** The food diary and the kitchen (docs/PLAN.md §14). */
+    val diaryRepository = DiaryRepository(
+        database = database,
+        diaryDao = database.diaryDao(),
+        clock = clock,
+        foodUpdater = foodUpdater,
+    )
+
+    /** *Ate one*, *I cooked* and diary rows with today's prices, shared by the Food screens and widget. */
+    val foodDiary: FoodDiaryActions by lazy { FoodDiaryActions(this) }
 
     val moduleRepository: ModuleRepository = ModuleRepository(
         plannerDao = database.plannerDao(),
@@ -294,9 +312,11 @@ class AppContainer(context: Context) {
         dayDao = database.dayDao(),
         habitDao = database.habitDao(),
         studyDao = database.studyDao(),
+        diaryDao = database.diaryDao(),
         settingsStore = settingsStore,
         widgetUpdater = widgetUpdater,
         plannerUpdater = plannerUpdater,
+        foodUpdater = foodUpdater,
     )
 
     val forecastService = ForecastService(
