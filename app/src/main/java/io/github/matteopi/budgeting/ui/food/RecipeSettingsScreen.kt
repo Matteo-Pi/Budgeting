@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Add
 import io.github.matteopi.budgeting.core.nutrition.FoodPrefs
 import io.github.matteopi.budgeting.ui.food.components.FoodIcons
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -208,7 +209,7 @@ fun RecipeSettingsScreen(
         }
     }
     LaunchedEffect(Unit) {
-        viewModel.filled.filterNotNull().collect { message ->
+        viewModel.filled.filterNotNull().collectLatest { message ->
             viewModel.filledShown()
             snackbarHostState.showSnackbar(message)
         }

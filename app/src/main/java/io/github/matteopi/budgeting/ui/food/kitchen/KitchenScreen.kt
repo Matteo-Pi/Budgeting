@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -217,9 +218,9 @@ fun KitchenScreen(
     var throwing by remember { mutableStateOf<KitchenEntry?>(null) }
     var editing by remember { mutableStateOf<Batch?>(null) }
 
-    // Collected rather than keyed on the message, so clearing it doesn't cancel the snackbar it shows.
+    // Collected rather than keyed on the message, so clearing it does not cancel its snackbar; a newer message replaces it.
     LaunchedEffect(Unit) {
-        viewModel.message.filterNotNull().collect { shown ->
+        viewModel.message.filterNotNull().collectLatest { shown ->
             viewModel.messageShown()
             val result = snackbarHostState.showSnackbar(shown.text, actionLabel = if (shown.undo != null) "Undo" else null, duration = SnackbarDuration.Short)
             if (result == SnackbarResult.ActionPerformed) shown.undo?.invoke()
@@ -245,7 +246,7 @@ fun KitchenScreen(
         ) {
             item(key = "totals") {
                 Text(
-                    "${countText(state.portionsIn)} portions in · ${penceText(state.wastedThisMonthPence)} thrown away this month",
+                    "${countText(state.portionsIn)} ${if (state.portionsIn > 1 + 1e-9 || state.portionsIn < 1e-9) "portions" else "portion"} in · ${penceText(state.wastedThisMonthPence)} thrown away this month",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

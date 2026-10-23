@@ -53,6 +53,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.matteopi.budgeting.core.nutrition.Batch
@@ -87,9 +88,9 @@ fun DiaryScreen(
     var editing by remember { mutableStateOf<LogItem?>(null) }
     var picking by remember { mutableStateOf(false) }
 
-    // Collected rather than keyed on the message, so clearing it doesn't cancel the snackbar it shows.
+    // Collected rather than keyed on the message, so clearing it does not cancel its snackbar; a newer message replaces it.
     LaunchedEffect(Unit) {
-        viewModel.message.filterNotNull().collect { shown ->
+        viewModel.message.filterNotNull().collectLatest { shown ->
             viewModel.messageShown()
             val result = snackbarHostState.showSnackbar(
                 message = shown.text,
