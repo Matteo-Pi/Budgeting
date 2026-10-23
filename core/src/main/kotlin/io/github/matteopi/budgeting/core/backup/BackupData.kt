@@ -20,6 +20,9 @@ import io.github.matteopi.budgeting.core.model.ScheduledItem
 import io.github.matteopi.budgeting.core.model.SinkingFund
 import io.github.matteopi.budgeting.core.model.TermPeriod
 import io.github.matteopi.budgeting.core.model.Transaction
+import io.github.matteopi.budgeting.core.nutrition.Batch
+import io.github.matteopi.budgeting.core.nutrition.FoodDay
+import io.github.matteopi.budgeting.core.nutrition.LogItem
 import io.github.matteopi.budgeting.core.planner.model.CalendarLink
 import io.github.matteopi.budgeting.core.planner.model.DayReview
 import io.github.matteopi.budgeting.core.planner.model.DismissedSuggestion
@@ -94,4 +97,8 @@ data class BackupData(
     // Backup version 9.
     val plannerRevisionTopics: List<RevisionTopic> = emptyList(),
     val plannerDismissed: List<DismissedSuggestion> = emptyList(),
+    // Backup version 10: the kitchen and the food diary.
+    val mealBatches: List<Batch> = emptyList(),
+    val foodLog: List<LogItem> = emptyList(),
+    val foodDays: List<FoodDay> = emptyList(),
 )

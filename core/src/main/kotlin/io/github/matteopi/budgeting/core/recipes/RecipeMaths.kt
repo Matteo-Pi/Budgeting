@@ -1,6 +1,8 @@
 package io.github.matteopi.budgeting.core.recipes
 
 import io.github.matteopi.budgeting.core.model.Money
+import io.github.matteopi.budgeting.core.nutrition.Intake
+import io.github.matteopi.budgeting.core.nutrition.Intakes
 
 /** UK adult reference intakes (RIs), and the fibre guideline (docs/PLAN.md §11.2). */
 object ReferenceIntakes {
@@ -182,6 +184,8 @@ data class RecipeNumbers(
     val breakdowns: Map<BreakdownMetric, Breakdown>,
     /** The veg with and without the pulses cap, and by ingredient. */
     val vegSummary: VegSummary = VegSummary(veg, veg, veg, 0.0, 0.0, emptyList()),
+    /** Everything per portion, vitamins and minerals included, with the unknowns (docs/PLAN.md §14.2). */
+    val intake: Intake = Intake.NONE,
 )
 
 /** Cost, nutrition, veg and scaling for one recipe (docs/PLAN.md §11.2). */
@@ -231,6 +235,7 @@ object RecipeMaths {
         val quantityByIngredient = LinkedHashMap<Long, Double>()
         var totalPence = 0.0
         var nutrients = NutrientTotals()
+        var intake = Intake.NONE
         var rawGrams = 0.0
         var vegGrams = 0.0
         var pulseGrams = 0.0
@@ -267,6 +272,7 @@ object RecipeMaths {
             }
             if (ingredient.vegKind != VegKind.NONE) vegByIngredient.merge(id, quantity, Double::plus)
 
+            intake += Intakes.ofFood(ingredient, quantity)
             val per100 = ingredient.per100
             fun amount(nutrient: Nutrient): Double {
                 val value = per100[nutrient]
@@ -349,6 +355,7 @@ object RecipeMaths {
                 pulsesCounted = pulsesCounted,
                 items = vegItems,
             ),
+            intake = intake / portions.toDouble(),
         )
     }
 

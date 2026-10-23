@@ -1,6 +1,7 @@
 package io.github.matteopi.budgeting.core.recipes
 
 import io.github.matteopi.budgeting.core.model.Money
+import io.github.matteopi.budgeting.core.nutrition.Micros
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
@@ -36,7 +37,23 @@ data class BundlePer100(
     val salt: Double? = null,
     /** Sugar, honey and syrups put into the food (docs/PLAN.md §11.11). */
     val addedSugars: Double? = null,
-)
+    // Vitamins and minerals (docs/PLAN.md §14.2), in µg or mg as [Micro] says; absent = unknown.
+    val vitaminA: Double? = null,
+    val vitaminC: Double? = null,
+    val vitaminD: Double? = null,
+    val vitaminE: Double? = null,
+    val vitaminB6: Double? = null,
+    val vitaminB12: Double? = null,
+    val folate: Double? = null,
+    val calcium: Double? = null,
+    val iron: Double? = null,
+    val potassium: Double? = null,
+    val magnesium: Double? = null,
+    val zinc: Double? = null,
+) {
+    val micros: Micros
+        get() = Micros(vitaminA, vitaminC, vitaminD, vitaminE, vitaminB6, vitaminB12, folate, calcium, iron, potassium, magnesium, zinc)
+}
 
 @Serializable
 data class BundlePortion(val name: String, val amount: Double)
@@ -175,6 +192,7 @@ data class RecipeBundle(
                 note = source.note,
                 portions = source.portions.map { Portion(it.name, it.amount) },
                 foodGroup = source.group?.let { enumOf<FoodGroup>(it) },
+                micros = source.per100.micros,
             )
         }
 

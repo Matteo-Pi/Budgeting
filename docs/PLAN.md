@@ -18,6 +18,7 @@ Contents
 11. Food: recipes, cooking and shopping (the Recipes section)
 12. Planner: what it includes (to-do list, timetable, habits, day record, study planner)
 13. Planner: how it is built
+14. Food diary: calories, macros, vitamins and the kitchen
 
 ---
 
@@ -53,6 +54,7 @@ All data stays on the phone. No server, no login, no bank connection.
 | Laptop | Maybe later. Keep all logic in the pure-Kotlin `core` module so it could be reused; do nothing else for it now. |
 | Food (2026-10-17) | A recipe book, shopping list and cooking view live in this app as their own **Food** section (§11), costed from receipt prices. Offline first: the only network use is an optional, off-by-default barcode lookup that sends just the barcode number to Open Food Facts. |
 | Planner (2026-10-19) | A third section, **Planner** (§12, §13): to-do list, timetable, habits, a day record split into chunks, free time, study suggestions and insights. Google Calendar is read offline from the phone's own calendar store; writing back is an option, off by default. |
+| Food diary (2026-10-23) | A calorie, macro and vitamin diary, and a kitchen of cooked portions in the fridge and freezer, as tabs of the Recipes section, renamed **Food** (§14), with its own widget. |
 
 ### Glossary
 - **Pool**: the accounts with `includeInSafeToSpend = true`. Forecasts are for the pool's summed balance.
@@ -3559,3 +3561,162 @@ the Insights top bar: the test's tap on the list's last item didn't register. Se
 | Fiddly drags | 48 dp handles, a time label while dragging, typed times as the exact way, Undo on every edit, and accessibility actions. |
 | Migrations | Additive only, one per stage, each with a `MigrationTest`; never destructive. |
 | Changing the section switch | `SectionSwitchTest` is updated in P1, in the same change. |
+
+---
+
+## 14. Food diary: calories, macros, vitamins and the kitchen (asked for 2026-10-23)
+
+The user asked for "a calorie, macros and vitamins (general nutrition) tracker": say how many portions of a recipe
+were made and are in the fridge or freezer, tap a button when one is eaten so it goes into the tracker, add carbs on
+the side (rice, bread) with an adjustable amount, a widget to do it quickly, log things other than recipes ("a few
+slices of toast"), a database of foods with nutrition and cost per slice that the user can add to, a decision on
+where it lives, and "anything else useful".
+
+### 14.1 Decisions (made 2026-10-23; the user asked for them to be decided)
+| Topic | Decision |
+|---|---|
+| Where | **Tabs in the Recipes section, which is renamed Food** (the enum stays `RECIPES`, stored by name). Its bottom bar becomes **Recipes · Diary · Kitchen · Shopping · Ingredients**; Compare moves to a button on the Recipes tab's top bar and keeps its route. Why not a fourth section: the diary is made from recipes, the kitchen's portions come from cooking them, and its food database *is* the Ingredients tab with the built-in food list. A separate section would split one database across two places. |
+| The food database | The user's **ingredients** (they already have nutrition per 100 g, a price and named portions such as `slice` = 40 g) plus the **built-in food list** (§11.12). A food from the list is added to the ingredients when it is first logged, as the recipe review does. New items are made with the ingredient editor (typed, label photo or barcode). |
+| Nutrients | The nine of §11.2/§11.11 plus **12 vitamins and minerals**: vitamins A, C, D, E, B6 and B12, folate, calcium, iron, potassium, magnesium and zinc. The food list and the starter book carry typical values for all of them. |
+| Logged numbers | **Frozen when logged.** A diary row keeps the nutrition and cost it had when eaten, so editing a recipe or an ingredient later never rewrites the past. |
+| The kitchen | A **batch** is one cooking of a recipe: how many portions were made and how many are left in the fridge and in the freezer. *Ate one* logs a portion and takes it off. |
+| Sides | A portion can carry sides (rice, bread, naan…) with an adjustable amount, each its own diary row tied to the portion. |
+| Targets | Default to the UK reference intakes; the user can set their own, or have them worked out from age, height, weight, activity and goal (a guide, not advice). |
+| Widget | A Glance widget: today's kcal against the target, protein, and the kitchen's batches with one-tap *Ate one*; *+* opens a quick log pop-up. |
+| Privacy | Offline and on the phone, like the rest. Backups include the diary and the kitchen. |
+
+### 14.2 Nutrients and references (`core/.../nutrition/Micros.kt`)
+- `Micro`: unit and daily reference. The references are the UK/EU label NRVs, except vitamin D, which uses the
+  NHS's 10 µg:
+
+| Micro | Unit | Reference | | Micro | Unit | Reference |
+|---|---|---|---|---|---|---|
+| Vitamin A | µg | 800 | | Folate | µg | 200 |
+| Vitamin C | mg | 80 | | Calcium | mg | 800 |
+| Vitamin D | µg | 10 | | Iron | mg | 14 |
+| Vitamin E | mg | 12 | | Potassium | mg | 2000 |
+| Vitamin B6 | mg | 1.4 | | Magnesium | mg | 375 |
+| Vitamin B12 | µg | 2.5 | | Zinc | mg | 10 |
+
+- `Micros`: 12 nullable values per 100 base units (null = unknown). `Ingredient.micros` holds them; the bundle's
+  `per100` gains the 12 fields (absent = unknown).
+- `Intake`: the amounts eaten for every nutrient (the nine and the twelve), the veg and pulse grams, plus the set
+  of nutrients with an unknown part. An unknown value counts as 0 and makes that nutrient "at least" wherever it
+  is summed. Added sugars keep §11.11's rule.
+- Recipes: `RecipeNumbers.micros` (per portion, with its unknowns) is worked out from the same counted lines as the
+  rest, and the recipe's nutrition card gains *Vitamins and minerals* (per portion, % of the reference).
+
+### 14.3 Data (`app`, Room version 10 with `@AutoMigration(9, 10)`; backup version 10)
+- `ingredients` + 12 nullable REAL columns: `vit_a`, `vit_c`, `vit_d`, `vit_e`, `vit_b6`, `vit_b12`, `folate`,
+  `calcium`, `iron`, `potassium`, `magnesium`, `zinc` (per 100 base units, in 14.2's units).
+- An embedded nutrient block (`NutrientColumns`, prefix-free): `kcal`, `fat`, `saturates`, `carbs`, `sugars`,
+  `added_sugars`, `fibre`, `protein`, `salt`, the 12 micros, `veg_grams`, `pulse_grams` and `unknown_mask` (bit
+  `n` = nutrient `n` in `Intake.KEYS` has an unknown part). Used by the two tables below.
+
+| Table | Columns (besides `id`) | Keys and indices |
+|---|---|---|
+| meal_batches | recipe_id?, name, made_on (epoch day), servings REAL, portions REAL, fridge_left REAL, freezer_left REAL, frozen_on?, eat_by?, wasted REAL, cost_pence REAL? (one portion), note, created_at_millis, + the nutrient block for **one portion** | recipe_id → recipes SET NULL; index recipe_id |
+| food_log | date (epoch day), meal, eaten_at_millis, kind, name, amount REAL, amount_text, recipe_id?, batch_id?, ingredient_id?, side_of?, cost_pence REAL?, created_at_millis, + the nutrient block for **what was eaten** | recipe_id → recipes SET NULL; batch_id → meal_batches SET NULL; ingredient_id → ingredients SET NULL; side_of → food_log CASCADE; indices date, recipe_id, batch_id, ingredient_id, side_of |
+| food_days | date (primary key), water_ml, note | |
+
+- `kind`: `BATCH` (a portion from the kitchen), `RECIPE` (a portion of a recipe straight from the pan),
+  `FOOD` (an ingredient or food-list food by amount), `QUICK` (typed kcal and macros). `meal`: `BREAKFAST`,
+  `LUNCH`, `DINNER`, `SNACKS`. `amount`: portions for `BATCH`/`RECIPE`, base units for `FOOD`, 1 for `QUICK`.
+- **Rules**: one user action = one transaction. *Ate one* inserts the portion and its sides and takes the portion
+  off the batch together; deleting a batch-portion row puts it back (Undo is the same plan reversed). A batch with
+  nothing left is kept (its rows point at it) and listed as *Finished* for 14 days.
+- **Backups**: version 10 adds the three tables and the ingredient columns; versions 1–9 restore with them empty.
+- **Settings** (`food_prefs`, one JSON value): targets, meal times, fridge days (2, the FSA's advice for
+  leftovers) and freezer months (3), water glass size (250 ml) and goal (2,000 ml). In the `appSettings` backup map.
+
+### 14.4 Core (`core/.../nutrition/`, pure Kotlin, tested)
+- `Micros`, `Intake`, `FoodModels` (`MealSlot`, `LogKind`, `LogItem`, `Batch`, `FoodDay`, `FoodPrefs`,
+  `FoodTargets`).
+- `Intakes`: a food by amount (its nutrition and price per base unit; veg and pulse grams by its veg kind), one
+  portion of a recipe cooked for `servings` and split into `portions`, a quick entry, scaling.
+- `DiaryMaths.day(items, water, targets)`: totals overall and per meal, the unknowns, veg portions for the day
+  (the pulses cap applies to the day: Σ veg ÷ 80 + min(1, Σ pulses ÷ 80)), cost (known part and the count without
+  a price), each target's progress (*under*, *on track*, *over*; limits such as salt are *over* past 100%).
+- `Batches`: a new batch from a recipe (per-portion intake and cost, fridge/freezer split, eat-by =
+  made + fridge days), *eat* (from the fridge first unless the freezer is chosen; whole or half portions),
+  *move*, *throw away* (adds to `wasted`), and the status (*Eat today*, *Past its eat-by*, *Frozen*).
+- `Sides`: the default amount of a carb (rice, pasta, noodles, couscous and grains 75 g dry, or a 250 g pouch
+  when the name says microwave or cooked; bread 2 slices; naan, wraps, pitta and rolls 1; potatoes 200 g; chips
+  and wedges 150 g), and the suggestions for a recipe: its *Served with* text matched to a food, then the sides
+  last eaten with it, then the carbs logged most often.
+- `MealSlots.at(time, prefs)`: breakfast until 10:30, lunch until 15:00, snacks until 17:00, dinner until 21:30,
+  then snacks.
+- `QuickFood.read(text, ingredients, aliases)`: "3 slices of toast" read with `IngredientLines` and matched to an
+  ingredient or a food, with its amount, for the quick box.
+- `TargetCalculator`: Mifflin–St Jeor × activity (1.2–1.9) ± goal (lose 0.25 or 0.5 kg a week, keep, gain
+  0.25 kg), never below 1,200 kcal (1,500 for men); protein g/kg (0.75 by default, 1.6 for strength training),
+  fat 30% of energy, carbs the rest, fibre 30 g, the limits unchanged.
+- `NutritionInsights.of(items, days, targets)`: averages per logged day against the targets and references,
+  kcal per day, the micros under half their reference on average, the top sources of kcal, protein and cost,
+  cost per day, veg and water, and the kitchen's waste.
+
+### 14.5 Screens (`ui/food/diary/`, `ui/food/kitchen/`, `ui/food/log/`)
+- **Diary** (tab): the switch, "Diary · Fri 23 Oct" (date picker), previous and next day, *Trends*.
+  - Summary card: kcal eaten and left against the target, protein, carbs and fat bars, fibre, sugars and salt,
+    veg portions, water (+ a glass), and the day's cost.
+  - *Ready to eat*: the kitchen's batches as chips with *Ate one*.
+  - The meals: each with its rows (name, amount, kcal, protein; sides indented under their portion) and *Add*.
+    A row opens a sheet: amount, meal, time, *Delete* (with Undo).
+  - *All nutrients* (`Route.DayNutrients`): every nutrient against target or reference, the unknowns named, and
+    the foods that gave the most.
+  - FAB *Log food*.
+- **Log food** (`Route.LogFood(date, meal?, batchId?, recipeId?)`): *Kitchen*, *Recipes*, *Foods* and *Quick*,
+  with recent items first and a search.
+  - Portions in halves; a food by its portions ("3 slices"), grams or packs.
+  - Sides on a portion: suggestions as chips, *Add a side* (search), each with a stepper.
+  - Live kcal, protein and cost; meal and time chips; *Save*.
+  - *Quick*: "3 slices of toast" read by `QuickFood`, or a name with typed kcal and macros.
+- **Kitchen** (tab): *Fridge* and *Freezer*, each batch with its portions, made and eat-by dates (warned when
+  due or past), kcal, protein and cost a portion; *Ate one*, *Move*, *Throw away*, *Edit*; *Finished* below.
+  FAB *I cooked*: pick a recipe, then the batch sheet (servings cooked, portions made, how many in the fridge and
+  the freezer, the date). Totals: portions in, and money thrown away this month.
+- **Recipe page**: *I cooked this* (the batch sheet) and *Log a portion*; *Vitamins and minerals* on the
+  nutrition card. **Cooking view**: *Done cooking* offers the batch sheet.
+- **Ingredient editor**: *Vitamins and minerals (per 100 g)*, folded away; *Fill in from the food list* fills them
+  too.
+- **Food settings** (the old Recipe settings, same route): *Targets* (`Route.FoodTargets`, with *Work them out*),
+  meal times, fridge days and freezer months, water, *Fill in vitamins from the food list* (every ingredient
+  whose name matches a food and has none), and the old settings.
+- **Trends** (`Route.FoodTrends`): 7 or 28 days: kcal per day against the target (bars, the `dataviz` rules),
+  averages against targets, vitamins and minerals as % of reference (low ones flagged), veg, water, cost per day,
+  top sources and waste.
+
+### 14.6 The Food widget (`widget/food/FoodWidget`) and quick log (`ui/food/log/QuickLogActivity`)
+- Glance, `SizeMode.Responsive`, the app's theme (§6.7):
+  - **Small**: "1,240 of 2,000 kcal" and *+*.
+  - **Wide**: + protein and the first batch with *Ate one*.
+  - **Tall**: + up to 3 batches, each *Ate one*.
+- *Ate one* (`actionRunCallback`) logs one portion with the sides last eaten with that recipe, in the meal for
+  now, then refreshes and shows a Toast ("Logged Chilli + rice · 690 kcal"). Tapping the batch's name opens the
+  quick log pop-up on it instead, to change the amount or the sides. *+* opens the pop-up on *Log food*.
+- `QuickLogActivity`: translucent like `QuickAddActivity`, hosting the Log food screen; no unlock needed (it shows
+  no money balances).
+- Refreshed by `FoodUpdater` after every diary or kitchen write (debounced like `WidgetUpdater`) and at midnight
+  by the daily worker.
+
+### 14.7 Stages
+**N1: the diary, the kitchen and vitamins (Room 10, backup 10).** Core: everything in 14.2–14.4; the 12 micros for
+every food of the list and the starter book. App: Room 10, `DiaryDao`, `DiaryRepository` (log, edit, delete,
+undo, eat, batches, water), the Food section's new bar, Diary, Log food, Kitchen, All nutrients, the recipe page and
+cooking view buttons, the ingredient editor's micros, Food settings with targets.
+**N2: the widget, trends and the calculator.** `FoodWidget`, `QuickLogActivity`, `FoodUpdater`, Trends,
+`TargetCalculator` on the targets screen.
+
+**Tests**
+- **Core**: `MicrosTest` (references, food list coverage: every food has all 12, values within sane ranges),
+  `IntakesTest` (a slice of toast, a portion of the chilli split 4 or 5 ways, quick entries, unknowns),
+  `DiaryMathsTest` (totals, meals, the day's pulses cap, cost with unknowns, target states), `BatchesTest`
+  (eat from fridge then freezer, halves, move, throw away, statuses, never below zero), `SidesTest`,
+  `MealSlotsTest`, `QuickFoodTest`, `TargetCalculatorTest`, `NutritionInsightsTest`, backup 10 in
+  `BackupCodecTest`, recipe micros in `RecipeMathsTest`.
+- **JVM**: `DiaryMappingTest`, `KitchenMappingTest`, `LogFoodMappingTest`.
+- **Device**: `MigrationTest` 9 → 10 and 1 → 10; `data/DiaryRepositoryTest` (eat with sides and undo, delete
+  putting a portion back, move and throw away); `ui/DiaryTest` (`diary-*`: the chilli cooked into 4 fridge and 2
+  freezer portions, *Ate one* with rice, 3 slices of toast, a quick entry, the summary numbers, all nutrients);
+  `ui/KitchenTest` (`kitchen-*`); `SectionSwitchTest` for the renamed section and its tabs; (N2)
+  `widget/FoodWidgetTest` (sizes and one-tap *Ate one*).

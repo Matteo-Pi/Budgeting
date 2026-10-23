@@ -31,6 +31,14 @@ import io.github.matteopi.budgeting.core.model.SinkingFund
 import io.github.matteopi.budgeting.core.model.SinkingFundStatus
 import io.github.matteopi.budgeting.core.model.TermPeriod
 import io.github.matteopi.budgeting.core.model.Transaction
+import io.github.matteopi.budgeting.core.nutrition.Batch
+import io.github.matteopi.budgeting.core.nutrition.FoodDay
+import io.github.matteopi.budgeting.core.nutrition.Intake
+import io.github.matteopi.budgeting.core.nutrition.IntakeKey
+import io.github.matteopi.budgeting.core.nutrition.LogItem
+import io.github.matteopi.budgeting.core.nutrition.LogKind
+import io.github.matteopi.budgeting.core.nutrition.MealSlot
+import io.github.matteopi.budgeting.core.nutrition.Micros
 import io.github.matteopi.budgeting.core.planner.model.CalendarLink
 import io.github.matteopi.budgeting.core.planner.model.CategoryKey
 import io.github.matteopi.budgeting.core.planner.model.DayReview
@@ -170,6 +178,9 @@ object BackupMapper {
             },
             plannerRevisionTopics = data.plannerRevisionTopics.map { PlannerRevisionTopicDto(it.id, it.examTaskId, it.name, it.difficulty, it.sortOrder) },
             plannerDismissed = data.plannerDismissed.map { PlannerDismissedDto(it.key, it.dismissedAt.toEpochMilli()) },
+            mealBatches = data.mealBatches.map { it.toDto() },
+            foodLog = data.foodLog.map { it.toDto() },
+            foodDays = data.foodDays.map { FoodDayDto(it.date.toString(), it.waterMl, it.note) },
             settings = data.settings.toDto(),
             appSettings = appSettings,
         )
@@ -240,6 +251,9 @@ object BackupMapper {
             },
             plannerRevisionTopics = backup.plannerRevisionTopics.map { RevisionTopic(it.id, it.examTaskId, it.name, it.difficulty, it.sortOrder) },
             plannerDismissed = backup.plannerDismissed.map { DismissedSuggestion(it.key, Instant.ofEpochMilli(it.dismissedAtEpochMillis)) },
+            mealBatches = backup.mealBatches.map { it.toModel() },
+            foodLog = backup.foodLog.map { it.toModel() },
+            foodDays = backup.foodDays.map { FoodDay(LocalDate.parse(it.date), it.waterMl, it.note) },
             settings = backup.settings.toModel(),
         )
     }
@@ -524,6 +538,18 @@ private fun Ingredient.toDto() = IngredientDto(
     createdAtEpochMillis = createdAtEpochMillis,
     addedSugars = per100.addedSugars,
     foodGroup = foodGroup?.name,
+    vitaminA = micros.vitaminA,
+    vitaminC = micros.vitaminC,
+    vitaminD = micros.vitaminD,
+    vitaminE = micros.vitaminE,
+    vitaminB6 = micros.vitaminB6,
+    vitaminB12 = micros.vitaminB12,
+    folate = micros.folate,
+    calcium = micros.calcium,
+    iron = micros.iron,
+    potassium = micros.potassium,
+    magnesium = micros.magnesium,
+    zinc = micros.zinc,
 )
 private fun IngredientDto.toModel(portions: List<Portion>) = Ingredient(
     id = id,
@@ -547,6 +573,71 @@ private fun IngredientDto.toModel(portions: List<Portion>) = Ingredient(
     createdAtEpochMillis = createdAtEpochMillis,
     portions = portions,
     foodGroup = foodGroup?.let { name -> FoodGroup.entries.firstOrNull { it.name == name } },
+    micros = Micros(vitaminA, vitaminC, vitaminD, vitaminE, vitaminB6, vitaminB12, folate, calcium, iron, potassium, magnesium, zinc),
+)
+
+// ---- The food diary and the kitchen (version 10) ------------------------------------------------
+
+private fun Intake.toDto() = IntakeDto(
+    amounts = IntakeKey.entries.filter { get(it) != 0.0 }.associate { it.name to get(it) },
+    vegGrams = vegGrams,
+    pulseGrams = pulseGrams,
+    unknown = unknown.map { it.name },
+)
+
+/** Keys this version doesn't know are left out. */
+private fun IntakeDto.toModel(): Intake {
+    val byName = IntakeKey.entries.associateBy { it.name }
+    return Intake.of(
+        values = amounts.mapNotNull { (name, value) -> byName[name]?.let { it to value } }.toMap(),
+        vegGrams = vegGrams,
+        pulseGrams = pulseGrams,
+        unknown = unknown.mapNotNull { byName[it] }.toSet(),
+    )
+}
+
+private fun Batch.toDto() = MealBatchDto(
+    id, recipeId, name, madeOn.toString(), servings, portions, fridgeLeft, freezerLeft, frozenOn?.toString(), eatBy?.toString(),
+    wasted, costPence, note, createdAtEpochMillis, intake.toDto(),
+)
+private fun MealBatchDto.toModel() = Batch(
+    id = id,
+    recipeId = recipeId,
+    name = name,
+    madeOn = LocalDate.parse(madeOn),
+    servings = servings,
+    portions = portions,
+    fridgeLeft = fridgeLeft,
+    freezerLeft = freezerLeft,
+    frozenOn = frozenOn?.let(LocalDate::parse),
+    eatBy = eatBy?.let(LocalDate::parse),
+    wasted = wasted,
+    costPence = costPence,
+    note = note,
+    createdAtEpochMillis = createdAtEpochMillis,
+    intake = intake.toModel(),
+)
+
+private fun LogItem.toDto() = FoodLogDto(
+    id, date.toString(), meal.name, eatenAtEpochMillis, kind.name, name, amount, amountText, recipeId, batchId, ingredientId,
+    sideOf, costPence, createdAtEpochMillis, intake.toDto(),
+)
+private fun FoodLogDto.toModel() = LogItem(
+    id = id,
+    date = LocalDate.parse(date),
+    meal = MealSlot.valueOf(meal),
+    eatenAtEpochMillis = eatenAtEpochMillis,
+    kind = LogKind.valueOf(kind),
+    name = name,
+    amount = amount,
+    amountText = amountText,
+    recipeId = recipeId,
+    batchId = batchId,
+    ingredientId = ingredientId,
+    sideOf = sideOf,
+    costPence = costPence,
+    createdAtEpochMillis = createdAtEpochMillis,
+    intake = intake.toModel(),
 )
 
 private fun Recipe.toDto() = RecipeDto(

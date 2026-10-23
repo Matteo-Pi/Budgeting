@@ -1,6 +1,7 @@
 package io.github.matteopi.budgeting.core.recipes
 
 import io.github.matteopi.budgeting.core.model.Money
+import io.github.matteopi.budgeting.core.nutrition.Micros
 import java.time.LocalDate
 
 /*
@@ -101,6 +102,8 @@ data class Ingredient(
     val portions: List<Portion> = emptyList(),
     /** What the recipe filters count it as (docs/PLAN.md §11.11): null guesses from the name ([FoodGroups]). */
     val foodGroup: FoodGroup? = null,
+    /** Vitamins and minerals per 100 base units (docs/PLAN.md §14.2); unknown by default. */
+    val micros: Micros = Micros(),
 )
 
 /** Whether a food group is a recipe's protein or its carb. */

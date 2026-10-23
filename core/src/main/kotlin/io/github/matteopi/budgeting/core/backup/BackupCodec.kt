@@ -2,6 +2,8 @@ package io.github.matteopi.budgeting.core.backup
 
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import io.github.matteopi.budgeting.core.nutrition.LogKind
+import io.github.matteopi.budgeting.core.nutrition.MealSlot
 import java.time.DateTimeException
 
 /** The outcome of [BackupCodec.decode]. */
@@ -16,7 +18,7 @@ sealed class BackupDecodeResult {
     data class Failure(val errors: List<String>) : BackupDecodeResult()
 }
 
-/** JSON encode/decode for [BackupV1] (versions 1 to 9), with validation. See docs/PLAN.md §5.17. */
+/** JSON encode/decode for [BackupV1] (versions 1 to 10), with validation. See docs/PLAN.md §5.17. */
 object BackupCodec {
 
     private val json = Json {
@@ -172,6 +174,7 @@ object BackupCodec {
 
         validateFood(b, productIds) { ok, message -> check(ok, message) }
         validatePlanner(b) { ok, message -> check(ok, message) }
+        validateDiary(b) { ok, message -> check(ok, message) }
 
         b.settings.defaultAccountId?.let {
             check(it in accountIds, "Settings refer to a missing default account $it.")
@@ -298,6 +301,38 @@ object BackupCodec {
             block.topicId?.let { check(it in topicIds, "Plan block ${block.id} refers to a missing revision topic $it.") }
         }
         check(b.plannerDismissed.map { it.key }.toSet().size == b.plannerDismissed.size, "A suggestion is dismissed twice.")
+    }
+
+    /**
+     * The version-10 tables: references to recipes, ingredients, batches and the rows a side belongs to, known
+     * meals and kinds, amounts never below zero, and one entry per day.
+     */
+    private fun validateDiary(b: BackupV1, check: (Boolean, String) -> Unit) {
+        val recipeIds = b.recipes.map { it.id }.toSet()
+        val ingredientIds = b.ingredients.map { it.id }.toSet()
+        val batchIds = b.mealBatches.map { it.id }.toSet()
+        val rowIds = b.foodLog.map { it.id }.toSet()
+        check(batchIds.size == b.mealBatches.size, "Two kitchen batches have the same id.")
+        check(rowIds.size == b.foodLog.size, "Two diary rows have the same id.")
+        check(b.foodDays.map { it.date }.toSet().size == b.foodDays.size, "A diary day is listed twice.")
+        for (batch in b.mealBatches) {
+            batch.recipeId?.let { check(it in recipeIds, "Kitchen batch ${batch.id} refers to a missing recipe $it.") }
+            check(
+                batch.portions >= 0 && batch.fridgeLeft >= 0 && batch.freezerLeft >= 0 && batch.wasted >= 0,
+                "Kitchen batch ${batch.id} has portions below zero.",
+            )
+        }
+        val meals = MealSlot.entries.map { it.name }.toSet()
+        val kinds = LogKind.entries.map { it.name }.toSet()
+        for (row in b.foodLog) {
+            check(row.meal in meals, "Diary row ${row.id} has an unknown meal \"${row.meal}\".")
+            check(row.kind in kinds, "Diary row ${row.id} has an unknown kind \"${row.kind}\".")
+            check(row.amount >= 0, "Diary row ${row.id} has an amount below zero.")
+            row.recipeId?.let { check(it in recipeIds, "Diary row ${row.id} refers to a missing recipe $it.") }
+            row.ingredientId?.let { check(it in ingredientIds, "Diary row ${row.id} refers to a missing ingredient $it.") }
+            row.batchId?.let { check(it in batchIds, "Diary row ${row.id} refers to a missing kitchen batch $it.") }
+            row.sideOf?.let { check(it in rowIds && it != row.id, "Diary row ${row.id} is a side of a missing row $it.") }
+        }
     }
 
     /** The version-3 tables: the same reference checks, plus the uniqueness the food tables enforce. */

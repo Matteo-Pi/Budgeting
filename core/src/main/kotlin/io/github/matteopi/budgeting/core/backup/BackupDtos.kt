@@ -285,6 +285,19 @@ data class IngredientDto(
     val addedSugars: Double? = null,
     /** Version 4: a `FoodGroup` name, or null to guess it from the name. */
     val foodGroup: String? = null,
+    // Version 10: vitamins and minerals per 100 base units (docs/PLAN.md §14.2); absent in older files.
+    val vitaminA: Double? = null,
+    val vitaminC: Double? = null,
+    val vitaminD: Double? = null,
+    val vitaminE: Double? = null,
+    val vitaminB6: Double? = null,
+    val vitaminB12: Double? = null,
+    val folate: Double? = null,
+    val calcium: Double? = null,
+    val iron: Double? = null,
+    val potassium: Double? = null,
+    val magnesium: Double? = null,
+    val zinc: Double? = null,
 )
 
 @Serializable
@@ -586,4 +599,61 @@ data class PlannerRevisionTopicDto(
 data class PlannerDismissedDto(
     val key: String,
     val dismissedAtEpochMillis: Long,
+)
+
+// ---- Version 10: the food diary and the kitchen (docs/PLAN.md §14.3) ----
+
+/** An intake: amounts by `IntakeKey` name (keys left out are 0), the veg and pulse grams, and the unknown keys. */
+@Serializable
+data class IntakeDto(
+    val amounts: Map<String, Double> = emptyMap(),
+    val vegGrams: Double = 0.0,
+    val pulseGrams: Double = 0.0,
+    val unknown: List<String> = emptyList(),
+)
+
+@Serializable
+data class MealBatchDto(
+    val id: Long,
+    val recipeId: Long?,
+    val name: String,
+    val madeOn: String,
+    val servings: Double,
+    val portions: Double,
+    val fridgeLeft: Double,
+    val freezerLeft: Double,
+    val frozenOn: String?,
+    val eatBy: String?,
+    val wasted: Double,
+    val costPence: Double?,
+    val note: String,
+    val createdAtEpochMillis: Long,
+    /** One portion. */
+    val intake: IntakeDto,
+)
+
+@Serializable
+data class FoodLogDto(
+    val id: Long,
+    val date: String,
+    val meal: String,
+    val eatenAtEpochMillis: Long,
+    val kind: String,
+    val name: String,
+    val amount: Double,
+    val amountText: String,
+    val recipeId: Long?,
+    val batchId: Long?,
+    val ingredientId: Long?,
+    val sideOf: Long?,
+    val costPence: Double?,
+    val createdAtEpochMillis: Long,
+    val intake: IntakeDto,
+)
+
+@Serializable
+data class FoodDayDto(
+    val date: String,
+    val waterMl: Int,
+    val note: String,
 )
