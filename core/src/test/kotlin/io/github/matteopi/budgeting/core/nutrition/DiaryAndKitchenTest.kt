@@ -280,6 +280,61 @@ class DiaryAndKitchenTest {
         assertNull(QuickFood.read("   ", emptyList()))
     }
 
+    @Test
+    fun `the quick box offers several foods, the best first, each with the amount typed`() {
+        val mine = Ingredient(id = 6, name = "White bread", per100 = Nutrition(kcal = 235.0), portions = listOf(Portion("slice", 38.0)))
+        val options = QuickFood.options("2 slices of bread", listOf(mine))
+        assertTrue(options.size >= 3, options.map { it.ingredient.name }.toString())
+        assertEquals(6L, options.first().ingredient.id, "the user's own bread first")
+        assertEquals(76.0, options.first().amount.amount)
+        val names = options.map { it.ingredient.name }
+        assertEquals(names.size, names.toSet().size, "each once")
+        assertTrue("Wholemeal bread" in names, names.toString())
+        assertEquals(80.0, options.first { it.ingredient.name == "Wholemeal bread" }.amount.amount, "2 of its own 40 g slices")
+        assertTrue(options.none { it.foodKey == "bread_white" }, "the list's white bread is the user's own")
+        assertTrue(options.size <= 8)
+        assertTrue(QuickFood.options("   ", listOf(mine)).isEmpty())
+        val rice = QuickFood.options("rice", emptyList(), limit = 4)
+        assertEquals(4, rice.size)
+        assertTrue(rice.all { it.foodKey != null })
+    }
+
+    @Test
+    fun `several foods in one go, and what goes with them`() {
+        val cereal = QuickFood.readAll("cereal with milk", emptyList())
+        assertEquals(listOf("cereal", "milk"), cereal.map { it.text })
+        assertEquals("cornflakes", cereal[0].options.first().foodKey)
+        assertEquals(40.0, cereal[0].options.first().amount.amount)
+        assertEquals(125.0, cereal[1].options.first().amount.amount)
+        val toast = QuickFood.readAll("2 slices of toast with butter and jam", emptyList())
+        assertEquals(listOf("2 slices of toast", "butter", "jam"), toast.map { it.text })
+        assertEquals(80.0, toast[0].options.first().amount.amount)
+        assertEquals("butter", toast[1].options.first().foodKey)
+        assertEquals(10.0, toast[1].options.first().amount.amount)
+        assertEquals(15.0, toast[2].options.first().amount.amount)
+        assertEquals(1, QuickFood.readAll("milk", emptyList()).size)
+        assertEquals(15.0, Sides.defaultAmount(food("peanut_butter")).amount)
+        assertEquals(235.0, Sides.defaultAmount(food("butter_beans")).amount, "a tin, not a knob")
+        assertEquals("2 biscuits", Sides.defaultAmount(food("wheat_biscuits")).text)
+
+        val bread = food("bread_white", 1)
+        val butter = food("butter", 2)
+        val extras = Sides.extrasFor(bread, listOf(bread, butter, food("butter_beans", 3)), emptyList())
+        assertEquals(2L, extras.first().ingredient.id, "the user's own butter")
+        assertTrue(extras.none { it.ingredient.id == 3L }, "not butter beans")
+        assertTrue(extras.any { it.foodKey == "jam" })
+        val cornflakes = food("cornflakes", 4)
+        assertEquals("milk_semi", Sides.extrasFor(cornflakes, listOf(cornflakes), emptyList()).first().foodKey)
+        // What was last eaten with it comes first, at its amount.
+        val history = listOf(
+            row(1, MealSlot.BREAKFAST, kcal(150.0), ingredientId = 4),
+            row(2, MealSlot.BREAKFAST, kcal(60.0), sideOf = 1, ingredientId = 2, amount = 20.0),
+        )
+        val again = Sides.extrasFor(cornflakes, listOf(cornflakes, butter), history)
+        assertEquals(2L, again.first().ingredient.id)
+        assertEquals(20.0, again.first().amount.amount)
+    }
+
     // ---- TargetCalculator, prefs, insights ----
 
     @Test

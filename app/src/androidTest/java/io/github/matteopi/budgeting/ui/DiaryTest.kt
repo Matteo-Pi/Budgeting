@@ -162,6 +162,40 @@ class DiaryTest : UiTest() {
     }
 
     @Test
+    fun cerealWithMilkIsLoggedInOneGoAndToastGetsButterFromItsSuggestions() {
+        open()
+        goToTab("Diary")
+        tapIcon("Log food")
+        tapText("Quick")
+        typeInTag(DiaryTags.QUICK_TEXT, "cereal with milk")
+        waitForExists(hasTestTag(DiaryTags.quickPart(1)), "two foods read")
+        waitForExists(hasTestTag(DiaryTags.quickOption(0, 1)), "a second option for the cereal")
+        shot("diary-08-cereal-with-milk")
+        tap(hasTestTag(DiaryTags.QUICK_USE), "Use these")
+        waitForText("With it")
+        tap(hasTestTag(DiaryTags.LOG_SAVE), "Save")
+        waitFor("the cereal and its milk") { todayRows().size == 2 }
+        val rows = todayRows()
+        val cereal = rows.single { it.sideOf == null }
+        val milk = rows.single { it.sideOf != null }
+        assertEquals("Corn flakes", cereal.name)
+        assertEquals(40.0, cereal.amount, 1e-9)
+        assertEquals(cereal.id, milk.sideOf)
+        assertEquals(125.0, milk.amount, 1e-9)
+
+        // Toast from the Foods tab: butter is offered with it.
+        tapIcon("Log food")
+        tapText("Foods")
+        typeInTag(DiaryTags.SEARCH, "white bread")
+        tap(hasTestTag(DiaryTags.pick("fbread_white")), "White bread")
+        waitForText("With it")
+        tap(hasTestTag(DiaryTags.side("fbutter")), "+ Butter")
+        tap(hasTestTag(DiaryTags.LOG_SAVE), "Save")
+        waitFor("the toast and its butter") { todayRows().size == 4 }
+        assertEquals(10.0, todayRows().single { it.name == "Butter (salted)" }.amount, 1e-9)
+    }
+
+    @Test
     fun typingAndDeletingInTheSearchKeepsEveryKey() {
         open()
         goToTab("Diary")

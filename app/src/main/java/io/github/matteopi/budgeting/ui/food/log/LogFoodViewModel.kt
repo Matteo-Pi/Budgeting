@@ -17,7 +17,7 @@ import io.github.matteopi.budgeting.core.nutrition.LogKind
 import io.github.matteopi.budgeting.core.nutrition.MealSlot
 import io.github.matteopi.budgeting.core.nutrition.MealSlots
 import io.github.matteopi.budgeting.core.nutrition.QuickFood
-import io.github.matteopi.budgeting.core.nutrition.QuickFoodResult
+import io.github.matteopi.budgeting.core.nutrition.QuickPart
 import io.github.matteopi.budgeting.core.nutrition.SideSuggestion
 import io.github.matteopi.budgeting.core.nutrition.Sides
 import io.github.matteopi.budgeting.core.recipes.FoodDatabase
@@ -74,6 +74,8 @@ data class LogForm(
     val quickCarbs: String = "",
     val quickFat: String = "",
     val saving: Boolean = false,
+    /** For each food the quick box read, which of its options is chosen (the first when not set). */
+    val quickChoices: Map<Int, Int> = emptyMap(),
     val sideSearch: String? = null,
 )
 
@@ -86,7 +88,8 @@ data class LogFoodUiState(
     val foods: List<FoodOption> = emptyList(),
     val sideFoods: List<FoodOption> = emptyList(),
     val suggestions: List<SideSuggestion> = emptyList(),
-    val quick: QuickFoodResult? = null,
+    /** Each food the quick box read ("cereal", "milk"), with what it could be. */
+    val quickParts: List<QuickPart> = emptyList(),
     /** What is being logged, sides included. */
     val total: Eaten = Eaten(Intake.NONE, null),
     val canSave: Boolean = false,
@@ -140,18 +143,18 @@ class LogFoodViewModel(
         val recipes = book.liveRecipes.sortedWith(
             compareBy<Recipe> { recentRecipeIds.indexOf(it.id).let { i -> if (i < 0) Int.MAX_VALUE else i } }.thenBy { it.title.lowercase() },
         ).filter { f.query.isBlank() || it.title.contains(f.query.trim(), ignoreCase = true) }
-        val quick = if (f.tab == LogTab.QUICK && f.quickText.isNotBlank()) QuickFood.read(f.quickText, live, aliases) else null
+        val quickParts = if (f.tab == LogTab.QUICK && f.pick == null && f.quickText.isNotBlank()) QuickFood.readAll(f.quickText, live, aliases) else emptyList()
         val pickRecipeId = when (val pick = f.pick) {
             is Pick.FromBatch -> pick.batch.recipeId
             is Pick.FromRecipe -> pick.recipe.id
             else -> null
         }
-        val suggestions = if (pickRecipeId != null || f.pick is Pick.FromBatch) {
-            Sides.suggestions(book.recipes.firstOrNull { it.id == pickRecipeId }, live, history)
-                .filter { suggestion -> f.sides.none { it.key == keyOf(suggestion.ingredient, suggestion.foodKey) } }
-        } else {
-            emptyList()
-        }
+        val suggestions = when (val pick = f.pick) {
+            is Pick.FromBatch, is Pick.FromRecipe -> Sides.suggestions(book.recipes.firstOrNull { it.id == pickRecipeId }, live, history)
+            // Milk with cereal, butter and jam with toast, or what was last had with it.
+            is Pick.FromFood -> Sides.extrasFor(pick.ingredient, live, history)
+            null -> emptyList()
+        }.filter { suggestion -> f.sides.none { it.key == keyOf(suggestion.ingredient, suggestion.foodKey) } }
         val total = total(f, book)
         return LogFoodUiState(
             loading = false,
@@ -163,7 +166,7 @@ class LogFoodViewModel(
             foods = if (f.pick == null && f.tab == LogTab.FOODS) foods(f.query, live, history) else emptyList(),
             sideFoods = f.sideSearch?.let { foods(it, live, history).take(20) } ?: emptyList(),
             suggestions = suggestions,
-            quick = quick,
+            quickParts = quickParts,
             total = total,
             canSave = !f.saving && (f.pick != null || (f.tab == LogTab.QUICK && quickKcal(f) != null)),
         )
@@ -203,7 +206,7 @@ class LogFoodViewModel(
             is Pick.FromFood -> Intakes.eatFood(pick.ingredient, f.amount, actions.priceOf(pick.ingredient, book))
             null -> quickKcal(f)?.let { Eaten(quickIntake(f, it), null) }
         }
-        val sides = if (f.pick is Pick.FromBatch || f.pick is Pick.FromRecipe) {
+        val sides = if (f.pick != null) {
             f.sides.map { Intakes.eatFood(it.ingredient, it.amount, actions.priceOf(it.ingredient, book)) }
         } else {
             emptyList()
@@ -258,9 +261,26 @@ class LogFoodViewModel(
         }
     }
 
-    /** *Use this* on what the quick box read. */
-    fun useQuick(result: QuickFoodResult) {
-        pickFood(FoodOption(keyOf(result.ingredient, result.foodKey), result.ingredient, result.foodKey, ""), result.amount.amount)
+    /** Chooses option [option] for the quick box's food [part]. */
+    fun chooseQuick(part: Int, option: Int) = form.update { it.copy(quickChoices = it.quickChoices + (part to option)) }
+
+    /**
+     * *Use this* / *Use these* on what the quick box read: the first food is logged with the others on it ("cereal
+     * with milk": the cereal, and the milk as its side), each at the amount typed.
+     */
+    fun useQuick(parts: List<QuickPart>, choices: Map<Int, Int>) {
+        val chosen = parts.mapIndexedNotNull { index, part -> part.options.getOrNull(choices[index] ?: 0) ?: part.options.firstOrNull() }
+        val first = chosen.firstOrNull() ?: return
+        val sides = chosen.drop(1).map { SideChoice(keyOf(it.ingredient, it.foodKey), it.ingredient, it.foodKey, it.amount.amount) }
+            .distinctBy { it.key }
+        form.update {
+            it.copy(
+                pick = Pick.FromFood(first.ingredient, first.foodKey),
+                amount = first.amount.amount,
+                sides = sides,
+                quickChoices = emptyMap(),
+            )
+        }
     }
 
     /** The sides last eaten with the recipe, as a start. */
@@ -342,8 +362,9 @@ class LogFoodViewModel(
                 val ingredient = actions.ingredientFor(pick.ingredient, pick.foodKey)
                 val current = container.observeFoodBook().first()
                 val row = actions.foodRow(template, ingredient, f.amount, actions.priceOf(ingredient, current))
-                container.diaryRepository.log(row)
-                "Logged ${row.name}"
+                val sides = sideRows()
+                container.diaryRepository.log(row, sides)
+                "Logged " + (listOf(row.name) + sides.map { it.name }).joinToString(" + ")
             }
             null -> {
                 val kcal = quickKcal(f) ?: return null

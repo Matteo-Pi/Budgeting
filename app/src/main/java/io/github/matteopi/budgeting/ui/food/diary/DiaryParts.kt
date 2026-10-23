@@ -57,6 +57,7 @@ object DiaryTags {
     const val LOG_SAVE = "log-save"
     const val LOG_TOTAL = "log-total"
     const val QUICK_TEXT = "log-quick-text"
+    const val QUICK_USE = "log-quick-use"
     const val QUICK_NAME = "log-quick-name"
     const val QUICK_KCAL = "log-quick-kcal"
     const val QUICK_PROTEIN = "log-quick-protein"
@@ -74,6 +75,8 @@ object DiaryTags {
     fun pick(key: String) = "log-pick-$key"
     fun side(key: String) = "log-side-$key"
     fun nutrient(key: String) = "nutrient-$key"
+    fun quickPart(index: Int) = "log-quick-part-$index"
+    fun quickOption(part: Int, option: Int) = "log-quick-option-$part-$option"
 }
 
 private val DAY_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ENGLISH)

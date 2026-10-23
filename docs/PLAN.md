@@ -3735,3 +3735,12 @@ cooking view buttons, the ingredient editor's micros, Food settings with targets
 - Tests: core `MicrosAndIntakesTest`, `DiaryAndKitchenTest`, `DiaryBackupTest`; JVM `DiaryMappingTest` (rows,
   meals, kitchen text, steps, the widget's state); device `MigrationTest` 9 → 10 and 1 → 10, `DiaryRepositoryTest`,
   `ui/DiaryTest`, `ui/KitchenTest`, and `SectionSwitchTest`/`CookingAndCompareTest` updated for the new bar.
+- (Later the same day, from the user's use.) The Log food boxes keep their own text and the searching runs off the
+  main thread for the tab on screen only, since showing the text a slow search was worked out for reset the box
+  while typing. The quick box reads several foods at once with `QuickFood.readAll` ("cereal with milk", "2 slices of
+  toast with butter and jam": split at with / and / plus / on / commas unless the whole is a food's name) and lists
+  up to five options for each (`QuickFood.options`: the best match, then the user's close names of the same kind,
+  then the food list's search, same-kind first). *Use these* logs the first food with the others as its sides. Any
+  food picked by amount has *With it*: what was last had with it, then `Sides.extrasFor` (milk with cereal, butter,
+  jam and spreads with bread). Default amounts: spreads 10 g, jams, honey and nut butters 15 g, cereals 40 g (wheat
+  biscuits 2), milk 125 ml.

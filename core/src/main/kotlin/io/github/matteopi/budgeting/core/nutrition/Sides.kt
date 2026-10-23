@@ -32,6 +32,31 @@ object Sides {
     const val CHIPS_GRAMS = 150.0
     const val OTHER_GRAMS = 100.0
 
+    /** Spreads: a knob (10 g) on toast. */
+    private val SPREADS = Regex("""(?i)\b(butter|spread|margarine)\b(?!\s*beans)""")
+
+    /** Jams, honey, nut butters and the like: a heaped teaspoon (15 g). */
+    private val TOPPINGS = Regex("""(?i)\b(jam|marmalade|honey|peanut butter|chocolate spread|hazelnut spread|syrup|lemon curd|yeast extract|marmite)\b""")
+
+    /** Breakfast cereals: a 40 g bowl. */
+    private val CEREALS = Regex("""(?i)\b(cereal|(?<!chilli )flakes|muesli|granola|porridge|oats|bran|wheat biscuits|rice snaps|crispies)\b""")
+    private val MILK = Regex("""(?i)\bmilk\b""")
+    private val NOT_MILK = Regex("""(?i)\b(coconut|condensed|evaporated|chocolate|powder|yogh?urt)\b""")
+
+    const val SPREAD_GRAMS = 10.0
+    const val TOPPING_GRAMS = 15.0
+    const val CEREAL_GRAMS = 40.0
+    const val MILK_ML = 125.0
+
+    /** What goes with a food (docs/PLAN.md §14.5): milk on cereal, butter and jam on toast. */
+    private val GOES_WITH: List<Pair<Regex, List<String>>> = listOf(
+        CEREALS to listOf("semi-skimmed milk"),
+        Regex("""(?i)\b(bread|toast|bagels?|crumpets?|muffins?|rolls?|sourdough)\b""") to listOf("butter", "strawberry jam", "peanut butter", "spread"),
+        Regex("""(?i)\b(pancakes?|waffles?)\b""") to listOf("clear honey", "strawberry jam"),
+        Regex("""(?i)\b(yogh?urt)\b""") to listOf("granola", "clear honey"),
+        Regex("""(?i)\b(baking potatoes|jacket)\b""") to listOf("baked beans", "cheddar", "butter"),
+    )
+
     private val COOKED = Regex("""(?i)\b(microwave|cooked|pouch|ready|straight to wok|express)\b""")
     private val CHIPS = Regex("""(?i)\b(chips|wedges|fries)\b""")
     private val SPOONS = setOf("tsp", "tbsp", "pinch", "spray", "handful")
@@ -62,8 +87,14 @@ object Sides {
                 ?: portion("naan", "wrap", "pitta", "roll", "each")?.let { of(it) }
                 ?: grams(OTHER_GRAMS)
             FoodGroup.POTATOES -> grams(if (CHIPS.containsMatchIn(ingredient.name)) CHIPS_GRAMS else POTATO_GRAMS)
-            else -> ingredient.portions.firstOrNull { Quantities.stem(it.name) !in SPOONS.map(Quantities::stem) }?.let { of(it) }
-                ?: grams(OTHER_GRAMS)
+            else -> when {
+                TOPPINGS.containsMatchIn(ingredient.name) -> grams(TOPPING_GRAMS)
+                SPREADS.containsMatchIn(ingredient.name) -> grams(SPREAD_GRAMS)
+                CEREALS.containsMatchIn(ingredient.name) -> portion("biscuit")?.let { of(it, 2.0) } ?: grams(CEREAL_GRAMS)
+                MILK.containsMatchIn(ingredient.name) && !NOT_MILK.containsMatchIn(ingredient.name) -> grams(MILK_ML)
+                else -> ingredient.portions.firstOrNull { Quantities.stem(it.name) !in SPOONS.map(Quantities::stem) }?.let { of(it) }
+                    ?: grams(OTHER_GRAMS)
+            }
         }
     }
 
@@ -142,6 +173,53 @@ object Sides {
             .groupingBy { it.id }.eachCount().entries.sortedByDescending { it.value }
             .forEach { add(byId.getValue(it.key)) }
 
+        return out.values.take(limit)
+    }
+
+    /**
+     * What to offer with a food that isn't a portion of a recipe, best first and at most [limit]: what was last eaten
+     * with it in [history] (newest first), then what usually goes with it ([GOES_WITH]: milk with cereal, butter and
+     * jam with toast), matched to one of [ingredients] by name, else to a food of the list.
+     */
+    fun extrasFor(
+        food: Ingredient,
+        ingredients: List<Ingredient>,
+        history: List<LogItem>,
+        limit: Int = 6,
+        useFoodList: Boolean = true,
+    ): List<SideSuggestion> {
+        val live = ingredients.filter { !it.archived }
+        val byId = live.associateBy { it.id }
+        val out = LinkedHashMap<String, SideSuggestion>()
+        fun add(ingredient: Ingredient, foodKey: String? = null, amount: FoodAmount = defaultAmount(ingredient)) {
+            if (ingredient.id != 0L && ingredient.id == food.id) return
+            if (foodKey == null && ingredient.id == 0L) return
+            val key = if (ingredient.id != 0L) "i${ingredient.id}" else "f$foodKey"
+            if (key !in out) out[key] = SideSuggestion(ingredient, foodKey, amount)
+        }
+        if (food.id != 0L) {
+            val mains = history.filter { it.ingredientId == food.id && it.sideOf == null }.map { it.id }.toSet()
+            history.filter { it.sideOf in mains }.forEach { side ->
+                byId[side.ingredientId]?.let { add(it, amount = FoodAmount(side.amount, describe(it, side.amount))) }
+            }
+        }
+        val byKey = live.associateBy { IngredientMatching.nameKey(it.name) }
+        for ((pattern, names) in GOES_WITH) {
+            if (!pattern.containsMatchIn(food.name)) continue
+            for (name in names) {
+                // The user's own by name, or a close name that is the same thing ("Lurpak butter", not butter beans).
+                val mine = byKey[IngredientMatching.nameKey(name)]
+                    ?: IngredientMatching.match(name, live).let { m -> m.ingredientId?.let(byId::get) }
+                        ?.takeIf { IngredientMatching.head(it.name) == IngredientMatching.head(name) }
+                if (mine != null) {
+                    add(mine)
+                } else if (useFoodList) {
+                    val listed = FoodDatabase.match(name) ?: continue
+                    val same = byKey[IngredientMatching.nameKey(listed.name)]
+                    if (same != null) add(same) else add(listed.ingredient, listed.key)
+                }
+            }
+        }
         return out.values.take(limit)
     }
 

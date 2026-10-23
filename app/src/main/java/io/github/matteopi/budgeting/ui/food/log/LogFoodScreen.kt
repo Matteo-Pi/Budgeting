@@ -46,6 +46,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.material3.RadioButton
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -168,9 +171,7 @@ fun LogFoodScreen(
                 }
             } else {
                 item(key = "picked") { Picked(state, viewModel) }
-                if (pick is Pick.FromBatch || pick is Pick.FromRecipe) {
-                    item(key = "sides") { SidesCard(state, viewModel) }
-                }
+                item(key = "sides") { SidesCard(state, viewModel) }
             }
         }
     }
@@ -178,7 +179,7 @@ fun LogFoodScreen(
     if (f.sideSearch != null) {
         AlertDialog(
             onDismissRequest = viewModel::closeSideSearch,
-            title = { Text("Add a side") },
+            title = { Text(if (f.pick is Pick.FromFood) "Add a food" else "Add a side") },
             text = {
                 Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState())) {
                     SearchField(f.sideSearch, viewModel::setSideSearch, "Search foods")
@@ -227,20 +228,46 @@ private fun QuickBox(state: LogFoodUiState, viewModel: LogFoodViewModel) {
             singleLine = true,
             modifier = Modifier.fillMaxWidth().testTag(DiaryTags.QUICK_TEXT),
         )
-        val quick = state.quick
-        if (quick != null) {
-            Card(Modifier.fillMaxWidth()) {
-                Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(quick.ingredient.name, style = MaterialTheme.typography.bodyLarge)
-                        val kcal = quick.ingredient.per100.kcal?.let { kcalText(it * quick.amount.amount / 100) } ?: "kcal unknown"
-                        Text("${quick.amount.text} · $kcal", style = MaterialTheme.typography.bodySmall)
+        val parts = state.quickParts
+        parts.forEachIndexed { index, part ->
+            Card(Modifier.fillMaxWidth().testTag(DiaryTags.quickPart(index))) {
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    if (parts.size > 1) Text("\"${part.text}\"", style = MaterialTheme.typography.titleSmall)
+                    val chosen = f.quickChoices[index] ?: 0
+                    part.options.forEachIndexed { optionIndex, option ->
+                        val kcal = option.ingredient.per100.kcal?.let { kcalText(it * option.amount.amount / 100) } ?: "kcal unknown"
+                        val selected = optionIndex == chosen
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .selectable(selected = selected, onClick = { viewModel.chooseQuick(index, optionIndex) }, role = Role.RadioButton)
+                                .padding(vertical = 4.dp)
+                                .testTag(DiaryTags.quickOption(index, optionIndex)),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(selected = selected, onClick = null)
+                            Column(Modifier.weight(1f).padding(start = 8.dp)) {
+                                Text(option.ingredient.name, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                val source = if (option.foodKey != null) " · food list" else ""
+                                Text("${option.amount.text} · $kcal$source", style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
                     }
-                    OutlinedButton(onClick = { viewModel.useQuick(quick) }) { Text("Use this") }
                 }
+            }
+        }
+        if (parts.isNotEmpty()) {
+            Button(onClick = { viewModel.useQuick(parts, f.quickChoices) }, modifier = Modifier.fillMaxWidth().testTag(DiaryTags.QUICK_USE)) {
+                Text(if (parts.size == 1) "Use this" else "Use these ${parts.size} together")
             }
         } else if (f.quickText.isNotBlank()) {
             Text("No food matches that yet. Type its numbers below.", style = MaterialTheme.typography.bodySmall)
+        } else {
+            Text(
+                "Several at once: \"cereal with milk\", \"2 slices of toast with butter and jam\".",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         Text("Or type the numbers", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
         var quickName by rememberSaveable { mutableStateOf(f.quickName) }
@@ -331,7 +358,11 @@ private fun SidesCard(state: LogFoodUiState, viewModel: LogFoodViewModel) {
     val f = state.form
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("On the side", style = MaterialTheme.typography.titleMedium)
+            val food = f.pick is Pick.FromFood
+            Text(if (food) "With it" else "On the side", style = MaterialTheme.typography.titleMedium)
+            if (food && f.sides.isEmpty()) {
+                Text("Milk on cereal, butter and jam on toast: add them here and they are logged together.", style = MaterialTheme.typography.bodySmall)
+            }
             if (state.suggestions.isNotEmpty()) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     state.suggestions.forEach { suggestion ->
@@ -359,7 +390,7 @@ private fun SidesCard(state: LogFoodUiState, viewModel: LogFoodViewModel) {
                     IconButton(onClick = { viewModel.removeSide(side.key) }) { Icon(Icons.Default.Close, contentDescription = "Remove ${side.ingredient.name}") }
                 }
             }
-            OutlinedButton(onClick = viewModel::openSideSearch) { Text("Add a side") }
+            OutlinedButton(onClick = viewModel::openSideSearch) { Text(if (food) "Add a food" else "Add a side") }
         }
     }
 }
